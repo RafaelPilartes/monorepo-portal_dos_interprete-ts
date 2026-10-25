@@ -10,18 +10,12 @@ Plataforma da Academia Grace Mind que junta quem precisa de um intérprete com q
 
 ## Estado actual
 
-Inventário de partida em `docs/inventory/` (00–05; o 05 é o mapa de rotas do passo A). Factos do código de partida (2026-10-15), que o plano está a substituir:
+Monorepo pnpm + Turborepo desde o passo C; os ecrãs da SPA antiga foram movidos para as quatro apps nos passos D1–D4 e a SPA antiga foi apagada (fica no git até `aca929a`). O estado da corrida está em `HANDOFF.md`; o que mudou, passo a passo, em `CHANGELOG.md` e `docs/plan/step-reports/`.
 
-- **SPA única vinda do Lovable** — Vite 5 + React 18 + TS + shadcn/ui. Sem backend, sem API, sem edge functions. `00-overview.md` §§1–2
-- **Sem autenticação ligada.** A cadeia Supabase existe (`SupabaseAuthDAO` → `AuthUseCase` → `auth.viewmodel`) e `auth.viewmodel.ts` não é importado por ficheiro nenhum. O login é `setTimeout` + toast. `00-overview.md` §5, `04-gaps.md` item 5 (autenticação não ligada)
-- **Sem guards de rota.** `/dashboard/admin` abre a qualquer visitante. O papel escolhe-se escrevendo o URL. `04-gaps.md` item 6 (zero guards de rota)
-- **Zero migrations.** Não há `supabase/migrations/` nem `config.toml`; o schema vive em 3 `.sql` soltos, e o principal nunca correu com sucesso de uma só vez. `01-database.md` §6, `04-gaps.md` itens 3 (zero migrations) e 4 (o `.sql` não corre de uma só vez)
-- **Projecto Supabase remoto inacessível** à data de 2026-10-15 (ref em `VITE_SUPABASE_URL`). O conector não tem permissão sobre ele. `00-overview.md` §9
-- **Estado do RLS desconhecido**, com a `anon key` no bundle do browser. Localmente: 0 RLS e 0 policies em 37 tabelas. `01-database.md` §10, `04-gaps.md` item 2 (RLS desconhecido)
-- **1 das 68 páginas usa dados reais** (`AdminTeam.tsx`). 38 DAOs, 37 usecases e 37 viewmodels construídos, quase nenhum consumido. `02-screens.md` §§0 e 8
-- **Schema por decidir.** O modelo actual é um rascunho, com 18 divergências face ao que o código espera. `01-database.md` §5.2
-
-O modelo de domínio está decidido (`decisions.md`, p.ex. D-01 (empresa = organização com membros) e D-30 (pagamento de directos e abertos fora da plataforma)) e desenhado em `docs/plan/data-model.md`. A base nova constrói-se **só localmente**, por ficheiros em `packages/db/` (ADR-004 (schema recomeçado de raiz)).
+- **Os ecrãs ainda mostram mocks.** Cada passo H liga os seus ecrãs à base nova e apaga os mocks que substitui. Até lá há avisos de sucesso sem nada por trás (AD-014, AD-016).
+- **Sem autenticação ligada** até ao H1 (equipa) e H2 (contas); as rotas não têm guardas até lá.
+- **Zero migrations** até ao passo F; a base nova constrói-se **só localmente**, por ficheiros em `packages/db/` (ADR-004 (schema recomeçado de raiz)). O projecto Supabase remoto antigo não se toca.
+- O inventário da SPA de partida (2026-10-15) continua em `docs/inventory/` (00–05) como referência histórica.
 
 ---
 

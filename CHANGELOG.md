@@ -2,6 +2,13 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.6.0 — 2026-10-25 — Passo D4 (mover o `interpreter-web`; apagar a SPA antiga)
+
+- A área do intérprete passa para `apps/interpreter-web`, nos caminhos novos; áreas sem ecrã têm aviso honesto.
+- A SPA antiga (`legacy/`) foi apagada; fica no git até `aca929a`.
+- Cada link das barras laterais dos três painéis é verificado por teste.
+- Relatório: `docs/plan/step-reports/D4.md`.
+
 ## 0.5.0 — 2026-10-25 — Passo D3 (mover o `requester-web`)
 
 - A área do solicitante passa para `apps/requester-web`, nos caminhos novos, com as páginas de perfil do intérprete e as de entrada.

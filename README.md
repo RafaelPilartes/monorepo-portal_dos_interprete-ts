@@ -31,124 +31,24 @@ O **Portal dos Intérpretes** é uma plataforma:
 
 ---
 
-## 🧠 Tecnologias
+## 🧠 Tecnologias e estrutura
 
-| Camada      | Tecnologia                           |
-| ----------- | ------------------------------------ |
-| **Runtime** | React 18 · TypeScript 5 · Vite 5     |
-| **Styling** | Tailwind CSS 3 · tailwindcss-animate |
-| **UI Kit**  | shadcn/ui (Radix UI primitives)      |
-| **Routing** | React Router DOM 6                   |
-| **Data**    | TanStack React Query 5               |
-| **Forms**   | React Hook Form · Zod                |
-| **Charts**  | Recharts                             |
-| **Icons**   | Lucide React                         |
-| **Fonts**   | Plus Jakarta Sans (Google Fonts)     |
-
----
-
-## 📁 Estrutura do Projecto
+Monorepo **pnpm + Turborepo** (ADR-001), Node ≥ 22. Quatro apps web (Vite + React 18 + TypeScript estrito + Tailwind + shadcn/ui) e uma API (Fastify), sobre Supabase. Detalhe em `docs/plan/architecture.md`.
 
 ```
-src/
-├── assets/              # Imagens (hero, serviços, ícones)
-├── components/
-│   ├── layout/          # PublicLayout, Header, Footer
-│   ├── dashboard/       # Componentes partilhados dos dashboards
-│   ├── ui/              # shadcn/ui components
-│   └── *.tsx            # Componentes reutilizáveis (PageBanner, InterpreterCard, etc.)
-├── core/
-│   └── entities/        # Entidades de domínio (UserEntity, etc.)
-├── data/                # Dados estáticos (intérpretes, testemunhos)
-├── hooks/               # Custom React hooks
-├── lib/                 # Utilitários (cn, helpers)
-├── pages/
-│   ├── portal/          # Páginas públicas
-│   │   ├── auth/        # Login, Register, RecoverPassword
-│   │   └── *.tsx        # Home, Services, Interpreters, Impact, etc.
-│   └── dashboard/       # Painéis de controlo
-│       ├── admin/       # Dashboard do Administrador (17 ecrãs)
-│       ├── interpreter/ # Dashboard do Intérprete (13 ecrãs + profile)
-│       ├── requester/   # Dashboard do Solicitante (11 ecrãs)
-│       └── modules/     # Módulos placeholder para expansão
-├── routes/
-│   ├── AppRoutes.tsx    # Router principal
-│   ├── PublicRoutes.tsx # Rotas públicas (portal)
-│   ├── AdminRoutes.tsx  # Rotas do administrador
-│   ├── InterpreterRoutes.tsx  # Rotas do intérprete
-│   └── RequesterRoutes.tsx    # Rotas do solicitante
-└── App.tsx              # Entry point
+apps/
+  site-web/          site público (http://localhost:5170)
+  requester-web/     solicitantes (http://localhost:5171)
+  interpreter-web/   intérpretes (http://localhost:5172)
+  admin-web/         equipa da plataforma (http://localhost:5173)
+  api/               Fastify (http://localhost:3000/health)
+packages/            ui, i18n, core, auth, data, features, db, db-types, config
+tests/e2e/           Playwright: percorre as rotas de cada app
+scripts/verify.py    verificações estruturais
+docs/plan/           plano, decisões, especificações, registo da corrida
 ```
 
----
-
-## 🗺️ Arquitectura de Rotas
-
-O routing está modularizado em ficheiros separados por domínio:
-
-### Rotas Públicas (`/`)
-
-| Rota                                        | Página                    |
-| ------------------------------------------- | ------------------------- |
-| `/home`                                     | Home Page                 |
-| `/services`                                 | Serviços de Interpretação |
-| `/how-it-works`                             | Como Funciona             |
-| `/impact`                                   | Impacto Social            |
-| `/contact`                                  | Contacto                  |
-| `/for-requesters`                           | Para Solicitantes         |
-| `/for-interpreters`                         | Para Intérpretes          |
-| `/interpreters`                             | Directório de Intérpretes |
-| `/interpreters/:slug`                       | Perfil do Intérprete      |
-| `/interpreters/:slug/videos`                | Vídeos do Intérprete      |
-| `/interpreters/:slug/articles`              | Artigos do Intérprete     |
-| `/interpreters/:slug/articles/:articleSlug` | Artigo Individual         |
-| `/tutorials`                                | Tutoriais                 |
-
-### Autenticação
-
-| Rota                | Página             |
-| ------------------- | ------------------ |
-| `/login`            | Login              |
-| `/register`         | Registo            |
-| `/recover-password` | Recuperar Password |
-
----
-
-### Dashboard Solicitante
-
-- Solicitações
-- Nova Solicitação
-- Histórico
-- Favoritos
-- Avaliações
-- Perfil
-- Definições
-
----
-
-### Dashboard Intérprete
-
-- Perfil profissional
-- Solicitações
-- Agenda e disponibilidade
-- Ganhos
-- Avaliações
-- Verificação
-- Documentos
-- Definições
-
----
-
-### Dashboard Administrador
-
-- Gestão de intérpretes
-- Gestão de solicitantes
-- Gestão de solicitações
-- Verificações
-- Relatórios
-- Pagamentos
-- Serviços
-- Definições
+As rotas de cada app estão em `docs/plan/architecture.md` §3 e em `docs/inventory/05-route-map.md`.
 
 ---
 
@@ -223,32 +123,24 @@ O routing está modularizado em ficheiros separados por domínio:
 ## 🛠️ Execução Local
 
 ### Pré-requisitos
-
-- Node.js ≥ 18
-- npm ≥ 9
+- Node.js ≥ 22 e pnpm 10 (`npm install -g pnpm@10`)
+- Docker (para a base de dados local, a partir do passo F do plano)
 
 ### Comandos
 
-```sh
-# Clonar o repositório
-git clone <URL_DO_REPOSITORIO>
-cd web-portal_do_interprete-ts
-
-# Instalar dependências
-npm install
-
-# Iniciar o servidor de desenvolvimento
-npm run dev
-
-# Build de produção
-npm run build
-
-# Pré-visualizar build
-npm run preview
-
-# Lint
-npm run lint
+```bash
+pnpm install          # instala tudo e activa o hook pre-push
+pnpm dev              # arranca as quatro apps e a API
+pnpm build            # build de produção de todas
+pnpm lint             # ESLint
+pnpm typecheck        # TypeScript
+pnpm test             # testes unitários
+pnpm verify           # verificações estruturais (scripts/verify.py)
+pnpm e2e              # Playwright (instalar o browser uma vez:
+                      # pnpm --filter @portal-dos-interpretes/e2e exec playwright install chromium)
 ```
+
+Variáveis de ambiente: copiar `.env.example` para `.env` (nunca versionar o `.env`).
 
 ---
 

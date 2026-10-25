@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { AppProviders } from '@portal-dos-interpretes/features/app/AppProviders'
 import rootPackage from '../../../package.json'
 import { App, InterpreterAppRoutes } from './App'
-import { navigation } from './pages/dashboard/interpreter/InterpreterLayout'
+import { navigation } from './navigation'
 
 function renderAt(path: string) {
   return render(

@@ -54,6 +54,12 @@ const statusConfig = {
   },
 };
 
+/** Portuguese labels for statuses the config above does not style (AD-017). */
+const UNLISTED_STATUS_LABELS: Record<string, string> = {
+  active: "Activa",
+  suspended: "Suspensa",
+};
+
 export function VerificationRequestDetailsModal({
   open,
   onOpenChange,
@@ -61,11 +67,11 @@ export function VerificationRequestDetailsModal({
 }: VerificationRequestDetailsModalProps) {
   if (!request) return null;
 
-  // The old config only knew pending/approved/rejected and crashed on the other
-  // statuses of the type (active, expired, suspended); show those neutrally (AD-017).
+  // The old config did not list "active" and "suspended", which the type allows,
+  // and crashed on them; show any unlisted status with the neutral style (AD-017).
   const status = statusConfig[request.status as keyof typeof statusConfig] ?? {
-    ...statusConfig.pending,
-    label: request.status,
+    ...statusConfig.expired,
+    label: UNLISTED_STATUS_LABELS[request.status] ?? "Estado desconhecido",
   };
   const StatusIcon = status.icon;
 

@@ -75,6 +75,11 @@ export function InterpreterAppRoutes() {
         {placeholders.map(({ path, title, description }) => (
           <Route key={path} path={path} element={<ModulePlaceholder title={title} description={description} />} />
         ))}
+        {/* The profile pages link back to the list; the colleagues' directory arrives in H4 (AD-017). */}
+        <Route
+          path="interpreters"
+          element={<ModulePlaceholder title="Lista de Profissionais" description={LATER} />}
+        />
         {/* Colleagues' public profiles (architecture.md §3: /interpreters/:slug). */}
         <Route path="interpreters/:slug" element={<ColleagueProfile />} />
         <Route path="interpreters/:slug/videos" element={<InterpreterVideos />} />
@@ -82,7 +87,7 @@ export function InterpreterAppRoutes() {
         <Route path="interpreters/:slug/articles/:articleSlug" element={<ArticlePage />} />
       </Route>
       <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route path="/register" element={<Register defaultAccountType="interpreter" />} />
       <Route path="/recover-password" element={<RecoverPassword />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

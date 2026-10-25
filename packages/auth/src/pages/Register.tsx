@@ -18,10 +18,15 @@ import {
 import { toast } from 'sonner'
 import logo from '@portal-dos-interpretes/ui/assets/logo.png'
 
-export default function Register() {
+export interface RegisterProps {
+  /** Account type selected when the page opens: each app pre-selects its own public (AD-017). */
+  defaultAccountType?: 'requester' | 'interpreter'
+}
+
+export default function Register({ defaultAccountType = 'requester' }: RegisterProps = {}) {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [userType, setUserType] = useState('requester')
+  const [userType, setUserType] = useState<string>(defaultAccountType)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
