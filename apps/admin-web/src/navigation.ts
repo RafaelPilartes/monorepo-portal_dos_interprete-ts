@@ -69,7 +69,9 @@ export const navigation: (NavItem | NavGroup)[] = [
     defaultOpen: true,
     items: [
       { name: 'Equipa', href: '/team', icon: Shield },
-      { name: 'Auditoria & Logs', href: '/audit', icon: History }
+      { name: 'Auditoria', href: '/audit', icon: History },
+      { name: 'Documentos legais', href: '/settings/legal', icon: Scale },
+      { name: 'Tipos de documento', href: '/settings/document-types', icon: FileText }
     ]
   },
   {

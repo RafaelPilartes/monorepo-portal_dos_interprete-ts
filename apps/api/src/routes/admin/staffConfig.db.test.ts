@@ -100,6 +100,19 @@ describe('configuration versions', () => {
   })
 })
 
+describe('GET /me', () => {
+  it('answers who the caller is: account, roles and staff level', async () => {
+    const response = await app.inject({ method: 'GET', url: '/me', headers: as(moderator) })
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      account: { id: moderator.id, email: moderator.email, status: 'active' },
+      roles: ['staff'],
+      staff_level: 'moderator',
+    })
+    expect((await app.inject({ method: 'GET', url: '/me' })).statusCode).toBe(401)
+  })
+})
+
 describe('team', () => {
   it('adds an existing account by email and refuses an unknown email with ACCOUNT_NOT_FOUND', async () => {
     const person = await createConfirmedAccount(local.API_URL, local.SERVICE_ROLE_KEY, local.ANON_KEY)

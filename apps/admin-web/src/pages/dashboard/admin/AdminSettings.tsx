@@ -1,304 +1,310 @@
-import { PageHeader } from "@portal-dos-interpretes/ui/components/page-header";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@portal-dos-interpretes/ui/components/card";
-import { Button } from "@portal-dos-interpretes/ui/components/button";
-import { Input } from "@portal-dos-interpretes/ui/components/input";
-import { Label } from "@portal-dos-interpretes/ui/components/label";
-import { Switch } from "@portal-dos-interpretes/ui/components/switch";
-import { Textarea } from "@portal-dos-interpretes/ui/components/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@portal-dos-interpretes/ui/components/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@portal-dos-interpretes/ui/components/select";
-import { Save, Bell, Shield, Globe, Mail, Database } from "lucide-react";
-import { toast } from "sonner";
+import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
+import { useSession } from '@portal-dos-interpretes/auth'
+import { COMMON_TEXTS, formatDateTime } from '@portal-dos-interpretes/i18n'
+import { Badge } from '@portal-dos-interpretes/ui/components/badge'
+import { Button } from '@portal-dos-interpretes/ui/components/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@portal-dos-interpretes/ui/components/card'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@portal-dos-interpretes/ui/components/dialog'
+import { Input } from '@portal-dos-interpretes/ui/components/input'
+import { Label } from '@portal-dos-interpretes/ui/components/label'
+import { PageHeader } from '@portal-dos-interpretes/ui/components/page-header'
+import { Switch } from '@portal-dos-interpretes/ui/components/switch'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@portal-dos-interpretes/ui/components/table'
+import { Textarea } from '@portal-dos-interpretes/ui/components/textarea'
+import { errorDetails, errorMessage } from '@/components/errorText'
+import { QueryError, TableSkeleton } from '@/components/QueryStates'
+import { ALL_FIELDS, CONFIG_GROUPS, differences, displayValue, parseFieldInput, type FieldValue } from '@/config/configFields'
+import type { ConfigVersionRow } from '@/data/repositories'
+import { useConfigMutations, useConfigVersions, useStaffList } from '@/viewModels/staff-config.viewmodel'
+
+// /settings/config (staff-and-config.md, R-CFG-01..04): the version in force, read only; drafts
+// are edited and published with the list of differences; the history of versions.
+
+/** The history shows the most recent versions first; the rest on request. */
+const HISTORY_SIZE = 10
+
+const STATUS_LABELS: Record<string, string> = { draft: 'Rascunho', published: 'Em vigor', retired: 'Retirada' }
+
+function ValueCell({ version, field }: { version: ConfigVersionRow; field: (typeof ALL_FIELDS)[number] }) {
+  const shown = displayValue(field, version[field.field])
+  if (shown !== null) return <span>{shown}</span>
+  return field.blocksProduction ? (
+    <Badge variant="destructive">Por definir — bloqueia a produção</Badge>
+  ) : (
+    <span className="text-muted-foreground">Por definir</span>
+  )
+}
+
+function VersionView({ version }: { version: ConfigVersionRow }) {
+  return (
+    <div className="grid gap-6 md:grid-cols-2">
+      {CONFIG_GROUPS.map((group) => (
+        <Card key={group.title}>
+          <CardHeader>
+            <CardTitle className="text-base">{group.title}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="space-y-2 text-sm">
+              {group.fields.map((field) => (
+                <div key={field.field} className="flex items-start justify-between gap-4">
+                  <dt className="text-muted-foreground">{field.label}</dt>
+                  <dd className="text-right">
+                    <ValueCell version={version} field={field} />
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+function DraftEditor({ draft, current, onClose }: { draft: ConfigVersionRow; current: ConfigVersionRow | null; onClose: () => void }) {
+  const { updateDraft, publish } = useConfigMutations()
+  const [inputs, setInputs] = useState<Record<string, string>>(() =>
+    Object.fromEntries(ALL_FIELDS.map((field) => [field.field, draft[field.field] === null ? '' : String(draft[field.field])])),
+  )
+  const [notes, setNotes] = useState(draft.notes ?? '')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [saveError, setSaveError] = useState<unknown>(null)
+  const [confirming, setConfirming] = useState(false)
+
+  const collect = (): Record<string, FieldValue> | null => {
+    const errors: Record<string, string> = {}
+    const values: Record<string, FieldValue> = {}
+    for (const field of ALL_FIELDS) {
+      const parsed = parseFieldInput(field, inputs[field.field] ?? '')
+      if ('error' in parsed) errors[field.field] = parsed.error
+      else values[field.field] = parsed.value
+    }
+    setFieldErrors(errors)
+    return Object.keys(errors).length > 0 ? null : values
+  }
+
+  const save = async (): Promise<ConfigVersionRow | null> => {
+    setSaveError(null)
+    const values = collect()
+    if (!values) return null
+    try {
+      return await updateDraft.mutateAsync({ id: draft.id, values, notes })
+    } catch (error) {
+      setSaveError(error)
+      setFieldErrors(errorDetails(error))
+      return null
+    }
+  }
+
+  const [saved, setSaved] = useState<ConfigVersionRow | null>(null)
+  const changes = saved ? differences(current, saved) : []
+
+  const askPublish = async () => {
+    const result = await save()
+    if (result) {
+      setSaved(result)
+      setConfirming(true)
+    }
+  }
+
+  const doPublish = async () => {
+    try {
+      await publish.mutateAsync({ id: draft.id, expectedCurrentVersionId: current?.id ?? null })
+      toast.success(`Versão ${draft.version_number} publicada.`)
+      setConfirming(false)
+      onClose()
+    } catch (error) {
+      setConfirming(false)
+      setSaveError(error)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-base">Rascunho — versão {draft.version_number}</CardTitle>
+        <Button variant="ghost" onClick={onClose}>Fechar</Button>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <form
+          className="space-y-6"
+          onSubmit={(event) => {
+            event.preventDefault()
+            void save().then((result) => result && toast.success('Rascunho guardado.'))
+          }}
+        >
+          {CONFIG_GROUPS.map((group) => (
+            <fieldset key={group.title} className="space-y-3">
+              <legend className="font-medium">{group.title}</legend>
+              <div className="grid gap-4 md:grid-cols-2">
+                {group.fields.map((field) => {
+                  const id = `config-${field.field}`
+                  return (
+                    <div key={field.field} className="space-y-1">
+                      <Label htmlFor={id}>
+                        {field.label}
+                        {field.unit ? ` (${field.unit})` : field.kind === 'percent' ? ' (%)' : field.kind === 'money' ? ' (Kz)' : ''}
+                      </Label>
+                      {field.kind === 'boolean' ? (
+                        <div className="flex items-center gap-2 pt-1">
+                          <Switch
+                            id={id}
+                            checked={inputs[field.field] === 'true'}
+                            onCheckedChange={(checked) => setInputs((current) => ({ ...current, [field.field]: String(checked) }))}
+                          />
+                          <span className="text-sm">{inputs[field.field] === 'true' ? 'Sim' : 'Não'}</span>
+                        </div>
+                      ) : (
+                        <Input
+                          id={id}
+                          inputMode={field.kind === 'text' || field.kind === 'iban' ? 'text' : 'decimal'}
+                          value={inputs[field.field] ?? ''}
+                          placeholder="Por definir"
+                          aria-invalid={fieldErrors[field.field] ? true : undefined}
+                          onChange={(event) => setInputs((current) => ({ ...current, [field.field]: event.target.value }))}
+                        />
+                      )}
+                      {fieldErrors[field.field] && <p className="text-sm text-destructive">{fieldErrors[field.field]}</p>}
+                    </div>
+                  )
+                })}
+              </div>
+            </fieldset>
+          ))}
+          <div className="space-y-1">
+            <Label htmlFor="config-notes">Notas</Label>
+            <Textarea id="config-notes" value={notes} onChange={(event) => setNotes(event.target.value)} />
+          </div>
+          {saveError !== null && <p role="alert" className="text-sm text-destructive">{errorMessage(saveError)}</p>}
+          <div className="flex gap-2">
+            <Button type="submit" variant="outline" disabled={updateDraft.isPending}>
+              {updateDraft.isPending ? COMMON_TEXTS.loading : 'Guardar rascunho'}
+            </Button>
+            <Button type="button" onClick={() => void askPublish()} disabled={updateDraft.isPending || publish.isPending}>
+              Publicar…
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+
+      <Dialog open={confirming} onOpenChange={setConfirming}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Publicar a versão {draft.version_number}?</DialogTitle>
+            <DialogDescription>
+              Passa a ser a versão em vigor{current ? `; a versão ${current.version_number} fica retirada` : ''}. Uma versão publicada não se edita.
+            </DialogDescription>
+          </DialogHeader>
+          {changes.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum valor muda em relação à versão em vigor.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Campo</TableHead>
+                  <TableHead>Em vigor</TableHead>
+                  <TableHead>Nova versão</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {changes.map((field) => (
+                  <TableRow key={field.field}>
+                    <TableCell>{field.label}</TableCell>
+                    <TableCell>{current ? displayValue(field, current[field.field]) ?? 'Por definir' : '—'}</TableCell>
+                    <TableCell>{saved ? displayValue(field, saved[field.field]) ?? 'Por definir' : '—'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirming(false)}>{COMMON_TEXTS.cancel}</Button>
+            <Button onClick={() => void doPublish()} disabled={publish.isPending}>
+              {publish.isPending ? COMMON_TEXTS.loading : 'Publicar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  )
+}
 
 export default function AdminSettings() {
-  const handleSave = () => {
-    toast.success("Configurações guardadas com sucesso!");
-  };
+  const session = useSession()
+  const isSuper = session.status === 'authenticated' && session.account.staffLevel === 'super_admin'
+  const versions = useConfigVersions()
+  const staff = useStaffList()
+  const { createDraft } = useConfigMutations()
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [showAll, setShowAll] = useState(false)
+
+  const current = useMemo(() => versions.data?.find((version) => version.status === 'published') ?? null, [versions.data])
+  const editing = versions.data?.find((version) => version.id === editingId && version.status === 'draft') ?? null
+  const names = useMemo(() => new Map((staff.data ?? []).map((member) => [member.account_id, member.full_name])), [staff.data])
+
+  const startDraft = async () => {
+    try {
+      const draft = await createDraft.mutateAsync(current?.id)
+      setEditingId(draft.id)
+    } catch (error) {
+      toast.error(errorMessage(error))
+    }
+  }
+
+  if (versions.isPending) return <TableSkeleton rows={8} />
+  if (versions.isError) return <QueryError error={versions.error} onRetry={() => void versions.refetch()} />
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Configurações"
-        description="Configurações gerais da plataforma"
+        title="Configuração da plataforma"
+        description={current ? `Versão em vigor: ${current.version_number}, publicada a ${current.published_at ? formatDateTime(current.published_at) : '—'}.` : 'Ainda não há nenhuma versão em vigor.'}
+        action={isSuper && !editing ? <Button onClick={() => void startDraft()} disabled={createDraft.isPending}>Criar rascunho</Button> : undefined}
       />
 
-      <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="general">Geral</TabsTrigger>
-          <TabsTrigger value="notifications">Notificações</TabsTrigger>
-          <TabsTrigger value="security">Segurança</TabsTrigger>
-          <TabsTrigger value="email">Email</TabsTrigger>
-          <TabsTrigger value="system">Sistema</TabsTrigger>
-        </TabsList>
+      {editing ? <DraftEditor key={editing.id} draft={editing} current={current} onClose={() => setEditingId(null)} /> : current && <VersionView version={current} />}
 
-        <TabsContent value="general">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5" />
-                Configurações Gerais
-              </CardTitle>
-              <CardDescription>
-                Configurações básicas da plataforma
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Nome da Plataforma</Label>
-                  <Input defaultValue="Portal dos Intérpretes" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email de Contacto</Label>
-                  <Input type="email" defaultValue="contato@gracemind.ao" />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Descrição</Label>
-                <Textarea 
-                  defaultValue="Plataforma de intermediação entre pessoas surdas e intérpretes de Língua Gestual Angolana."
-                  rows={3}
-                />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Idioma Padrão</Label>
-                  <Select defaultValue="pt">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pt">Português</SelectItem>
-                      <SelectItem value="en">English</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Fuso Horário</Label>
-                  <Select defaultValue="africa-luanda">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="africa-luanda">África/Luanda (WAT)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                <div>
-                  <p className="font-medium">Modo de Manutenção</p>
-                  <p className="text-sm text-muted-foreground">Desativar acesso público temporariamente</p>
-                </div>
-                <Switch />
-              </div>
-
-              <Button onClick={handleSave}>
-                <Save className="mr-2 h-4 w-4" /> Guardar Alterações
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="notifications">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Notificações
-              </CardTitle>
-              <CardDescription>
-                Configure as notificações do sistema
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                  <div>
-                    <p className="font-medium">Novos intérpretes</p>
-                    <p className="text-sm text-muted-foreground">Notificar quando novos intérpretes se registarem</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                  <div>
-                    <p className="font-medium">Novas solicitações</p>
-                    <p className="text-sm text-muted-foreground">Notificar sobre novas solicitações de serviço</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                  <div>
-                    <p className="font-medium">Avaliações baixas</p>
-                    <p className="text-sm text-muted-foreground">Alertar sobre avaliações abaixo de 3 estrelas</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                  <div>
-                    <p className="font-medium">Relatórios semanais</p>
-                    <p className="text-sm text-muted-foreground">Receber resumo semanal por email</p>
-                  </div>
-                  <Switch />
-                </div>
-              </div>
-
-              <Button onClick={handleSave}>
-                <Save className="mr-2 h-4 w-4" /> Guardar Alterações
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="security">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Segurança
-              </CardTitle>
-              <CardDescription>
-                Configurações de segurança da plataforma
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                  <div>
-                    <p className="font-medium">Autenticação de dois fatores</p>
-                    <p className="text-sm text-muted-foreground">Exigir 2FA para administradores</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                  <div>
-                    <p className="font-medium">Verificação de email</p>
-                    <p className="text-sm text-muted-foreground">Exigir verificação de email no registo</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                  <div>
-                    <p className="font-medium">Aprovação manual de intérpretes</p>
-                    <p className="text-sm text-muted-foreground">Exigir aprovação antes de ativar perfis</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Tempo de sessão (minutos)</Label>
-                  <Input type="number" defaultValue="60" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Tentativas de login máximas</Label>
-                  <Input type="number" defaultValue="5" />
-                </div>
-              </div>
-
-              <Button onClick={handleSave}>
-                <Save className="mr-2 h-4 w-4" /> Guardar Alterações
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="email">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
-                Configurações de Email
-              </CardTitle>
-              <CardDescription>
-                Configure o servidor de email para notificações
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Servidor SMTP</Label>
-                  <Input defaultValue="smtp.gracemind.ao" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Porta</Label>
-                  <Input defaultValue="587" />
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Utilizador</Label>
-                  <Input defaultValue="noreply@gracemind.ao" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Password</Label>
-                  <Input type="password" defaultValue="••••••••" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Email do Remetente</Label>
-                <Input type="email" defaultValue="noreply@gracemind.ao" />
-              </div>
-
-              <div className="flex items-center gap-4">
-                <Button variant="outline">Testar Conexão</Button>
-                <Button onClick={handleSave}>
-                  <Save className="mr-2 h-4 w-4" /> Guardar Alterações
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="system">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="h-5 w-5" />
-                Sistema
-              </CardTitle>
-              <CardDescription>
-                Informações e manutenção do sistema
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-sm text-muted-foreground">Versão</p>
-                  <p className="font-medium">1.0.0</p>
-                </div>
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-sm text-muted-foreground">Última atualização</p>
-                  <p className="font-medium">16 Jan 2026</p>
-                </div>
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-sm text-muted-foreground">Base de dados</p>
-                  <p className="font-medium">PostgreSQL 15</p>
-                </div>
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-sm text-muted-foreground">Ambiente</p>
-                  <p className="font-medium">Produção</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="font-medium">Manutenção</h4>
-                <div className="flex flex-wrap gap-4">
-                  <Button variant="outline">Limpar Cache</Button>
-                  <Button variant="outline">Reindexar Base de Dados</Button>
-                  <Button variant="outline">Fazer Backup</Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Histórico de versões</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Versão</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Publicada por</TableHead>
+                <TableHead>Quando</TableHead>
+                <TableHead className="text-right">Acções</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(showAll ? versions.data : versions.data.slice(0, HISTORY_SIZE)).map((version) => (
+                <TableRow key={version.id}>
+                  <TableCell>{version.version_number}</TableCell>
+                  <TableCell>
+                    <Badge variant={version.status === 'published' ? 'default' : 'secondary'}>{STATUS_LABELS[version.status] ?? version.status}</Badge>
+                  </TableCell>
+                  <TableCell>{version.published_by ? names.get(version.published_by) ?? '—' : '—'}</TableCell>
+                  <TableCell>{version.published_at ? formatDateTime(version.published_at) : '—'}</TableCell>
+                  <TableCell className="text-right">
+                    {isSuper && version.status === 'draft' && (
+                      <Button variant="outline" size="sm" onClick={() => setEditingId(version.id)}>Editar</Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {versions.data.length > HISTORY_SIZE && (
+            <Button variant="ghost" className="mt-2" onClick={() => setShowAll((value) => !value)}>
+              {showAll ? 'Mostrar só as mais recentes' : `Mostrar todas (${versions.data.length})`}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }

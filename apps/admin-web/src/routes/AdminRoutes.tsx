@@ -13,6 +13,8 @@ import AdminServices from '@/pages/dashboard/admin/AdminServices'
 import AdminSettings from '@/pages/dashboard/admin/AdminSettings'
 import AdminTeam from '@/pages/dashboard/admin/AdminTeam'
 import AdminAudit from '@/pages/dashboard/admin/AdminAudit'
+import AdminDocumentTypes from '@/pages/dashboard/admin/AdminDocumentTypes'
+import AdminLegal from '@/pages/dashboard/admin/AdminLegal'
 import AdminSuccessCases from '@/pages/dashboard/admin/AdminSuccessCases'
 import AdminTestimonials from '@/pages/dashboard/admin/AdminTestimonials'
 import AdminVerificationHistory from '@/pages/dashboard/admin/AdminVerificationHistory'
@@ -41,6 +43,8 @@ const AdminRoutes = () => {
       <Route path="payments" element={<AdminPayments />} />
       <Route path="catalog/services" element={<AdminServices />} />
       <Route path="settings/config" element={<AdminSettings />} />
+      <Route path="settings/legal" element={<AdminLegal />} />
+      <Route path="settings/document-types" element={<AdminDocumentTypes />} />
       <Route path="team" element={<AdminTeam />} />
       <Route path="audit" element={<AdminAudit />} />
       <Route

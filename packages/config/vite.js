@@ -33,6 +33,8 @@ export function createViteConfig({ port, root }) {
     server: { port, strictPort: true },
     preview: { port, strictPort: true },
     resolve: { alias: { '@': path.resolve(root, 'src') } },
+    // One .env at the repository root serves every app (README; names in .env.example).
+    envDir: path.resolve(root, '..', '..'),
     define: {
       __APP_VERSION__: JSON.stringify(readRootVersion()),
       __APP_COMMIT__: JSON.stringify(readCommit()),

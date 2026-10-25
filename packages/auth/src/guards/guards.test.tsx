@@ -25,9 +25,9 @@ function renderGuarded(src: SessionSource, guarded: React.ReactNode, path = '/re
   )
 }
 
-const requester: Account = { id: 'a1', email: 'a@x.ao', roles: ['requester'], staffLevel: null }
-const finance: Account = { id: 's1', email: 's@x.ao', roles: ['staff'], staffLevel: 'finance' }
-const superAdmin: Account = { id: 's2', email: 'r@x.ao', roles: ['staff'], staffLevel: 'super_admin' }
+const requester: Account = { id: 'a1', email: 'a@x.ao', fullName: 'Ana', roles: ['requester'], staffLevel: null }
+const finance: Account = { id: 's1', email: 's@x.ao', fullName: 'Sara', roles: ['staff'], staffLevel: 'finance' }
+const superAdmin: Account = { id: 's2', email: 'r@x.ao', fullName: 'Rui', roles: ['staff'], staffLevel: 'super_admin' }
 
 describe('RequireSession', () => {
   it('shows a loading state while the session is read', () => {

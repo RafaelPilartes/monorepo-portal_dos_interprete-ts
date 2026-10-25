@@ -12,12 +12,14 @@ const NO_ROWS = 'PGRST116'
  * Rows come back as the database shapes them; hydration to entities is the
  * use case's job, not the DAO's.
  */
-export class ReadOnlyDAO<Row extends { id: string }> implements IReadRepository<Row> {
+export class ReadOnlyDAO<Row extends object> implements IReadRepository<Row> {
   constructor(
     protected readonly client: SupabaseClient,
     protected readonly schemaName: string,
     protected readonly tableName: string,
     protected readonly searchColumns: readonly string[] = [],
+    /** The key column, for getById and listenById; views may name it otherwise (e.g. account_id). */
+    protected readonly idColumn: string = 'id',
   ) {}
 
   protected get where(): string {
@@ -29,13 +31,15 @@ export class ReadOnlyDAO<Row extends { id: string }> implements IReadRepository<
   }
 
   async list(query: ListQuery<Row> = {}): Promise<ListResponse<Row>> {
-    const { limit, offset = 0, searchTerm, filters, orderBy, ascending = true } = query
+    const { limit, offset = 0, searchTerm, filters, orderBy, ascending = true, between } = query
     let request = this.table().select('*', { count: 'exact' })
     if (filters) {
       for (const [column, value] of Object.entries(filters)) {
         if (value !== undefined) request = request.eq(column, value)
       }
     }
+    if (between?.from) request = request.gte(between.column, between.from)
+    if (between?.to) request = request.lte(between.column, between.to)
     const term = searchTerm?.trim()
     if (term && this.searchColumns.length > 0) {
       // Commas and parentheses would break the or() syntax; they are not useful in a search.
@@ -52,7 +56,7 @@ export class ReadOnlyDAO<Row extends { id: string }> implements IReadRepository<
   }
 
   async getById(id: string): Promise<Row | null> {
-    const { data, error } = await this.table().select('*').eq('id', id).single()
+    const { data, error } = await this.table().select('*').eq(this.idColumn, id).single()
     if (error) {
       if (error.code === NO_ROWS) return null
       throw translatePostgrestError(error, this.where)
@@ -72,8 +76,8 @@ export class ReadOnlyDAO<Row extends { id: string }> implements IReadRepository<
     handlers: { onChange: (row: Row) => void; onDelete: () => void; onError: (error: Error) => void },
   ): () => void {
     const channel = this.client
-      .channel(`${this.where}:id=${id}`)
-      .on('postgres_changes', { event: '*', schema: this.schemaName, table: this.tableName, filter: `id=eq.${id}` }, (payload) => {
+      .channel(`${this.where}:${this.idColumn}=${id}`)
+      .on('postgres_changes', { event: '*', schema: this.schemaName, table: this.tableName, filter: `${this.idColumn}=eq.${id}` }, (payload) => {
         if (payload.eventType === 'DELETE') handlers.onDelete()
         else if (payload.new && Object.keys(payload.new).length > 0) handlers.onChange(payload.new as Row)
       })

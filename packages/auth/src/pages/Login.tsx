@@ -1,5 +1,10 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { errorFor } from '@portal-dos-interpretes/core/errors'
+import { DataError } from '@portal-dos-interpretes/data'
+import { AUTH_TEXTS } from '@portal-dos-interpretes/i18n'
+import { usePortalServices } from '../services/PortalServices'
+import { safeReturnTo } from '../services/returnTo'
 import { appUrl } from '@portal-dos-interpretes/ui/lib/app-urls'
 import { Button } from '@portal-dos-interpretes/ui/components/button'
 import { Input } from '@portal-dos-interpretes/ui/components/input'
@@ -16,16 +21,41 @@ export interface LoginProps {
 export default function Login({ registerHref = '/register' }: LoginProps = {}) {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [formError, setFormError] = useState<string | null>(null)
+  const services = usePortalServices()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    setFormError(null)
+    if (!services) {
+      // Apps whose sign-in arrives in step H2.
+      toast.info('O sistema de autenticação será implementado em breve.')
+      return
+    }
     setIsLoading(true)
-
-    // Simulate login - will be replaced with actual auth
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    toast.info('O sistema de autenticação será implementado em breve.')
-    setIsLoading(false)
+    try {
+      const result = await services.auth.signIn(email, password)
+      if (!result.ok) {
+        setFormError(result.reason === 'invalid_credentials' ? AUTH_TEXTS.invalidCredentials : AUTH_TEXTS.emailNotConfirmed)
+        return
+      }
+      // A suspended account is refused here, with the catalog message (R-ACC-03).
+      const account = await services.source.load()
+      if (!account) {
+        setFormError(errorFor('ACCOUNT_SUSPENDED').message)
+        return
+      }
+      navigate(safeReturnTo(searchParams.get('returnTo')), { replace: true })
+    } catch (error) {
+      console.error('[auth] sign-in failed', error)
+      setFormError(error instanceof DataError ? error.message : errorFor('INTERNAL_ERROR').message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -59,6 +89,9 @@ export default function Login({ registerHref = '/register' }: LoginProps = {}) {
                   type="email"
                   placeholder="seu@email.com"
                   className="pl-10"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   required
                 />
               </div>
@@ -81,10 +114,14 @@ export default function Login({ registerHref = '/register' }: LoginProps = {}) {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   className="pl-10 pr-10"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                   required
                 />
                 <button
                   type="button"
+                  aria-label={showPassword ? 'Esconder a palavra-passe' : 'Mostrar a palavra-passe'}
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
@@ -97,6 +134,12 @@ export default function Login({ registerHref = '/register' }: LoginProps = {}) {
               </div>
             </div>
 
+            {formError && (
+              <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {formError}
+              </p>
+            )}
+
             <Button
               type="submit"
               className="w-full"
@@ -104,7 +147,7 @@ export default function Login({ registerHref = '/register' }: LoginProps = {}) {
               disabled={isLoading}
             >
               {isLoading ? (
-                'A entrar...'
+                AUTH_TEXTS.signingIn
               ) : (
                 <>
                   Entrar

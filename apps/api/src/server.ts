@@ -9,6 +9,7 @@ import { registerErrorHandling } from './plugins/errors.js'
 import { registerRateLimit } from './plugins/rateLimit.js'
 import { registerStaffConfigRoutes } from './routes/admin/staffConfig.js'
 import { registerFileRoutes } from './routes/files.js'
+import { registerMeRoute } from './routes/me.js'
 import { registerHealthRoute } from './routes/health.js'
 
 export interface ServerOptions {
@@ -35,7 +36,13 @@ export async function buildServer(options: ServerOptions = {}): Promise<FastifyI
     bodyLimit: 1024 * 1024,
   })
   registerErrorHandling(server)
-  await server.register(cors, { origin: options.appOrigins ?? false, credentials: true })
+  await server.register(cors, {
+    origin: options.appOrigins ?? false,
+    credentials: true,
+    // The apps write with POST, PATCH, PUT and DELETE (api.md); the default would refuse three.
+    methods: ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key'],
+  })
   // Before any route, /health included: the plugin attaches its limit to routes as they register.
   await registerRateLimit(server)
 
@@ -50,6 +57,7 @@ export async function buildServer(options: ServerOptions = {}): Promise<FastifyI
     registerAudit(server, { db: options.db })
     if (options.storage) registerFileRoutes(server, { db: options.db, storage: options.storage })
     registerStaffConfigRoutes(server, { db: options.db })
+    registerMeRoute(server, { db: options.db })
   }
   return server
 }

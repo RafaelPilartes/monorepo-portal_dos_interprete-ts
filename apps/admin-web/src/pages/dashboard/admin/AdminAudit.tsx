@@ -1,230 +1,161 @@
-import { useState } from 'react'
-import { PageHeader } from '@portal-dos-interpretes/ui/components/page-header'
-import { FiltersBar } from '@portal-dos-interpretes/ui/components/filters-bar'
-import { EmptyState } from '@portal-dos-interpretes/ui/components/empty-state'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@portal-dos-interpretes/ui/components/table'
-import { Badge } from '@portal-dos-interpretes/ui/components/badge'
-import { Card } from '@portal-dos-interpretes/ui/components/card'
+import { useMemo, useState } from 'react'
+import { formatDateTime, STAFF_LEVEL_LABELS } from '@portal-dos-interpretes/i18n'
 import { Button } from '@portal-dos-interpretes/ui/components/button'
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious
-} from '@portal-dos-interpretes/ui/components/pagination'
-import { Clock, ShieldAlert, Eye, CheckCircle2, XCircle } from 'lucide-react'
-import { AuditDetailsModal } from '@/components/dashboard/modals/AuditDetailsModal'
-import { AuditLog, mockLogs } from '@/core/mocks/auditMocks'
+import { Card, CardContent } from '@portal-dos-interpretes/ui/components/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@portal-dos-interpretes/ui/components/dialog'
+import { EmptyState } from '@portal-dos-interpretes/ui/components/empty-state'
+import { Input } from '@portal-dos-interpretes/ui/components/input'
+import { Label } from '@portal-dos-interpretes/ui/components/label'
+import { PageHeader } from '@portal-dos-interpretes/ui/components/page-header'
+import { PaginationBar } from '@portal-dos-interpretes/ui/components/pagination-bar'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@portal-dos-interpretes/ui/components/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@portal-dos-interpretes/ui/components/table'
+import { History } from 'lucide-react'
+import { QueryError, TableSkeleton } from '@/components/QueryStates'
+import type { AuditRow } from '@/data/repositories'
+import { AUDIT_PAGE_SIZE, useAuditEvents, useStaffList, type AuditFilters } from '@/viewModels/staff-config.viewmodel'
 
-const moduleFilters = [
-  { value: 'all', label: 'Todos os Módulos' },
-  { value: 'AdminTeam', label: 'Admin Team' },
-  { value: 'Interpreters', label: 'Intérpretes' },
-  { value: 'Requests', label: 'Pedidos / Requisições' },
-  { value: 'Profile', label: 'Perfis de Utilizador' },
-  { value: 'Database', label: 'Base de Dados (Sistema)' }
-]
+// /audit (staff-and-config.md, R-AUD-03): paginated on the server, most recent first; each level
+// sees the entries of its areas (the database filters, audit.events_for_staff).
+
+const ANY = '__any__'
+const ENTITY_LABELS: Record<string, string> = {
+  staff_member: 'Equipa',
+  platform_version: 'Configuração',
+  legal_document: 'Documento legal',
+  document_type: 'Tipo de documento',
+  verification_document: 'Documento de verificação',
+  chat_attachment: 'Anexo de conversa',
+}
+
+function actorLabel(row: AuditRow): string {
+  const role = row.actor_role && row.actor_role in STAFF_LEVEL_LABELS ? STAFF_LEVEL_LABELS[row.actor_role as keyof typeof STAFF_LEVEL_LABELS] : row.actor_role === 'system' ? 'Sistema' : row.actor_role
+  return row.actor_name ? `${row.actor_name} (${role})` : role ?? '—'
+}
+
+/** End of the chosen day in Luanda (UTC+1), so a "to" date includes the whole day. */
+function endOfDay(date: string): string {
+  return `${date}T23:59:59.999+01:00`
+}
+
+function Json({ value }: { value: unknown }) {
+  if (value === null || value === undefined) return <p className="text-sm text-muted-foreground">—</p>
+  return <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs">{JSON.stringify(value, null, 2)}</pre>
+}
 
 export default function AdminAudit() {
-  const [search, setSearch] = useState('')
-  const [moduleFilter, setModuleFilter] = useState('all')
-  const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 8
+  const [filters, setFilters] = useState<AuditFilters>({ page: 1 })
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const [selected, setSelected] = useState<AuditRow | null>(null)
+  const events = useAuditEvents(filters)
+  const staff = useStaffList()
+  const pageCount = useMemo(() => Math.max(1, Math.ceil((events.data?.total ?? 0) / AUDIT_PAGE_SIZE)), [events.data?.total])
 
-  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-
-  const filteredLogs = mockLogs.filter(log => {
-    const matchesSearch =
-      log.admin_name.toLowerCase().includes(search.toLowerCase()) ||
-      log.description.toLowerCase().includes(search.toLowerCase()) ||
-      log.action.toLowerCase().includes(search.toLowerCase())
-    const matchesModule =
-      moduleFilter === 'all' || log.module === moduleFilter
-    return matchesSearch && matchesModule
-  })
-
-  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage)
-  const paginatedLogs = filteredLogs.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  )
-
-  const handleOpenDetails = (log: AuditLog) => {
-    setSelectedLog(log)
-    setIsModalOpen(true)
-  }
-
-  const getSeverityBadge = (severity: string) => {
-    switch (severity) {
-      case 'critical': return <Badge variant="destructive" className="bg-red-600">crítico</Badge>
-      case 'high': return <Badge variant="destructive" className="bg-orange-600">alto</Badge>
-      case 'medium': return <Badge variant="secondary" className="bg-yellow-200 text-yellow-800 hover:bg-yellow-200">médio</Badge>
-      default: return <Badge variant="outline" className="text-gray-500">baixo</Badge>
-    }
-  }
-
-  const getActionBadge = (action: string) => {
-    return <Badge variant="outline" className="font-mono bg-muted/50">{action}</Badge>
-  }
+  const apply = (patch: Partial<AuditFilters>) => setFilters((current) => ({ ...current, ...patch, page: patch.page ?? 1 }))
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Auditoria Avançada (Schema Completo)"
-        description="Monitorização centralizada de transações, modificações e acessos baseada no Schema Completo de Logs."
-      />
+      <PageHeader title="Auditoria" description="Quem fez o quê, e quando. Ninguém altera nem apaga estes registos." />
 
-      <FiltersBar
-        searchValue={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Pesquisar por utilizador, ação ou descrição..."
-        filters={[
-          {
-            name: 'module',
-            value: moduleFilter,
-            onChange: setModuleFilter,
-            options: moduleFilters
-          }
-        ]}
-        onClearFilters={() => {
-          setSearch('')
-          setModuleFilter('all')
-          setCurrentPage(1)
-        }}
-        hasActiveFilters={search !== '' || moduleFilter !== 'all'}
-      />
+      <Card>
+        <CardContent className="grid gap-4 pt-6 md:grid-cols-5">
+          <div className="space-y-1">
+            <Label htmlFor="audit-from">De</Label>
+            <Input id="audit-from" type="date" value={from} onChange={(event) => { setFrom(event.target.value); apply({ from: event.target.value ? `${event.target.value}T00:00:00+01:00` : undefined }) }} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="audit-to">Até</Label>
+            <Input id="audit-to" type="date" value={to} onChange={(event) => { setTo(event.target.value); apply({ to: event.target.value ? endOfDay(event.target.value) : undefined }) }} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="audit-actor">Pessoa</Label>
+            <Select value={filters.actor ?? ANY} onValueChange={(value) => apply({ actor: value === ANY ? undefined : value })}>
+              <SelectTrigger id="audit-actor"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ANY}>Todas</SelectItem>
+                {(staff.data ?? []).map((member) => member.account_id && (
+                  <SelectItem key={member.account_id} value={member.account_id}>{member.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="audit-action">Acção</Label>
+            <Input id="audit-action" placeholder="ex.: config.published" value={filters.action ?? ''} onChange={(event) => apply({ action: event.target.value.trim() || undefined })} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="audit-entity">Tipo de entidade</Label>
+            <Select value={filters.entityType ?? ANY} onValueChange={(value) => apply({ entityType: value === ANY ? undefined : value })}>
+              <SelectTrigger id="audit-entity"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ANY}>Todos</SelectItem>
+                {Object.entries(ENTITY_LABELS).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
-      {filteredLogs.length === 0 ? (
-        <EmptyState
-          icon={ShieldAlert}
-          title="Nenhum registo encontrado"
-          description="Ajuste os filtros de pesquisa para encontrar logs de auditoria."
-        />
-      ) : (
-        <Card className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-muted/50">
-                <TableRow>
-                  <TableHead className="w-[150px]">Data & Hora</TableHead>
-                  <TableHead>Autor (Role)</TableHead>
-                  <TableHead>Ação</TableHead>
-                  <TableHead>Módulo</TableHead>
-                  <TableHead className="min-w-[200px]">Descrição Resumida</TableHead>
-                  <TableHead>Severidade</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedLogs.map(log => {
-                  const dateObj = new Date(log.created_at)
-                  return (
-                    <TableRow key={log.id}>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-sm">
-                            {dateObj.toLocaleDateString('pt-PT')}
-                          </span>
-                          <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                            <Clock className="h-3 w-3" /> 
-                            {dateObj.toLocaleTimeString('pt-PT')}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium truncate max-w-[150px]" title={log.admin_name}>{log.admin_name}</span>
-                          <span className="text-xs text-muted-foreground uppercase">{log.admin_role}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getActionBadge(log.action)}</TableCell>
-                      <TableCell>{log.module}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {log.success ? (
-                            <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-                          ) : (
-                            <XCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-                          )}
-                          <span className="text-sm truncate max-w-[200px] block" title={log.description}>
-                            {log.description}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getSeverityBadge(log.severity)}</TableCell>
+      <Card>
+        <CardContent className="pt-6">
+          {events.isPending ? (
+            <TableSkeleton rows={8} />
+          ) : events.isError ? (
+            <QueryError error={events.error} onRetry={() => void events.refetch()} />
+          ) : events.data.rows.length === 0 ? (
+            <EmptyState icon={History} title="Não há registos neste período." description="Muda os filtros para ver outros registos." />
+          ) : (
+            <div className="space-y-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Quando</TableHead>
+                    <TableHead>Quem</TableHead>
+                    <TableHead>Acção</TableHead>
+                    <TableHead>Entidade</TableHead>
+                    <TableHead className="text-right">Detalhe</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {events.data.rows.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="whitespace-nowrap">{row.occurred_at ? formatDateTime(row.occurred_at) : '—'}</TableCell>
+                      <TableCell>{actorLabel(row)}</TableCell>
+                      <TableCell className="font-mono text-xs">{row.action}</TableCell>
+                      <TableCell>{(row.entity_type && ENTITY_LABELS[row.entity_type]) ?? row.entity_type}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleOpenDetails(log)}>
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setSelected(row)}>Ver</Button>
                       </TableCell>
                     </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>
-      )}
+                  ))}
+                </TableBody>
+              </Table>
+              <PaginationBar page={filters.page} pageCount={pageCount} onPageChange={(page) => apply({ page })} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {totalPages > 1 && (
-        <div className="mt-6">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  className={
-                    currentPage === 1
-                      ? 'pointer-events-none opacity-50'
-                      : 'cursor-pointer'
-                  }
-                />
-              </PaginationItem>
-
-              {[...Array(totalPages)].map((_, i) => (
-                <PaginationItem key={i}>
-                  <PaginationLink
-                    onClick={() => setCurrentPage(i + 1)}
-                    isActive={currentPage === i + 1}
-                    className="cursor-pointer"
-                  >
-                    {i + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() =>
-                    setCurrentPage(p => Math.min(totalPages, p + 1))
-                  }
-                  className={
-                    currentPage === totalPages
-                      ? 'pointer-events-none opacity-50'
-                      : 'cursor-pointer'
-                  }
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
-
-      <AuditDetailsModal 
-        log={selectedLog}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
+      <Dialog open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{selected?.action}</DialogTitle>
+          </DialogHeader>
+          {selected && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {selected.occurred_at ? formatDateTime(selected.occurred_at) : ''} · {actorLabel(selected)} · {selected.entity_type} {selected.entity_id}
+                {selected.request_id ? ` · pedido ${selected.request_id}` : ''}
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div><p className="mb-1 text-sm font-medium">Antes</p><Json value={selected.before} /></div>
+                <div><p className="mb-1 text-sm font-medium">Depois</p><Json value={selected.after} /></div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

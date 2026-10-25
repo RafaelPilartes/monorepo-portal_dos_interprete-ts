@@ -16,3 +16,22 @@ export const COMMON_TEXTS = {
   fileTypeNotAccepted: 'Este tipo de ficheiro não é aceite.',
   fileTooLarge: (maxLabel: string): string => `O ficheiro é demasiado grande. O máximo é ${maxLabel}.`,
 } as const
+
+/** Entry screens (accounts-and-organizations.md, /login; staff-and-config.md, /login). */
+export const AUTH_TEXTS = {
+  invalidCredentials: 'Email ou palavra-passe errados.',
+  emailNotConfirmed: 'Ainda não confirmaste o teu email. Abre a mensagem que te enviámos para o confirmar.',
+  signingIn: 'A entrar…',
+  signOutFailed: 'Não foi possível terminar a sessão. Tenta outra vez.',
+  staffOnly: 'Esta área é só para a equipa do Portal',
+  goToMyArea: 'Ir para a minha área',
+  signOut: 'Sair',
+} as const
+
+/** Staff levels as the screens name them (D-60). */
+export const STAFF_LEVEL_LABELS = {
+  super_admin: 'Super-administrador',
+  moderator: 'Moderador',
+  finance: 'Financeiro',
+  request_operator: 'Operador de pedidos',
+} as const

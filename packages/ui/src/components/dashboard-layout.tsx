@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState, type MouseEvent } from 'react'
+import { toast } from 'sonner'
+import { AUTH_TEXTS } from '@portal-dos-interpretes/i18n'
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { cn } from '../lib/utils'
 import { Button } from './button'
@@ -43,6 +45,8 @@ interface DashboardLayoutProps {
   profileHref?: string
   /** In-app route of "Configurações"; the item is hidden when the app has none (AD-014). */
   settingsHref?: string
+  /** Ends the session; "Sair" then leads to the public site. Without it, "Sair" is only a link. */
+  onSignOut?: () => Promise<void>
 }
 
 function isNavGroup(item: NavItem | NavGroup): item is NavGroup {
@@ -55,10 +59,23 @@ export function DashboardLayout({
   userName = 'Utilizador',
   userEmail = 'email@exemplo.com',
   profileHref,
-  settingsHref
+  settingsHref,
+  onSignOut
 }: DashboardLayoutProps) {
   // "Sair" and the logo lead to the public site, as before (it is now another app).
   const siteHome = appUrl('site')
+  // "Sair" ends the session first; a failure is said, never hidden behind the redirect.
+  const signOut = async (event: MouseEvent) => {
+    if (!onSignOut) return
+    event.preventDefault()
+    try {
+      await onSignOut()
+      window.location.assign(siteHome)
+    } catch (error) {
+      console.error('[layout] sign-out failed', error)
+      toast.error(AUTH_TEXTS.signOutFailed)
+    }
+  }
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
   const location = useLocation()
@@ -163,7 +180,7 @@ export function DashboardLayout({
 
           <div className="border-t border-border p-4">
             <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground" asChild>
-              <a href={siteHome}><LogOut className="h-5 w-5" />Sair</a>
+              <a href={siteHome} onClick={signOut}><LogOut className="h-5 w-5" />Sair</a>
             </Button>
           </div>
         </div>
@@ -202,7 +219,7 @@ export function DashboardLayout({
                 <DropdownMenuItem asChild><Link to={settingsHref}><Settings className="mr-2 h-4 w-4" />Configurações</Link></DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild><a href={siteHome} className="text-destructive"><LogOut className="mr-2 h-4 w-4" />Sair</a></DropdownMenuItem>
+              <DropdownMenuItem asChild><a href={siteHome} onClick={signOut} className="text-destructive"><LogOut className="mr-2 h-4 w-4" />Sair</a></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>

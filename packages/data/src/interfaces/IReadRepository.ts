@@ -7,6 +7,8 @@ export interface ListQuery<Row> {
   filters?: Partial<Row> | undefined
   orderBy?: (keyof Row & string) | undefined
   ascending?: boolean | undefined
+  /** A column between two values, both ends included (e.g. a period of dates). */
+  between?: { column: keyof Row & string; from?: string | undefined; to?: string | undefined } | undefined
 }
 
 /** Port for reads, which go straight to the database under RLS (architecture.md §1). */

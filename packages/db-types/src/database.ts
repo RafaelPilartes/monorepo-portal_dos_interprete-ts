@@ -952,6 +952,12 @@ export type Database = {
                     isSetofReturn: false;
                 };
             };
+            "me": {
+                Args: {
+                    "p_account": string;
+                };
+                Returns: Json;
+            };
             "publish_legal_document": {
                 Args: {
                     "p_actor": string;

@@ -3,3 +3,6 @@ export type { CookieStorage, CookieStorageOptions } from './session/cookieStorag
 export { SessionProvider, useSession } from './session/SessionContext'
 export type { Account, Role, SessionSource, SessionState, StaffLevel } from './session/SessionContext'
 export { RequireRole, RequireSession, RequireStaffLevel } from './guards/guards'
+export { createPortalServices, PortalServicesProvider, usePortalServices, useRequiredPortalServices } from './services/PortalServices'
+export type { PortalServices, PortalServicesOptions } from './services/PortalServices'
+export { safeReturnTo } from './services/returnTo'

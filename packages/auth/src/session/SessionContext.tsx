@@ -7,6 +7,7 @@ export type StaffLevel = 'super_admin' | 'moderator' | 'finance' | 'request_oper
 export interface Account {
   id: string
   email: string | null
+  fullName: string
   roles: Role[]
   staffLevel: StaffLevel | null
 }

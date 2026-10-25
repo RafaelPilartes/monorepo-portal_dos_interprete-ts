@@ -362,3 +362,19 @@ BEGIN
   PERFORM audit.record(p_actor, v_level, 'document_type.deleted', 'document_type', p_id::text, to_jsonb(v_before), NULL);
 END;
 $$;
+
+-- GET /me (api.md §4), the part step H1 needs: the account, its staff level and the roles known so
+-- far ('staff'). H2 adds requester/interpreter roles, organisations, last_active_role and pending
+-- legal documents (R-ACC-02, R-PRIV-02).
+CREATE OR REPLACE FUNCTION identity.me(p_account uuid) RETURNS jsonb
+  LANGUAGE sql STABLE SECURITY DEFINER
+  SET search_path = ''
+AS $$
+  SELECT jsonb_build_object(
+    'account', jsonb_build_object('id', p.id, 'email', u.email, 'full_name', p.full_name, 'status', p.status),
+    'roles', CASE WHEN auth_helper.staff_level_of(p.id) IS NULL THEN '[]'::jsonb ELSE '["staff"]'::jsonb END,
+    'staff_level', auth_helper.staff_level_of(p.id))
+    FROM identity.profiles AS p
+    JOIN auth.users AS u ON u.id = p.id
+   WHERE p.id = p_account
+$$;
