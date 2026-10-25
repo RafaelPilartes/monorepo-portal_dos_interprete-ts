@@ -19,6 +19,7 @@ create_tag() {
 # --- tags (one line per closed step; appended by each step) ---
 # TAGS-BEGIN
 create_tag v0.1.0 077134322982da714e6e5fd1e9c79d62974639e9 "v0.1.0 - steps A and B (2026-10-25)"
+create_tag v0.2.0 e847394cbd34fa032d3db9e01a5fec86655e1573 "v0.2.0 - step C, empty monorepo (2026-10-25)"
 # TAGS-END
 
 git push origin --tags
