@@ -1,2 +1,5 @@
-// Placeholder: this package is filled in by a later step of docs/plan/MASTER-PLAN.md.
-export const PACKAGE_NAME = '@portal-dos-interpretes/auth'
+export { createCookieStorage } from './session/cookieStorage'
+export type { CookieStorage, CookieStorageOptions } from './session/cookieStorage'
+export { SessionProvider, useSession } from './session/SessionContext'
+export type { Account, Role, SessionSource, SessionState, StaffLevel } from './session/SessionContext'
+export { RequireRole, RequireSession, RequireStaffLevel } from './guards/guards'

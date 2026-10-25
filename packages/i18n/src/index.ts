@@ -1,2 +1,3 @@
-// Placeholder: this package is filled in by a later step of docs/plan/MASTER-PLAN.md.
-export const PACKAGE_NAME = '@portal-dos-interpretes/i18n'
+export * from './money'
+export * from './dates'
+export * from './texts'

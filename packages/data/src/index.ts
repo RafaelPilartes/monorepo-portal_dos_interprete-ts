@@ -1,2 +1,10 @@
-// Placeholder: this package is filled in by a later step of docs/plan/MASTER-PLAN.md.
-export const PACKAGE_NAME = '@portal-dos-interpretes/data'
+export type { ListResponse, Pagination } from './interfaces/IApiResponse'
+export type { IOwnRowsRepository, IReadRepository, ListQuery } from './interfaces/IReadRepository'
+export { DataError } from './domain/errors/DataError'
+export { translatePostgrestError } from './domain/errors/translatePostgrestError'
+export { createSupabaseClient } from './dao/supabase/client'
+export { ReadOnlyDAO } from './dao/supabase/ReadOnlyDAO'
+export { BaseSupabaseDAO } from './dao/supabase/BaseSupabaseDAO'
+export { ApiClient } from './dao/api/ApiClient'
+export { SessionDAO } from './dao/supabase/SessionDAO'
+export type { AuthSession, ISessionRepository } from './dao/supabase/SessionDAO'

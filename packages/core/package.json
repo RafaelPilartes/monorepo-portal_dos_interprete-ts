@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Pure validations and shared zod schemas.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./errors": "./src/errors/index.ts"
   },
   "scripts": {
     "lint": "eslint .",
@@ -18,5 +19,8 @@
     "typescript": "~5.9.3",
     "vitest": "^3.2.7",
     "@types/node": "^22.16.5"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
   }
 }

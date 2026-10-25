@@ -91,6 +91,15 @@ Uma app por subpasso, por esta ordem: `site-web`, `admin-web`, `requester-web`, 
 
 **Feito quando:** nenhuma app tem uma cópia de um componente que existe num pacote (verificação em `verify.py`); os testes de `core` e `i18n` passam.
 
+### Melhorias da execução (passo E, 2026-10-25)
+
+- **Catálogo de erros:** gerado de `api.md` §2 para `packages/core/src/errors/catalog.ts` por `scripts/error_catalog.py`; `verify.py` (`error-catalog`) falha se divergirem. É o "um sítio só" de `architecture.md` §6; `apps/api/src/lib/dbErrors.ts` (passo G) traduz para estes códigos.
+- **`formatAoa`:** separa os milhares e o "Kz" com espaço inquebrável, para "14 040 Kz" nunca partir a meio; recusa cêntimos (D-37).
+- **`ui → i18n`** (AD-018) e **`auth → data, core`** (AD-019): registados na regra de dependências.
+- **`packages/data`:** um só tipo de erro (`DataError`, com o código do catálogo); `P0001` com um código do catálogo passa; permissão negada é `FORBIDDEN`; o resto é `INTERNAL_ERROR`, com o texto real só no registo.
+- **Componentes partilhados duplicados:** `verify.py` (`no-duplicated-component`) compara nomes e conteúdo entre as apps e `packages/ui`/`packages/features`.
+- O `@import` da fonte no `styles.css` passou para o topo (antes era ignorado pelo browser).
+
 ## F — Base de dados local
 
 **Objectivo:** a máquina que aplica, verifica e reconstrói a base, com o esqueleto comum. **As tabelas de cada funcionalidade entram no passo dela.**

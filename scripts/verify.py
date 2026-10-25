@@ -314,9 +314,11 @@ ALLOWED_DEPENDENCIES: dict[str, set[str]] = {
     "api": {"core", "i18n", "db-types"},
     "features": {"ui", "data", "i18n", "core"},
     "data": {"db-types", "core"},
-    "auth": {"ui", "i18n", "db-types"},
+    # auth -> data: the session comes through the data layer's SessionDAO; auth -> core: error messages (AD-019).
+    "auth": {"ui", "i18n", "db-types", "data", "core"},
     "core": set(),
-    "ui": set(),
+    # ui -> i18n: MoneyAmount and StatusBadge reuse formatAoa and COMMON_TEXTS (AD-018).
+    "ui": {"i18n"},
     "i18n": set(),
     "db": set(),
     "db-types": set(),
@@ -348,6 +350,66 @@ def check_package_dependencies(ctx: Context) -> list[Violation]:
     return violations
 
 
+# --- check: error-catalog (since E) ------------------------------------------
+
+
+def check_error_catalog(ctx: Context) -> list[Violation]:
+    """packages/core's error catalog is generated from docs/plan/api.md §2 (one source)."""
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    import error_catalog  # noqa: E402  (sibling script)
+
+    doc = ctx.root / "docs" / "plan" / "api.md"
+    target = ctx.root / "packages" / "core" / "src" / "errors" / "catalog.ts"
+    if not doc.is_file():
+        return []
+    expected = error_catalog.render(error_catalog.parse(doc.read_text(encoding="utf-8")))
+    current = target.read_text(encoding="utf-8") if target.is_file() else ""
+    if current == expected:
+        return []
+    return [Violation(relative(ctx.root, target) if target.is_file() else "packages/core/src/errors/catalog.ts", 1,
+                      "differs from docs/plan/api.md §2; run python3 scripts/error_catalog.py --write")]
+
+
+# --- check: no-duplicated-component (since E) --------------------------------
+
+SHARED_COMPONENT_DIRS = ("packages/ui/src/components", "packages/features/src/components", "packages/features/src/pages")
+
+
+def _component_key(path: Path) -> str:
+    """'FiltersBar.tsx', 'filters-bar.tsx' and 'filters_bar.tsx' are the same component name."""
+    return re.sub(r"[^a-z0-9]", "", path.stem.lower())
+
+
+def _content_key(path: Path) -> str:
+    code, _ = mask_source(path.read_text())
+    return re.sub(r"\s+", "", re.sub(r"^\s*import[^\n]*$", "", code, flags=re.M))
+
+
+def check_no_duplicated_component(ctx: Context) -> list[Violation]:
+    """No app keeps a copy of a component that lives in a package (foundation.md §E)."""
+    shared_names: dict[str, str] = {}
+    shared_bodies: dict[str, str] = {}
+    for directory in SHARED_COMPONENT_DIRS:
+        base = ctx.root / directory
+        if not base.is_dir():
+            continue
+        for path in base.rglob("*.tsx"):
+            if path.name.endswith(".test.tsx"):
+                continue
+            shared_names[_component_key(path)] = relative(ctx.root, path)
+            shared_bodies[_content_key(path)] = relative(ctx.root, path)
+    violations = []
+    for path in sorted(ctx.root.glob("apps/*/src/**/*.tsx")):
+        if path.name.endswith(".test.tsx") or SKIP_DIRS.intersection(path.relative_to(ctx.root).parts):
+            continue
+        rel = relative(ctx.root, path)
+        if "/components/" in rel and _component_key(path) in shared_names:
+            violations.append(Violation(rel, 1, f"same component name as {shared_names[_component_key(path)]}"))
+        elif _content_key(path) in shared_bodies:
+            violations.append(Violation(rel, 1, f"same code as {shared_bodies[_content_key(path)]}"))
+    return violations
+
+
 CHECKS: dict[str, Callable[[Context], list[Violation]]] = {
     "no-direct-data-access": check_no_direct_data_access,
     "no-cross-app-import": check_no_cross_app_import,
@@ -355,6 +417,8 @@ CHECKS: dict[str, Callable[[Context], list[Violation]]] = {
     "english-identifiers": check_english_identifiers,
     "single-version": check_single_version,
     "package-dependencies": check_package_dependencies,
+    "error-catalog": check_error_catalog,
+    "no-duplicated-component": check_no_duplicated_component,
 }
 
 

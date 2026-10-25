@@ -154,3 +154,20 @@
 - **Notas da revisão do D4:** (5) as páginas de perfil de colegas ligam de volta a `/interpreters`, que o `interpreter-web` não tinha: passa a ter um `ModulePlaceholder` "Lista de Profissionais" até ao directório do H4. (6) O registo no `interpreter-web` abre com "Intérprete" pré-seleccionado (`defaultAccountType`); o site ainda não tem link para o login do `interpreter-web` ("Entrar" vai para o do solicitante) — fica para o H2, que liga a sessão partilhada (ADR-007). (7) "Ver perfil público" em `profile/overview` liga a `/interpreters/maria-santos`, um intérprete que os mocks não têm (mostra "Perfil não encontrado"), como na SPA antiga; resolve-se no H4. (8) `/notifications` (nas rotas novas de `architecture.md` §3 para as três apps de sessão) fica para o passo das notificações (H5), que cria o ecrã; nada liga a essa rota hoje.
 - **Como se desfaz:** (1)–(3) e (5)–(8) nos passos H; (4) `git checkout aca929a -- legacy` (o último commit de `dev` com a SPA antiga; a tag `v0.5.0` só existe localmente até o Rafael correr `scripts/release-tags.sh`).
 - **Marcas:** —
+
+## AD-018 — `packages/ui` pode depender de `packages/i18n`
+- **Passo:** E
+- **Contexto:** `foundation.md` §E põe `MoneyAmount` e o `StatusBadge` com fallback em `ui`, mas `architecture.md` §2 diz que `ui` não depende de nada além de React, Radix, Tailwind e Lucide. O `MoneyAmount` precisa do `formatAoa` e o fallback do texto "Estado desconhecido", que vivem em `i18n`.
+- **Opções:** A) reescrever a formatação em `ui` (a mesma regra em dois sítios); B) `ui → i18n`, registado em `verify.py` (`package-dependencies`).
+- **Escolha:** B. `i18n` é puro (sem domínio, sem rede), por isso não traz domínio para `ui`.
+- **Como se desfaz:** passar o texto e o valor formatado por props e tirar a dependência.
+- **Marcas:** —
+
+## AD-019 — `packages/auth` lê a sessão pela camada de dados
+- **Passo:** E
+- **Contexto:** `architecture.md` §2 dá a `auth` "cliente Supabase, sessão partilhada, guardas" mas proíbe o Supabase fora de `packages/data/src/dao/` (regra 4) e não lista `data` nas dependências de `auth`. As duas frases contradizem-se.
+- **Opções:** A) excepção para `auth` importar o Supabase; B) o cliente e o `SessionDAO` vivem em `packages/data/src/dao/supabase/`, e `auth` depende de `data` (e de `core` para as mensagens do catálogo); C) juntar `auth` a `data`.
+- **Escolha:** B. `auth` fica com o armazenamento em cookie do domínio-pai (ADR-007, sem Supabase), o `SessionProvider` com uma fonte de sessão injectável e as três guardas. A fonte real (sessão Supabase + `GET /me` para papéis e nível) liga-se no H1/H2.
+- **Porquê:** uma só porta para o Supabase, verificada pelo ESLint e pelo `verify.py`; as guardas testam-se sem rede.
+- **Como se desfaz:** permitir o Supabase em `packages/auth/src/session/` e tirar a dependência de `data`.
+- **Marcas:** —

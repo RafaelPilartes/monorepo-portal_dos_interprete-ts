@@ -1,3 +1,4 @@
+import { COMMON_TEXTS } from "@portal-dos-interpretes/i18n";
 import { cn } from "../lib/utils";
 
 type StatusType = 
@@ -14,7 +15,8 @@ type StatusType =
   | 'unverified';
 
 interface StatusBadgeProps {
-  status: StatusType;
+  /** A known status, or any string coming from data (unknown ones get a neutral badge). */
+  status: StatusType | (string & {});
   className?: string;
 }
 
@@ -65,9 +67,23 @@ const statusConfig: Record<StatusType, { label: string; className: string }> = {
   }
 };
 
+const UNKNOWN_STATUS = { label: COMMON_TEXTS.unknownStatus, className: 'bg-muted text-muted-foreground border-border' };
+
+function isKnownStatus(status: string): status is StatusType {
+  return Object.prototype.hasOwnProperty.call(statusConfig, status);
+}
+
+/**
+ * The old badge crashed on a status it did not know (04-gaps.md item 7); an
+ * unknown one now shows "Estado desconhecido" and logs a warning (foundation.md §E).
+ */
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const config = statusConfig[status];
-  
+  const known = isKnownStatus(status);
+  if (!known) {
+    console.warn(`StatusBadge: unknown status "${status}"`);
+  }
+  const config = known ? statusConfig[status] : UNKNOWN_STATUS;
+
   return (
     <span
       className={cn(

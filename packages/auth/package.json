@@ -31,6 +31,9 @@
     "react-dom": "^18.3.1"
   },
   "dependencies": {
+    "@portal-dos-interpretes/core": "workspace:*",
+    "@portal-dos-interpretes/data": "workspace:*",
+    "@portal-dos-interpretes/i18n": "workspace:*",
     "@portal-dos-interpretes/ui": "workspace:*",
     "lucide-react": "^0.462.0",
     "react-router-dom": "^6.30.1",
