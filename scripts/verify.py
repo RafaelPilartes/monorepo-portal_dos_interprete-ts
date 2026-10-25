@@ -120,8 +120,9 @@ def mask_source(source: str) -> tuple[str, str]:
     return "".join(code), "".join(keep)
 
 
-# JSX text runs: tag-to-tag, tag-to-expression and expression-to-tag.
-JSX_TEXT = re.compile(r"(?<=>)[^<>{}]*(?=[<{])|(?<=})[^<>{}]*(?=<)")
+# JSX text runs: tag-to-tag, tag-to-expression, expression-to-tag, and expression-to-expression
+# when the run cannot be code (no parentheses, '=', ';' or ':').
+JSX_TEXT = re.compile(r"(?<=>)[^<>{}]*(?=[<{])|(?<=})[^<>{}]*(?=<)|(?<=})[^<>{}()=;:]*(?={)")
 
 
 def strip_jsx_text(code: str) -> str:
@@ -259,7 +260,7 @@ def check_single_version(ctx: Context) -> list[Violation]:
         return [Violation("package.json", 1, "missing root package.json")]
     expected = json.loads(root_file.read_text()).get("version")
     violations = []
-    for manifest in sorted([*ctx.root.glob("apps/*/package.json"), *ctx.root.glob("packages/*/package.json")]):
+    for manifest in sorted([*ctx.root.glob("apps/*/package.json"), *ctx.root.glob("packages/*/package.json"), *ctx.root.glob("tests/*/package.json")]):
         version = json.loads(manifest.read_text()).get("version")
         if version != expected:
             violations.append(

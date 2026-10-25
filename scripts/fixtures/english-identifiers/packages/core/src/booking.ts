@@ -7,3 +7,5 @@ export class Store { guardarPedido() { return 1 } }
 export const avaliação = 5
 import { readFile as apagar } from 'node:fs'
 export { apagar }
+export const run = () => {}
+if (run) { const pedidoAberto = 1; void pedidoAberto }

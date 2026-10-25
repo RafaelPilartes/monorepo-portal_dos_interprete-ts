@@ -6,3 +6,4 @@ packages/core/src/booking.ts:6
 packages/core/src/booking.ts:7
 packages/core/src/booking.ts:8
 packages/core/src/booking.ts:9
+packages/core/src/booking.ts:11

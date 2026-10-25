@@ -1,0 +1,4 @@
+{
+  "extends": "@portal-dos-interpretes/config/tsconfig/node.json",
+  "include": ["specs", "*.ts"]
+}

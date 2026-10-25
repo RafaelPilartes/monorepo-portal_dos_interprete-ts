@@ -56,6 +56,10 @@ export function createEslintConfig(options = {}) {
         ...(react ? reactHooks.configs.recommended.rules : {}),
         ...(react ? { 'react-refresh/only-export-components': ['warn', { allowConstantExport: true }] } : {}),
         '@typescript-eslint/no-explicit-any': 'error',
+        '@typescript-eslint/no-unused-vars': [
+          'error',
+          { argsIgnorePattern: '^_', varsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' },
+        ],
         '@typescript-eslint/ban-ts-comment': ['error', { 'ts-ignore': 'allow-with-description' }],
         ...supabaseRestriction,
       },

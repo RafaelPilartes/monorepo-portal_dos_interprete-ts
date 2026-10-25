@@ -5,7 +5,10 @@
   "type": "module",
   "description": "Domain screens shared by more than one app.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./pages/*": "./src/pages/*.tsx",
+    "./components/*": "./src/components/*.tsx",
+    "./mocks/*": "./src/mocks/*.ts"
   },
   "scripts": {
     "lint": "eslint .",
@@ -28,5 +31,10 @@
   "peerDependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
+  },
+  "dependencies": {
+    "@portal-dos-interpretes/ui": "workspace:*",
+    "lucide-react": "^0.462.0",
+    "react-router-dom": "^6.30.1"
   }
 }

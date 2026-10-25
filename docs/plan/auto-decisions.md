@@ -74,3 +74,12 @@
 - **Porquê:** a raiz fica limpa; a SPA continua a compilar e a arrancar para comparação no passo D; o D4 apaga `legacy/` inteiro.
 - **Como se desfaz:** `git mv legacy/* .` antes do D4.
 - **Marcas:** —
+
+## AD-009 — Cartão do carrossel sem link à volta
+- **Passo:** D1 (site-web)
+- **Contexto:** em `InterpretersCarousel`, o cartão inteiro estava dentro de um `<a>` e o cartão tem o seu próprio link "Ver Perfil": `<a>` dentro de `<a>`, HTML inválido, que o React avisa na consola (o aviso já existia na SPA antiga, `docs/plan/environment.md` §7). O passo D exige rotas "sem erros de consola".
+- **Opções:** A) manter e aceitar o erro; B) tirar o link exterior e deixar só o "Ver Perfil"; C) tirar o link interior.
+- **Escolha:** B
+- **Porquê:** é a mudança mais pequena que dá HTML válido; o destino continua o mesmo (login do solicitante com `returnTo`, D-05). Perde-se só o clique no resto do cartão.
+- **Como se desfaz:** voltar a pôr o `<a>` à volta e tirar o link interior no modo compacto.
+- **Marcas:** —

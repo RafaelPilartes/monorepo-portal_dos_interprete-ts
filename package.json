@@ -16,7 +16,8 @@
     "db:up": "node -e \"console.error('db:up arrives in step F (foundation.md \u00a7F)'); process.exit(1)\"",
     "db:down": "node -e \"console.error('db:down arrives in step F (foundation.md \u00a7F)'); process.exit(1)\"",
     "db:verify": "node -e \"console.error('db:verify arrives in step F (foundation.md \u00a7F)'); process.exit(1)\"",
-    "prepare": "git config core.hooksPath .githooks || echo 'warning: git hooks not activated (no git directory); run: git config core.hooksPath .githooks'"
+    "prepare": "git config core.hooksPath .githooks || echo 'warning: git hooks not activated (no git directory); run: git config core.hooksPath .githooks'",
+    "e2e": "pnpm --filter @portal-dos-interpretes/e2e e2e"
   },
   "devDependencies": {
     "turbo": "^2.11.10",

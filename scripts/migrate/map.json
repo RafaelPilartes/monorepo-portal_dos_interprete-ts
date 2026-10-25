@@ -1,0 +1,20 @@
+{
+  "lib/utils": ["packages/ui", "lib/utils"],
+  "hooks/use-toast": ["packages/ui", "hooks/use-toast"],
+  "hooks/use-mobile": ["packages/ui", "hooks/use-mobile"],
+  "components/theme-provider": ["packages/ui", "components/theme-provider"],
+  "components/theme-toggle": ["packages/ui", "components/theme-toggle"],
+  "components/dashboard/FiltersBar": ["packages/ui", "components/filters-bar"],
+  "components/AnimatedSection": ["packages/ui", "components/animated-section"],
+  "components/InterpreterCard": ["packages/features", "components/InterpreterCard"],
+  "components/dashboard/VideoModal": ["packages/features", "components/VideoModal"],
+  "components/RequestServiceModal": ["packages/features", "components/RequestServiceModal"],
+  "core/mocks/interpretersMocks": ["packages/features", "mocks/interpretersMocks"],
+  "pages/portal/InterpreterProfile": ["packages/features", "pages/InterpreterProfile"],
+  "pages/portal/InterpreterVideos": ["packages/features", "pages/InterpreterVideos"],
+  "pages/portal/InterpreterArticles": ["packages/features", "pages/InterpreterArticles"],
+  "pages/portal/ArticlePage": ["packages/features", "pages/ArticlePage"],
+  "pages/portal/auth/Login": ["packages/auth", "pages/Login"],
+  "pages/portal/auth/Register": ["packages/auth", "pages/Register"],
+  "pages/portal/auth/RecoverPassword": ["packages/auth", "pages/RecoverPassword"]
+}
