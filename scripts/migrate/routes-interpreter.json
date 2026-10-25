@@ -1,0 +1,7 @@
+{
+  "/dashboard/interpreter": "/",
+  "/dashboard/interpreter/documents": "/verification/documents",
+  "/dashboard/interpreter/legal": "/library/legal",
+  "/dashboard/interpreter/community": "/community/feed",
+  "/dashboard/interpreter/forum": "/community/forum"
+}
