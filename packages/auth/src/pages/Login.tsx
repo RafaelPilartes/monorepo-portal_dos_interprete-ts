@@ -8,7 +8,12 @@ import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner'
 import logo from '@portal-dos-interpretes/ui/assets/logo.png'
 
-export default function Login() {
+export interface LoginProps {
+  /** Where "Registe-se aqui" leads; the link is hidden when null (admin-web has no registration). */
+  registerHref?: string | null
+}
+
+export default function Login({ registerHref = '/register' }: LoginProps = {}) {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -110,15 +115,17 @@ export default function Login() {
           </form>
 
           {/* Register Link */}
+          {registerHref && (
           <p className="mt-8 text-center text-sm text-muted-foreground">
             Não tem uma conta?{' '}
             <Link
-              to="/register"
+              to={registerHref}
               className="font-medium text-primary hover:underline"
             >
               Registe-se aqui
             </Link>
           </p>
+          )}
         </div>
       </div>
 

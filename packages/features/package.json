@@ -1,6 +1,6 @@
 {
   "name": "@portal-dos-interpretes/features",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "description": "Domain screens shared by more than one app.",
@@ -38,8 +38,6 @@
     "@portal-dos-interpretes/ui": "workspace:*",
     "@tanstack/react-query": "^5.83.0",
     "lucide-react": "^0.462.0",
-    "next-themes": "^0.3.0",
-    "react-router-dom": "^6.30.1",
-    "sonner": "^1.7.4"
+    "react-router-dom": "^6.30.1"
   }
 }

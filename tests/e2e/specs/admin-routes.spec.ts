@@ -20,12 +20,12 @@ const routes: SmokeRoute[] = [
   { path: '/content/testimonials', name: 'content-testimonials', expectText: 'Gestão de Testemunhos' },
   { path: '/content/success-cases', name: 'content-success-cases', expectText: 'Casos de Sucesso' },
   { path: '/reports', name: 'reports', expectText: 'Relatórios de Impacto' },
-  { path: '/settings/config', name: 'settings-config', expectText: 'Configurações' },
+  { path: '/settings/config', name: 'settings-config', expectText: 'Configurações Gerais' },
   { path: '/team', name: 'team', expectText: 'Gestão de Equipa' },
   { path: '/audit', name: 'audit', expectText: 'Auditoria Avançada' },
   { path: '/community/opportunities', name: 'community-opportunities', expectText: 'Gestão de Oportunidades' },
   { path: '/community/library', name: 'community-library', expectText: 'Gestão da Biblioteca' },
-  { path: '/community/feed', name: 'community-feed', expectText: 'Comunidade' },
+  { path: '/community/feed', name: 'community-feed', expectText: 'Moderação da área comunitária' },
   { path: '/community/events', name: 'community-events', expectText: 'Gestão de Eventos' },
   { path: '/community/training', name: 'community-training', expectText: 'Gestão de Formação' },
   { path: '/community/mentorship', name: 'community-mentorship', expectText: 'Gestão de Mentorias' },
@@ -34,6 +34,7 @@ const routes: SmokeRoute[] = [
   { path: '/community/partners', name: 'community-partners', expectText: 'Gestão de Parcerias' },
   { path: '/support/tickets', name: 'support-tickets', expectText: 'Suporte e Ouvidoria' },
   { path: '/login', name: 'login', expectText: 'Bem-vindo de volta' },
+  { path: '/recover-password', name: 'recover-password', expectText: 'Recuperar' },
   { path: '/does-not-exist', name: 'not-found', expectText: 'Página não encontrada' },
 ]
 

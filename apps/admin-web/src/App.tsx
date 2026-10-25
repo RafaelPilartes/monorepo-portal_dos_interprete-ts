@@ -11,7 +11,7 @@ export function AdminAppRoutes() {
   return (
     <Routes>
       {AdminRoutes()}
-      <Route path="/login" element={<Login />} />
+      <Route path="/login" element={<Login registerHref={null} />} />
       <Route path="/recover-password" element={<RecoverPassword />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

@@ -32,9 +32,10 @@ describe('admin-web routes (new paths, architecture.md §3)', () => {
     expect(screen.getByText('Página não encontrada')).toBeTruthy()
   })
 
-  it('serves the login page from packages/auth', () => {
+  it('serves the login page from packages/auth, without a registration link', () => {
     renderAt('/login')
     expect(screen.getByText('Bem-vindo de volta')).toBeTruthy()
+    expect(screen.queryByText('Registe-se aqui')).toBeNull()
   })
 })
 

@@ -2,6 +2,13 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.4.0 — 2026-10-25 — Passo D2 (mover o `admin-web`)
+
+- O painel da equipa passa para `apps/admin-web`, nos caminhos novos (sem `/dashboard/admin`).
+- Componentes de painel partilhados em `packages/ui`; `AppProviders` em `packages/features`.
+- A gestão da equipa mostra dados fictícios e recusa alterações até a base estar ligada (AD-014).
+- Relatório: `docs/plan/step-reports/D2.md`.
+
 ## 0.3.0 — 2026-10-25 — Passo D1 (mover o `site-web`)
 
 - O site público passa para `apps/site-web`, igual ao de hoje (mocks incluídos); `/home` redirecciona para `/`; 404 em português.

@@ -18,6 +18,11 @@ describe('entry pages links (AD-012)', () => {
     expect(links).not.toContain('/home/register')
   })
 
+  it('login: the registration link can be hidden (admin-web)', () => {
+    renderPage(<Login registerHref={null} />)
+    expect(screen.queryByText('Registe-se aqui')).toBeNull()
+  })
+
   it('register: "login" stays in the app', () => {
     renderPage(<Register />)
     const links = screen.getAllByRole('link').map((link) => link.getAttribute('href'))
