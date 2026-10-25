@@ -1,6 +1,6 @@
 {
   "name": "@portal-dos-interpretes/root",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "packageManager": "pnpm@10.28.0",
   "engines": {
@@ -13,10 +13,10 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "verify": "python3 scripts/verify.py",
-    "db:up": "node -e \"console.error('db:up arrives in step F (foundation.md §F)'); process.exit(1)\"",
-    "db:down": "node -e \"console.error('db:down arrives in step F (foundation.md §F)'); process.exit(1)\"",
-    "db:verify": "node -e \"console.error('db:verify arrives in step F (foundation.md §F)'); process.exit(1)\"",
-    "prepare": "git config core.hooksPath .githooks || true"
+    "db:up": "node -e \"console.error('db:up arrives in step F (foundation.md \u00a7F)'); process.exit(1)\"",
+    "db:down": "node -e \"console.error('db:down arrives in step F (foundation.md \u00a7F)'); process.exit(1)\"",
+    "db:verify": "node -e \"console.error('db:verify arrives in step F (foundation.md \u00a7F)'); process.exit(1)\"",
+    "prepare": "git config core.hooksPath .githooks || echo 'warning: git hooks not activated (no git directory); run: git config core.hooksPath .githooks'"
   },
   "devDependencies": {
     "turbo": "^2.11.10",

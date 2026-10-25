@@ -1,6 +1,6 @@
 {
   "name": "@portal-dos-interpretes/db",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Executable schema: migrations, functions, policies, seed, schedule, scripts, tests.",

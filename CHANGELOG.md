@@ -2,6 +2,14 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.2.0 — 2026-10-25 — Passo C (monorepo vazio a compilar)
+
+- pnpm + Turborepo; a SPA antiga passa intacta para `legacy/` (AD-008).
+- Quatro apps (`site-web`, `requester-web`, `interpreter-web`, `admin-web`) com página "a arrancar" e versão no rodapé; API Fastify com `GET /health` e Dockerfile.
+- `packages/config` partilhado; oito pacotes vazios.
+- `scripts/verify.py` (5 verificações, com self-test), hook `pre-push`, ADR-001 a ADR-007, `scripts/set-version.py`.
+- Relatório: `docs/plan/step-reports/C.md`.
+
 ## 0.1.0 — 2026-10-25 — Passo B (Git do zero) e passo A (inventário)
 
 - Passo A: mapa de rotas, componentes partilhados, segredos (nenhum encontrado) e mocks em `docs/inventory/05-route-map.md`; o explainer aponta para `docs/plan/decisions.md`.

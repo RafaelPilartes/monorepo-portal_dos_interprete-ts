@@ -2,7 +2,9 @@
 // current SPA so moved screens keep their look (foundation.md §D).
 import animate from 'tailwindcss-animate'
 
+/** @param {string} name */
 const token = (name) => `hsl(var(--${name}))`
+/** @param {string} name */
 const pair = (name) => ({ DEFAULT: token(name), foreground: token(`${name}-foreground`) })
 
 /** @type {import('tailwindcss').Config} */

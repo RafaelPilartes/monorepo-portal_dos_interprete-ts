@@ -1,0 +1,8 @@
+packages/core/src/booking.ts:2
+packages/core/src/booking.ts:3
+packages/core/src/booking.ts:4
+packages/core/src/booking.ts:5
+packages/core/src/booking.ts:6
+packages/core/src/booking.ts:7
+packages/core/src/booking.ts:8
+packages/core/src/booking.ts:9

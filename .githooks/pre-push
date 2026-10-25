@@ -3,17 +3,30 @@
 # --no-verify only in an emergency, and said in the commit message.
 set -euo pipefail
 
+# The gates run on the working tree, so it must equal what is being pushed.
+if [ -n "$(git status --porcelain)" ]; then
+  echo "pre-push: the working tree has uncommitted or untracked changes; commit or stash them first." >&2
+  exit 1
+fi
+
 zero=0000000000000000000000000000000000000000
 touches_db=false
 while read -r local_ref local_sha remote_ref remote_sha; do
   [ "$local_sha" = "$zero" ] && continue
-  if [ "$remote_sha" = "$zero" ]; then
-    range="$(git merge-base origin/main "$local_sha" 2>/dev/null || echo "")"
-    range="${range:+$range..}$local_sha"
-  else
-    range="$remote_sha..$local_sha"
+  base=""
+  if [ "$remote_sha" != "$zero" ] && git cat-file -e "${remote_sha}^{commit}" 2>/dev/null; then
+    base="$remote_sha"
+  elif git rev-parse -q --verify origin/main >/dev/null; then
+    base="$(git merge-base origin/main "$local_sha" || true)"
   fi
-  if git diff --name-only "$range" -- packages/db/ | grep -q .; then
+  if [ -z "$base" ]; then
+    # Unknown range: assume the database may have changed (fail safe, not silent).
+    echo "pre-push: cannot compute the pushed range for ${remote_ref}; treating packages/db/ as changed." >&2
+    touches_db=true
+    continue
+  fi
+  changed="$(git diff --name-only "$base" "$local_sha" -- packages/db/)"
+  if [ -n "$changed" ]; then
     touches_db=true
   fi
 done
