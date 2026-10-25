@@ -173,6 +173,8 @@ SUPABASE_ACCESS = re.compile(r"\bsupabase\s*\.\s*(from|rpc|storage|channel|auth)
 FETCH_CALL = re.compile(r"(?:(?<![\w.$])|\b(?:window|globalThis|self)\s*\.\s*)fetch\s*\(")
 # The API's one door to outside services (Storage, Auth, email); see docs/plan/step-plans/G.md.
 API_INTEGRATIONS_DIR = "apps/api/src/integrations/"
+# Local database tooling (bootstrap-admin.mjs talks to the local Auth); never shipped to an app.
+DB_SCRIPTS_DIR = "packages/db/scripts/"
 IMPORT_SPEC = re.compile(r"""(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\s*\(\s*)(['"])([^'"]+)\1""")
 
 
@@ -187,7 +189,7 @@ def check_no_direct_data_access(ctx: Context) -> list[Violation]:
         code, with_strings = mask_source(path.read_text())
         for match in SUPABASE_ACCESS.finditer(code):
             violations.append(Violation(rel, line_of(code, match.start()), f"data access outside {DAO_DIR}"))
-        if not rel.startswith(API_INTEGRATIONS_DIR):
+        if not rel.startswith((API_INTEGRATIONS_DIR, DB_SCRIPTS_DIR)):
             for match in FETCH_CALL.finditer(code):
                 violations.append(Violation(rel, line_of(code, match.start()), f"fetch outside {DAO_DIR} and {API_INTEGRATIONS_DIR}"))
         for match in IMPORT_SPEC.finditer(with_strings):
@@ -816,6 +818,25 @@ def check_api_error_shape(ctx: Context) -> list[Violation]:
             violations.append(Violation(rel, line_of(with_strings, match.start()), "an error body sent by hand; use sendApiError or throw ApiError"))
     return violations
 
+
+# --- check: no-function-star (since H1) ----------------------------------------------------------
+
+# "(f(...)).*" runs f once per output column in Postgres: a write function would run several times
+# (two publishes, duplicate inserts). Use "SELECT * FROM f(...)".
+FUNCTION_STAR = re.compile(r"\(\s*[A-Za-z_][\w]*\.[A-Za-z_][\w]*\s*\([^()]*\)\s*\)\s*\.\s*\*")
+
+
+def check_no_function_star(ctx: Context) -> list[Violation]:
+    """No SQL in the API or the database package expands a function call with (f(...)).*."""
+    violations = []
+    paths = [p for p in code_files(ctx.root) if relative(ctx.root, p).startswith(("apps/api/", "packages/db/"))]
+    paths += sql_files(ctx.root)
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        for match in FUNCTION_STAR.finditer(text):
+            violations.append(Violation(relative(ctx.root, path), line_of(text, match.start()), "(f(...)).* runs f once per column; use SELECT * FROM f(...)"))
+    return violations
+
 CHECKS: dict[str, Callable[[Context], list[Violation]]] = {
     "no-direct-data-access": check_no_direct_data_access,
     "no-cross-app-import": check_no_cross_app_import,
@@ -835,6 +856,7 @@ CHECKS: dict[str, Callable[[Context], list[Violation]]] = {
     "schema-lists": check_schema_lists,
     "bucket-limits": check_bucket_limits,
     "api-error-shape": check_api_error_shape,
+    "no-function-star": check_no_function_star,
 }
 
 

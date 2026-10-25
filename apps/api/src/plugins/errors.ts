@@ -5,7 +5,7 @@ import {
 } from '@portal-dos-interpretes/core/errors'
 import type { FastifyError, FastifyInstance } from 'fastify'
 import { ZodError } from 'zod'
-import { codeForDatabaseError, isDatabaseError } from '../lib/dbErrors.js'
+import { answerForDatabaseError, isDatabaseError } from '../lib/dbErrors.js'
 import { ApiError, sendApiError } from '../lib/sendApiError.js'
 
 // Every error leaves the API in the catalog's shape (api.md §2). What a person sees is a catalog
@@ -36,10 +36,11 @@ export function registerErrorHandling(server: FastifyInstance): void {
     if (error instanceof ApiError) return sendApiError(reply, error.code, error.params, error.details)
     if (error instanceof ZodError) return sendApiError(reply, 'VALIDATION_FAILED', undefined, validationDetails(error))
     if (isDatabaseError(error)) {
-      const code = codeForDatabaseError(error)
-      // Rule refusals (P0001) are expected; every other database error is logged.
-      if (error.code !== 'P0001') request.log.error({ err: error, mappedTo: code }, 'database error')
-      return sendApiError(reply, code)
+      const answer = answerForDatabaseError(error, catalogMessage('VALIDATION_FAILED'))
+      // Rule refusals (P0001) and refused values are expected; every other database error is logged.
+      if (answer.code === 'INTERNAL_ERROR') request.log.error({ err: error }, 'database error')
+      else if (error.code !== 'P0001') request.log.info({ err: error, mappedTo: answer.code }, 'database refused a value')
+      return sendApiError(reply, answer.code, undefined, answer.details)
     }
     const status = (error as FastifyError).statusCode
     if (status === 429) return sendApiError(reply, 'RATE_LIMITED')

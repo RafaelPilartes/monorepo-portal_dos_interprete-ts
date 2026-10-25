@@ -14,9 +14,10 @@
   },
   "devDependencies": {
     "@portal-dos-interpretes/config": "workspace:*",
+    "@types/node": "^22.16.5",
     "eslint": "^9.32.0",
+    "pg": "^8.23.1",
     "typescript": "~5.9.3",
-    "vitest": "^3.2.7",
-    "@types/node": "^22.16.5"
+    "vitest": "^3.2.7"
   }
 }

@@ -20,7 +20,8 @@
     "e2e": "pnpm --filter @portal-dos-interpretes/e2e e2e",
     "db:reset": "bash packages/db/scripts/reset-local.sh",
     "db:types": "bash packages/db/scripts/gen-types.sh",
-    "db:status": "bash packages/db/scripts/migrate.sh --status"
+    "db:status": "bash packages/db/scripts/migrate.sh --status",
+    "db:bootstrap-admin": "node packages/db/scripts/bootstrap-admin.mjs"
   },
   "devDependencies": {
     "supabase": "2.122.0",

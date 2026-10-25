@@ -6,9 +6,15 @@ import pg from 'pg'
 
 export type Queryable = Pick<pg.PoolClient, 'query'>
 
+/** Who is asking, for the audit trail: audit.record reads these from the transaction. */
+export interface RequestContext {
+  requestId: string
+  ip: string
+}
+
 export interface Database {
   /** Runs `work` in one transaction as service_role; commits on success, rolls back on error. */
-  transaction<T>(work: (client: Queryable) => Promise<T>): Promise<T>
+  transaction<T>(work: (client: Queryable) => Promise<T>, context?: RequestContext): Promise<T>
   close(): Promise<void>
 }
 
@@ -26,12 +32,18 @@ export function createDatabase(connectionString: string): Database {
   pool.on('error', () => undefined)
 
   return {
-    async transaction(work) {
+    async transaction(work, context) {
       const client = await pool.connect()
       let broken = false
       try {
         await client.query('BEGIN')
         await client.query('SET LOCAL ROLE service_role')
+        if (context) {
+          await client.query("SELECT set_config('app.request_id', $1, true), set_config('app.client_ip', $2, true)", [
+            context.requestId,
+            context.ip,
+          ])
+        }
         const result = await work(client)
         await client.query('COMMIT')
         return result

@@ -71,9 +71,41 @@ export type Database = {
             };
         };
         Views: {
-            [_ in never]: never;
+            "events_for_staff": {
+                Row: {
+                    "action": string;
+                    "actor_account": string | null;
+                    "actor_name": string | null;
+                    "actor_role": string;
+                    "after": Json | null;
+                    "area": string | null;
+                    "before": Json | null;
+                    "entity_id": string | null;
+                    "entity_type": string;
+                    "id": number;
+                    "note": string | null;
+                    "occurred_at": string;
+                    "request_id": string | null;
+                };
+                ComputedFields: never;
+                Relationships: [
+                ];
+            };
         };
         Functions: {
+            "area_of": {
+                Args: {
+                    "p_entity_type": string;
+                };
+                Returns: string;
+            };
+            "level_sees": {
+                Args: {
+                    "p_area": string;
+                    "p_level": string;
+                };
+                Returns: boolean;
+            };
             "record": {
                 Args: {
                     "p_action": string;
@@ -167,13 +199,484 @@ export type Database = {
     };
     "config": {
         Tables: {
-            [_ in never]: never;
+            "platform_versions": {
+                Row: {
+                    "academia_bank_name": string | null;
+                    "academia_beneficiary": string | null;
+                    "academia_iban": string | null;
+                    "billing_minimum_minutes": number | null;
+                    "billing_round_minutes": number | null;
+                    "cancellation_free_until_hours": number | null;
+                    "chat_close_days": number | null;
+                    "completion_auto_confirm_hours": number | null;
+                    "content_reports_autohide_threshold": number | null;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "event_payment_deadline_hours": number | null;
+                    "event_refund_until_hours": number | null;
+                    "id": string;
+                    "invite_expiry_hours": number | null;
+                    "managed_interpreter_share_pct": number | null;
+                    "managed_payment_deadline_hours": number | null;
+                    "managed_refund_full_until_hours": number | null;
+                    "managed_refund_late_pct": number | null;
+                    "max_interpreters_per_request": number | null;
+                    "mentorship_max_per_mentor": number | null;
+                    "notes": string | null;
+                    "org_invite_expiry_days": number | null;
+                    "overlap_buffer_minutes": number | null;
+                    "prices_include_tax": boolean | null;
+                    "published_at": string | null;
+                    "published_by": string | null;
+                    "request_min_lead_minutes": number | null;
+                    "review_reveal_days": number | null;
+                    "review_window_days": number | null;
+                    "staffing_warning_hours": number | null;
+                    "status": string;
+                    "support_autoclose_days": number | null;
+                    "tax_rate_pct": number | null;
+                    "two_interpreters_suggest_minutes": number | null;
+                    "updated_at": string;
+                    "urgent_threshold_hours": number | null;
+                    "verification_fee_aoa": number | null;
+                    "verification_free_resubmissions": number | null;
+                    "verification_payment_deadline_days": number | null;
+                    "verification_refund_on_reject_pct": number | null;
+                    "verification_renewal_notice_days": number | null;
+                    "verification_validity_months": number | null;
+                    "version_number": number;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "academia_bank_name"?: string | null;
+                    "academia_beneficiary"?: string | null;
+                    "academia_iban"?: string | null;
+                    "billing_minimum_minutes"?: number | null;
+                    "billing_round_minutes"?: number | null;
+                    "cancellation_free_until_hours"?: number | null;
+                    "chat_close_days"?: number | null;
+                    "completion_auto_confirm_hours"?: number | null;
+                    "content_reports_autohide_threshold"?: number | null;
+                    "created_at"?: string;
+                    "created_by"?: string | null;
+                    "event_payment_deadline_hours"?: number | null;
+                    "event_refund_until_hours"?: number | null;
+                    "id"?: string;
+                    "invite_expiry_hours"?: number | null;
+                    "managed_interpreter_share_pct"?: number | null;
+                    "managed_payment_deadline_hours"?: number | null;
+                    "managed_refund_full_until_hours"?: number | null;
+                    "managed_refund_late_pct"?: number | null;
+                    "max_interpreters_per_request"?: number | null;
+                    "mentorship_max_per_mentor"?: number | null;
+                    "notes"?: string | null;
+                    "org_invite_expiry_days"?: number | null;
+                    "overlap_buffer_minutes"?: number | null;
+                    "prices_include_tax"?: boolean | null;
+                    "published_at"?: string | null;
+                    "published_by"?: string | null;
+                    "request_min_lead_minutes"?: number | null;
+                    "review_reveal_days"?: number | null;
+                    "review_window_days"?: number | null;
+                    "staffing_warning_hours"?: number | null;
+                    "status"?: string;
+                    "support_autoclose_days"?: number | null;
+                    "tax_rate_pct"?: number | null;
+                    "two_interpreters_suggest_minutes"?: number | null;
+                    "updated_at"?: string;
+                    "urgent_threshold_hours"?: number | null;
+                    "verification_fee_aoa"?: number | null;
+                    "verification_free_resubmissions"?: number | null;
+                    "verification_payment_deadline_days"?: number | null;
+                    "verification_refund_on_reject_pct"?: number | null;
+                    "verification_renewal_notice_days"?: number | null;
+                    "verification_validity_months"?: number | null;
+                    "version_number": number;
+                };
+                Update: {
+                    "academia_bank_name"?: string | null;
+                    "academia_beneficiary"?: string | null;
+                    "academia_iban"?: string | null;
+                    "billing_minimum_minutes"?: number | null;
+                    "billing_round_minutes"?: number | null;
+                    "cancellation_free_until_hours"?: number | null;
+                    "chat_close_days"?: number | null;
+                    "completion_auto_confirm_hours"?: number | null;
+                    "content_reports_autohide_threshold"?: number | null;
+                    "created_at"?: string;
+                    "created_by"?: string | null;
+                    "event_payment_deadline_hours"?: number | null;
+                    "event_refund_until_hours"?: number | null;
+                    "id"?: string;
+                    "invite_expiry_hours"?: number | null;
+                    "managed_interpreter_share_pct"?: number | null;
+                    "managed_payment_deadline_hours"?: number | null;
+                    "managed_refund_full_until_hours"?: number | null;
+                    "managed_refund_late_pct"?: number | null;
+                    "max_interpreters_per_request"?: number | null;
+                    "mentorship_max_per_mentor"?: number | null;
+                    "notes"?: string | null;
+                    "org_invite_expiry_days"?: number | null;
+                    "overlap_buffer_minutes"?: number | null;
+                    "prices_include_tax"?: boolean | null;
+                    "published_at"?: string | null;
+                    "published_by"?: string | null;
+                    "request_min_lead_minutes"?: number | null;
+                    "review_reveal_days"?: number | null;
+                    "review_window_days"?: number | null;
+                    "staffing_warning_hours"?: number | null;
+                    "status"?: string;
+                    "support_autoclose_days"?: number | null;
+                    "tax_rate_pct"?: number | null;
+                    "two_interpreters_suggest_minutes"?: number | null;
+                    "updated_at"?: string;
+                    "urgent_threshold_hours"?: number | null;
+                    "verification_fee_aoa"?: number | null;
+                    "verification_free_resubmissions"?: number | null;
+                    "verification_payment_deadline_days"?: number | null;
+                    "verification_refund_on_reject_pct"?: number | null;
+                    "verification_renewal_notice_days"?: number | null;
+                    "verification_validity_months"?: number | null;
+                    "version_number"?: number;
+                };
+                Relationships: [
+                ];
+            };
+            "verification_document_types": {
+                Row: {
+                    "active": boolean;
+                    "code": string;
+                    "created_at": string;
+                    "description": string;
+                    "id": string;
+                    "name": string;
+                    "required": boolean;
+                    "sort": number;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "active"?: boolean;
+                    "code": string;
+                    "created_at"?: string;
+                    "description"?: string;
+                    "id"?: string;
+                    "name": string;
+                    "required"?: boolean;
+                    "sort"?: number;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "active"?: boolean;
+                    "code"?: string;
+                    "created_at"?: string;
+                    "description"?: string;
+                    "id"?: string;
+                    "name"?: string;
+                    "required"?: boolean;
+                    "sort"?: number;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                ];
+            };
         };
         Views: {
             [_ in never]: never;
         };
         Functions: {
-            [_ in never]: never;
+            "changed_fields": {
+                Args: {
+                    "p_from": Json;
+                    "p_to": Json;
+                };
+                Returns: Json;
+            };
+            "create_draft": {
+                Args: {
+                    "p_actor": string;
+                    "p_from"?: string;
+                };
+                Returns: {
+                    "academia_bank_name": string | null;
+                    "academia_beneficiary": string | null;
+                    "academia_iban": string | null;
+                    "billing_minimum_minutes": number | null;
+                    "billing_round_minutes": number | null;
+                    "cancellation_free_until_hours": number | null;
+                    "chat_close_days": number | null;
+                    "completion_auto_confirm_hours": number | null;
+                    "content_reports_autohide_threshold": number | null;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "event_payment_deadline_hours": number | null;
+                    "event_refund_until_hours": number | null;
+                    "id": string;
+                    "invite_expiry_hours": number | null;
+                    "managed_interpreter_share_pct": number | null;
+                    "managed_payment_deadline_hours": number | null;
+                    "managed_refund_full_until_hours": number | null;
+                    "managed_refund_late_pct": number | null;
+                    "max_interpreters_per_request": number | null;
+                    "mentorship_max_per_mentor": number | null;
+                    "notes": string | null;
+                    "org_invite_expiry_days": number | null;
+                    "overlap_buffer_minutes": number | null;
+                    "prices_include_tax": boolean | null;
+                    "published_at": string | null;
+                    "published_by": string | null;
+                    "request_min_lead_minutes": number | null;
+                    "review_reveal_days": number | null;
+                    "review_window_days": number | null;
+                    "staffing_warning_hours": number | null;
+                    "status": string;
+                    "support_autoclose_days": number | null;
+                    "tax_rate_pct": number | null;
+                    "two_interpreters_suggest_minutes": number | null;
+                    "updated_at": string;
+                    "urgent_threshold_hours": number | null;
+                    "verification_fee_aoa": number | null;
+                    "verification_free_resubmissions": number | null;
+                    "verification_payment_deadline_days": number | null;
+                    "verification_refund_on_reject_pct": number | null;
+                    "verification_renewal_notice_days": number | null;
+                    "verification_validity_months": number | null;
+                    "version_number": number;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "platform_versions";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "current_version_id": {
+                Args: Record<PropertyKey, never>;
+                Returns: string;
+            };
+            "delete_document_type": {
+                Args: {
+                    "p_actor": string;
+                    "p_id": string;
+                };
+                Returns: undefined;
+            };
+            "get": {
+                Args: {
+                    "p_version": string;
+                };
+                Returns: {
+                    "academia_bank_name": string | null;
+                    "academia_beneficiary": string | null;
+                    "academia_iban": string | null;
+                    "billing_minimum_minutes": number | null;
+                    "billing_round_minutes": number | null;
+                    "cancellation_free_until_hours": number | null;
+                    "chat_close_days": number | null;
+                    "completion_auto_confirm_hours": number | null;
+                    "content_reports_autohide_threshold": number | null;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "event_payment_deadline_hours": number | null;
+                    "event_refund_until_hours": number | null;
+                    "id": string;
+                    "invite_expiry_hours": number | null;
+                    "managed_interpreter_share_pct": number | null;
+                    "managed_payment_deadline_hours": number | null;
+                    "managed_refund_full_until_hours": number | null;
+                    "managed_refund_late_pct": number | null;
+                    "max_interpreters_per_request": number | null;
+                    "mentorship_max_per_mentor": number | null;
+                    "notes": string | null;
+                    "org_invite_expiry_days": number | null;
+                    "overlap_buffer_minutes": number | null;
+                    "prices_include_tax": boolean | null;
+                    "published_at": string | null;
+                    "published_by": string | null;
+                    "request_min_lead_minutes": number | null;
+                    "review_reveal_days": number | null;
+                    "review_window_days": number | null;
+                    "staffing_warning_hours": number | null;
+                    "status": string;
+                    "support_autoclose_days": number | null;
+                    "tax_rate_pct": number | null;
+                    "two_interpreters_suggest_minutes": number | null;
+                    "updated_at": string;
+                    "urgent_threshold_hours": number | null;
+                    "verification_fee_aoa": number | null;
+                    "verification_free_resubmissions": number | null;
+                    "verification_payment_deadline_days": number | null;
+                    "verification_refund_on_reject_pct": number | null;
+                    "verification_renewal_notice_days": number | null;
+                    "verification_validity_months": number | null;
+                    "version_number": number;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "platform_versions";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "publish_version": {
+                Args: {
+                    "p_actor": string;
+                    "p_expected_current": string;
+                    "p_id": string;
+                };
+                Returns: {
+                    "academia_bank_name": string | null;
+                    "academia_beneficiary": string | null;
+                    "academia_iban": string | null;
+                    "billing_minimum_minutes": number | null;
+                    "billing_round_minutes": number | null;
+                    "cancellation_free_until_hours": number | null;
+                    "chat_close_days": number | null;
+                    "completion_auto_confirm_hours": number | null;
+                    "content_reports_autohide_threshold": number | null;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "event_payment_deadline_hours": number | null;
+                    "event_refund_until_hours": number | null;
+                    "id": string;
+                    "invite_expiry_hours": number | null;
+                    "managed_interpreter_share_pct": number | null;
+                    "managed_payment_deadline_hours": number | null;
+                    "managed_refund_full_until_hours": number | null;
+                    "managed_refund_late_pct": number | null;
+                    "max_interpreters_per_request": number | null;
+                    "mentorship_max_per_mentor": number | null;
+                    "notes": string | null;
+                    "org_invite_expiry_days": number | null;
+                    "overlap_buffer_minutes": number | null;
+                    "prices_include_tax": boolean | null;
+                    "published_at": string | null;
+                    "published_by": string | null;
+                    "request_min_lead_minutes": number | null;
+                    "review_reveal_days": number | null;
+                    "review_window_days": number | null;
+                    "staffing_warning_hours": number | null;
+                    "status": string;
+                    "support_autoclose_days": number | null;
+                    "tax_rate_pct": number | null;
+                    "two_interpreters_suggest_minutes": number | null;
+                    "updated_at": string;
+                    "urgent_threshold_hours": number | null;
+                    "verification_fee_aoa": number | null;
+                    "verification_free_resubmissions": number | null;
+                    "verification_payment_deadline_days": number | null;
+                    "verification_refund_on_reject_pct": number | null;
+                    "verification_renewal_notice_days": number | null;
+                    "verification_validity_months": number | null;
+                    "version_number": number;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "platform_versions";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "require": {
+                Args: {
+                    "p_field": string;
+                    "p_version": string;
+                };
+                Returns: string;
+            };
+            "save_document_type": {
+                Args: {
+                    "p_active": boolean;
+                    "p_actor": string;
+                    "p_code": string;
+                    "p_description": string;
+                    "p_id": string;
+                    "p_name": string;
+                    "p_required": boolean;
+                    "p_sort": number;
+                };
+                Returns: {
+                    "active": boolean;
+                    "code": string;
+                    "created_at": string;
+                    "description": string;
+                    "id": string;
+                    "name": string;
+                    "required": boolean;
+                    "sort": number;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "verification_document_types";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "update_draft": {
+                Args: {
+                    "p_actor": string;
+                    "p_id": string;
+                    "p_notes"?: string;
+                    "p_values": Json;
+                };
+                Returns: {
+                    "academia_bank_name": string | null;
+                    "academia_beneficiary": string | null;
+                    "academia_iban": string | null;
+                    "billing_minimum_minutes": number | null;
+                    "billing_round_minutes": number | null;
+                    "cancellation_free_until_hours": number | null;
+                    "chat_close_days": number | null;
+                    "completion_auto_confirm_hours": number | null;
+                    "content_reports_autohide_threshold": number | null;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "event_payment_deadline_hours": number | null;
+                    "event_refund_until_hours": number | null;
+                    "id": string;
+                    "invite_expiry_hours": number | null;
+                    "managed_interpreter_share_pct": number | null;
+                    "managed_payment_deadline_hours": number | null;
+                    "managed_refund_full_until_hours": number | null;
+                    "managed_refund_late_pct": number | null;
+                    "max_interpreters_per_request": number | null;
+                    "mentorship_max_per_mentor": number | null;
+                    "notes": string | null;
+                    "org_invite_expiry_days": number | null;
+                    "overlap_buffer_minutes": number | null;
+                    "prices_include_tax": boolean | null;
+                    "published_at": string | null;
+                    "published_by": string | null;
+                    "request_min_lead_minutes": number | null;
+                    "review_reveal_days": number | null;
+                    "review_window_days": number | null;
+                    "staffing_warning_hours": number | null;
+                    "status": string;
+                    "support_autoclose_days": number | null;
+                    "tax_rate_pct": number | null;
+                    "two_interpreters_suggest_minutes": number | null;
+                    "updated_at": string;
+                    "urgent_threshold_hours": number | null;
+                    "verification_fee_aoa": number | null;
+                    "verification_free_resubmissions": number | null;
+                    "verification_payment_deadline_days": number | null;
+                    "verification_refund_on_reject_pct": number | null;
+                    "verification_renewal_notice_days": number | null;
+                    "verification_validity_months": number | null;
+                    "version_number": number;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "platform_versions";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "value_columns": {
+                Args: Record<PropertyKey, never>;
+                Returns: (string)[];
+            };
         };
         Enums: {
             [_ in never]: never;
@@ -201,13 +704,323 @@ export type Database = {
     };
     "identity": {
         Tables: {
-            [_ in never]: never;
+            "legal_documents": {
+                Row: {
+                    "body": string;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "id": string;
+                    "kind": string;
+                    "published_at": string | null;
+                    "published_by": string | null;
+                    "updated_at": string;
+                    "version": number;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "body"?: string;
+                    "created_at"?: string;
+                    "created_by"?: string | null;
+                    "id"?: string;
+                    "kind": string;
+                    "published_at"?: string | null;
+                    "published_by"?: string | null;
+                    "updated_at"?: string;
+                    "version": number;
+                };
+                Update: {
+                    "body"?: string;
+                    "created_at"?: string;
+                    "created_by"?: string | null;
+                    "id"?: string;
+                    "kind"?: string;
+                    "published_at"?: string | null;
+                    "published_by"?: string | null;
+                    "updated_at"?: string;
+                    "version"?: number;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "legal_documents_created_by_fkey";
+                        columns: [
+                            "created_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "legal_documents_published_by_fkey";
+                        columns: [
+                            "published_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "profiles": {
+                Row: {
+                    "anonymized_at": string | null;
+                    "avatar_path": string | null;
+                    "created_at": string;
+                    "full_name": string;
+                    "id": string;
+                    "last_active_role": string | null;
+                    "phone": string | null;
+                    "status": string;
+                    "suspended_at": string | null;
+                    "suspended_reason": string | null;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "anonymized_at"?: string | null;
+                    "avatar_path"?: string | null;
+                    "created_at"?: string;
+                    "full_name": string;
+                    "id": string;
+                    "last_active_role"?: string | null;
+                    "phone"?: string | null;
+                    "status"?: string;
+                    "suspended_at"?: string | null;
+                    "suspended_reason"?: string | null;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "anonymized_at"?: string | null;
+                    "avatar_path"?: string | null;
+                    "created_at"?: string;
+                    "full_name"?: string;
+                    "id"?: string;
+                    "last_active_role"?: string | null;
+                    "phone"?: string | null;
+                    "status"?: string;
+                    "suspended_at"?: string | null;
+                    "suspended_reason"?: string | null;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                ];
+            };
+            "staff_members": {
+                Row: {
+                    "account_id": string;
+                    "active": boolean;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "level": string;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "account_id": string;
+                    "active"?: boolean;
+                    "created_at"?: string;
+                    "created_by"?: string | null;
+                    "level": string;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "account_id"?: string;
+                    "active"?: boolean;
+                    "created_at"?: string;
+                    "created_by"?: string | null;
+                    "level"?: string;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "staff_members_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: true;
+                        referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "staff_members_created_by_fkey";
+                        columns: [
+                            "created_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
         };
         Views: {
-            [_ in never]: never;
+            "staff_directory": {
+                Row: {
+                    "account_id": string;
+                    "active": boolean;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "created_by_name": string | null;
+                    "email": string | null;
+                    "full_name": string;
+                    "level": string;
+                };
+                ComputedFields: never;
+                Relationships: [
+                    {
+                        foreignKeyName: "staff_members_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: true;
+                        referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "staff_members_created_by_fkey";
+                        columns: [
+                            "created_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
         };
         Functions: {
-            [_ in never]: never;
+            "add_staff_member": {
+                Args: {
+                    "p_actor": string;
+                    "p_email": string;
+                    "p_level": string;
+                };
+                Returns: {
+                    "account_id": string;
+                    "active": boolean;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "level": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "staff_members";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "assert_staff": {
+                Args: {
+                    "p_actor": string;
+                    "p_levels": (string)[];
+                };
+                Returns: string;
+            };
+            "create_legal_draft": {
+                Args: {
+                    "p_actor": string;
+                    "p_body": string;
+                    "p_kind": string;
+                };
+                Returns: {
+                    "body": string;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "id": string;
+                    "kind": string;
+                    "published_at": string | null;
+                    "published_by": string | null;
+                    "updated_at": string;
+                    "version": number;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "legal_documents";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "publish_legal_document": {
+                Args: {
+                    "p_actor": string;
+                    "p_id": string;
+                };
+                Returns: {
+                    "body": string;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "id": string;
+                    "kind": string;
+                    "published_at": string | null;
+                    "published_by": string | null;
+                    "updated_at": string;
+                    "version": number;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "legal_documents";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "set_staff_member": {
+                Args: {
+                    "p_account": string;
+                    "p_active": boolean;
+                    "p_actor": string;
+                    "p_level": string;
+                };
+                Returns: {
+                    "account_id": string;
+                    "active": boolean;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "level": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "staff_members";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "update_legal_draft": {
+                Args: {
+                    "p_actor": string;
+                    "p_body": string;
+                    "p_id": string;
+                };
+                Returns: {
+                    "body": string;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "id": string;
+                    "kind": string;
+                    "published_at": string | null;
+                    "published_by": string | null;
+                    "updated_at": string;
+                    "version": number;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "legal_documents";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
         };
         Enums: {
             [_ in never]: never;
