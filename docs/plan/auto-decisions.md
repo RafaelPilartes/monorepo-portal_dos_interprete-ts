@@ -38,3 +38,12 @@
 - **Porquê:** funciona em IPv4 e IPv6 sem depender da máquina.
 - **Como se desfaz:** pôr `server.host` na configuração base.
 - **Marcas:** —
+
+## AD-005 — Páginas que a arquitectura funde, e componentes sem uso
+- **Passo:** A (mapa de rotas), D1–D4 (mover)
+- **Contexto:** `architecture.md` §3 junta `…/documents` a `/verification` e funde as três páginas de verificação do admin (`interpreter-verifications`, `verification-requests`, `verification-history`) em `/verifications`, `/verifications/:id` e `/verifications/history`. O passo D manda **mover, não reescrever**. Há também 5 componentes sem uso alcançável (`docs/inventory/05-route-map.md` §2).
+- **Opções:** A) fundir já no D; B) mover cada página como está, para a rota nova mais próxima (`/verification/documents` no intérprete; `/verifications`, `/verifications/requests`, `/verifications/history` no admin), e fundir no H12 (verificação), que reescreve esses ecrãs; C) deixar as rotas antigas.
+- **Escolha:** B. Os 5 componentes sem uso não se movem.
+- **Porquê:** cumpre "mover, não reescrever" e não perde nenhum ecrã; a fusão exige comportamento novo, que é do H12.
+- **Como se desfaz:** no H12 as rotas provisórias dão lugar às finais.
+- **Marcas:** —

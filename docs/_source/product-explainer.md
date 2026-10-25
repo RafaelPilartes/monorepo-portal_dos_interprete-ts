@@ -3,6 +3,8 @@
 > **Rascunho 1 — 2026-10-15.** Escrito a partir do que a interface actual já mostra (inventário em `docs/inventory/`) e do que o Rafael decidiu. Quando este documento e o código discordarem, ou o código tem um defeito, ou há uma decisão por tomar — e essa decisão fica registada aqui.
 >
 > Onde uma coisa só aparece na interface e ainda ninguém a confirmou, está marcada **(a confirmar)**. O que está mesmo por decidir não está no texto: está na última secção, "O que ainda não está decidido".
+>
+> **Actualização de 2026-10-25 (passo A do plano).** As perguntas P1–P14 foram decididas a 2026-10-18: **as decisões estão em `docs/plan/decisions.md`** (códigos `D-xx`, e `PC-xx` para as pendentes do cliente) e **as regras em `docs/plan/specs/`** (códigos `R-…`). A secção 8 aponta para elas. O texto das secções 1 a 7 só mudou onde contradizia uma decisão; quando este documento e `decisions.md` discordarem, vale `decisions.md`.
 
 ---
 
@@ -20,7 +22,7 @@ O Portal é aberto a todos os intérpretes, verificados ou não. A Academia acre
 
 **O visitante.** Qualquer pessoa, sem conta. Vê o site, vê a lista de intérpretes, vê os tutoriais e contacta a plataforma. Não abre o perfil de nenhum intérprete: para ver os detalhes, tem de entrar com conta.
 
-**O solicitante.** Quem precisa de um intérprete. Pode ser um **particular** — uma pessoa surda que vai a uma consulta, uma família com um casamento — ou uma **empresa**, que precisa de intérpretes para reuniões, formações ou eventos e tem NIF, morada e sector.
+**O solicitante.** Quem precisa de um intérprete. Pode ser um **particular** — uma pessoa surda que vai a uma consulta, uma família com um casamento — ou uma **empresa**, que precisa de intérpretes para reuniões, formações ou eventos e tem NIF, morada e sector. A empresa é uma **organização com membros** (dono, administradores e membros), e pode ter uma só pessoa (D-01 (empresa)); os pedidos geridos de uma organização precisam de aprovação do dono ou de um administrador dela (D-06 (membros da empresa)).
 
 **O intérprete.** Quem presta o serviço. Tem um perfil, define os seus serviços e preços, diz quando está disponível, recebe pedidos e responde-lhes. Pode pedir a verificação da Academia.
 
@@ -34,9 +36,9 @@ O Portal é aberto a todos os intérpretes, verificados ou não. A Academia acre
 
 **Escolher um intérprete.** O solicitante encontra no directório o intérprete que quer e faz-lhe o pedido directamente. O preço de partida é o que esse intérprete cobra pelo serviço.
 
-**Publicar o pedido.** O solicitante descreve o que precisa e o pedido fica visível para os intérpretes que podem fazê-lo. Quem estiver interessado responde.
+**Publicar o pedido.** O solicitante descreve o que precisa e o pedido fica visível para os intérpretes que podem fazê-lo. Ao criá-lo, escolhe o modo: **"o primeiro que aceitar"** ou **"eu escolho entre os candidatos"** (D-11 (modo do aberto)).
 
-**Pedir à plataforma.** O solicitante não quer escolher, ou não sabe escolher: pede à plataforma que arranje alguém. Aqui o preço é o da plataforma, o valor de tabela de cada serviço.
+**Pedir à plataforma.** O solicitante não quer escolher, ou não sabe escolher: pede à plataforma que arranje alguém. Aqui o preço de partida é o da plataforma, e é a equipa que escolhe e atribui o intérprete (D-12 (gerido)); o preço também se pode negociar, entre o solicitante e a equipa (D-13 (negociação)). É pago ao Portal por transferência com comprovativo (D-31 (pagamento do gerido)). Nos outros dois caminhos o dinheiro combina-se fora da plataforma (D-30 (directos e abertos)).
 
 Seja qual for o caminho, o pedido tem sempre o mesmo conteúdo:
 
@@ -49,15 +51,13 @@ Seja qual for o caminho, o pedido tem sempre o mesmo conteúdo:
 
 ### Combinar o preço
 
-O preço de partida não tem de ser o final. Solicitante e intérprete podem falar no chat do pedido e **propor valores um ao outro**. Quando um aceita a proposta do outro, esse passa a ser o preço do serviço.
+O preço de partida não tem de ser o final. Solicitante e intérprete podem falar no chat do pedido e **propor valores um ao outro**. Quando um aceita a proposta do outro, esse passa a ser o preço proposto; o preço fica fechado quando o intérprete aceita o pedido (D-14 (preço final)). No pedido aberto em modo "o primeiro que aceitar" não há negociação (D-13 (negociação)).
 
 ### Depois de combinado
 
 O intérprete aceita ou recusa o pedido. Se recusar, diz porquê. O solicitante pode cancelar o pedido. A equipa da plataforma vê todos os pedidos e pode intervir em qualquer um.
 
-No dia, o serviço acontece. Depois, **os dois avaliam-se**: o solicitante avalia o intérprete e o intérprete avalia o solicitante, com uma nota de 1 a 5 e um comentário. As avaliações dos intérpretes aparecem no perfil.
-
-Como se marca o serviço como concluído, e o que acontece se uma das partes não concordar, ainda está por decidir (ver P6 — fecho do serviço).
+No dia, o serviço acontece. O **intérprete marca-o como feito**; o solicitante confirma, ou o sistema confirma sozinho ao fim de 48 horas, e qualquer um pode abrir uma disputa, que vai para a equipa (D-21 (conclusão)). Depois, **os dois avaliam-se**: o solicitante avalia o intérprete e o intérprete avalia o solicitante, com uma nota de 1 a 5 e um comentário. As avaliações são duplamente cegas (D-43 (avaliações)). As dos intérpretes aparecem no perfil; as feitas a um solicitante só as veem intérpretes (D-44 (avaliações do solicitante)).
 
 ---
 
@@ -75,7 +75,7 @@ Como se marca o serviço como concluído, e o que acontece se uma das partes nã
 - conteúdo próprio: vídeos e artigos;
 - as avaliações que recebeu;
 - a disponibilidade;
-- contactos e redes sociais (ver P14 — contactos no perfil).
+- contactos e redes sociais, visíveis a qualquer pessoa com conta (D-51 (contactos); objecção OB-01 registada).
 
 ### A disponibilidade
 
@@ -91,7 +91,7 @@ O intérprete vê os pedidos que lhe foram feitos e aceita ou recusa cada um. V�
 
 Um intérprete não verificado recebe pedidos como qualquer outro. O selo diz duas coisas a quem procura: que este intérprete foi formado pela Academia e que se compromete com o código de ética.
 
-A verificação é também uma das fontes de receita da plataforma, através de uma taxa (ver P4 — dinheiro, e P5 — taxa de verificação).
+A verificação é também uma das fontes de receita da plataforma, através de uma taxa paga por transferência com comprovativo; o selo dura um ano (D-34 (taxa de verificação); o valor é o pendente PC-03 (taxa de verificação)). O selo exige prova da formação da Academia (D-40 (selo)).
 
 ---
 
@@ -99,7 +99,7 @@ A verificação é também uma das fontes de receita da plataforma, através de 
 
 O painel de administração é onde a Academia gere o Portal. A equipa:
 
-- **gere os intérpretes** — vê a ficha completa, aprova, suspende;
+- **gere os intérpretes** — vê a ficha completa e suspende (não há aprovação prévia para entrar no directório: D-03 (entrada no directório));
 - **gere os solicitantes** — particulares e empresas, com o mesmo poder de suspender;
 - **acompanha todos os pedidos** e pode mudar o estado de qualquer um;
 - **trata as verificações** — a fila dos pedidos por analisar, os documentos de cada um, a decisão, e o histórico do que já foi decidido;
@@ -129,7 +129,7 @@ O directório mostra a lista, não os detalhes. O perfil de cada intérprete, co
 
 ## 7. Comunidade e formação
 
-A interface já reserva lugar para dez áreas que ainda não têm conteúdo. Fazem parte do âmbito; o que cada uma é exactamente ainda não está escrito (ver P10 — os módulos de comunidade):
+A interface já reserva lugar para dez áreas que ainda não têm conteúdo. Fazem parte do âmbito (D-71 (comunidade)); o que cada uma faz está decidido em D-72 a D-79. A tabela abaixo é o que a interface antiga mostrava, não o desenho final:
 
 | Área | Para quem, segundo a interface |
 | --- | --- |
@@ -147,6 +147,32 @@ A interface já reserva lugar para dez áreas que ainda não têm conteúdo. Faz
 ---
 
 ## 8. O que ainda não está decidido
+
+**Já está decidido.** As perguntas P1–P14 foram respondidas a 2026-10-18. A fonte é `docs/plan/decisions.md`; esta tabela só faz a correspondência. O que continua por responder é do cliente (a Academia Grace Mind) e está em `decisions.md` §10, com o comportamento provisório que se usa até haver resposta.
+
+| Pergunta | Decisão em `docs/plan/decisions.md` |
+|---|---|
+| P1 — empresa: uma conta ou uma equipa? | D-01 (empresa = organização com membros), D-06 (membros da empresa) |
+| P2 — publicar o pedido e pedir à plataforma | D-10 (três tipos), D-11 (modo do aberto), D-12 (gerido) |
+| P3 — negociação no pedido gerido | D-13 (negociação), D-14 (preço final) |
+| P4 — dinheiro | D-30 (directos e abertos: fora da plataforma), D-31 (pagamento do gerido), D-32 (repasse), D-33 (margem do gerido), D-37 (montantes); pendentes PC-01 (comissão) e PC-02 (margem do gerido) |
+| P5 — taxa de verificação | D-34 (taxa de verificação); pendente PC-03 (valor da taxa) |
+| P6 — fecho do serviço | D-21 (conclusão) |
+| P7 — cancelamento | D-22 (cancelamento) |
+| P8 — níveis de administrador | D-60 (níveis) |
+| P9 — suspensão | D-42 (suspensão), D-90 (suspensão num gerido pago) |
+| P10 — os módulos de comunidade | D-71 a D-79 (comunidade) |
+| P11 — avisos | D-50 (canais: Portal e email) |
+| P12 — conteúdo dos intérpretes | D-45 (conteúdo publica logo) |
+| P13 — o link dos serviços online | D-20 (link online) |
+| P14 — contactos no perfil | D-51 (contactos visíveis a quem tem conta); objecção OB-01 |
+
+O texto original das perguntas fica abaixo, para história.
+
+<details>
+<summary>Perguntas originais (2026-10-15)</summary>
+
+
 
 Cada ponto tem um código para ser fácil de citar. Os dois primeiros mudam a estrutura da base de dados, e por isso têm de estar fechados antes de ela ser montada.
 
@@ -191,3 +217,5 @@ Quem o cria: o solicitante, o intérprete, ou a plataforma?
 
 **P14 — contactos no perfil.**
 O perfil já só abre com conta. Mesmo assim: o telefone e as redes sociais do intérprete aparecem a qualquer pessoa com conta, ou só depois de um pedido aceite? Se aparecerem logo, o serviço pode ser combinado fora da plataforma, e isso pesa directamente em P4.
+
+</details>
