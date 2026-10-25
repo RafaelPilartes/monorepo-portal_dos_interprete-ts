@@ -33,7 +33,7 @@ Tudo abaixo foi **corrido** nesta sessão. Marcas: `[VISTO]` = saída do comando
 | docker | `docker --version` | 29.9.2, com buildx e compose v5.6.1 `[VISTO]` | Ver §4. |
 | gh | `gh --version`; `gh auth status` | 2.89.0; `auth status` diz **"The token in GH_TOKEN is invalid"** `[VISTO]` | Contraditório com a linha seguinte. |
 | gh (REST) | `gh api user` | devolve o utilizador `RafaelPilartes` `[VISTO]` | **A REST funciona**, apesar de `auth status`. |
-| gh (GraphQL) | `gh repo view`, `gh pr list` | `HTTP 403: GitHub GraphQL is not available from Claude Code sessions` `[VISTO]` | `gh pr create/list/view` (GraphQL) **não funcionam**. Para PR: `gh api repos/{owner}/{repo}/pulls` (REST) ou as ferramentas MCP do GitHub. Resultado da abertura de PR em §3. |
+| gh (GraphQL) | `gh repo view`, `gh pr list` | `HTTP 403: GitHub GraphQL is not available from Claude Code sessions` `[VISTO]` | `gh pr create/list/view` (GraphQL) **não funcionam**. Para PR: `gh api repos/{owner}/{repo}/pulls` (REST) ou as ferramentas MCP do GitHub. Abrir PR por REST funciona (ver fim). |
 
 ## 3. Git
 
@@ -44,7 +44,7 @@ Tudo abaixo foi **corrido** nesta sessão. Marcas: `[VISTO]` = saída do comando
 | Push de tag anotada | `git tag -a env-probe -m ... && git push origin env-probe` | `error: RPC failed; HTTP 403` (2 tentativas) `[VISTO]` | **Push de tags bloqueado.** Releases/versões por tag têm de ser criadas pelo Rafael (ou pela UI/API do GitHub, não testado). |
 | Apagar a tag | `git push origin :refs/tags/env-probe`; `git tag -d env-probe` | remoto: mesmo 403 (a tag nunca chegou lá — `git ls-remote` só mostra `main` e `dev`); local: apagada `[VISTO]` | Nada ficou a sobrar no remoto. |
 | Branch da sessão no remoto | `git ls-remote origin 'refs/heads/claude/*'` | vazio `[VISTO]` | O branch da sessão existe só localmente; não foi usado. Zero resultados é inconclusivo quanto a pushes futuros, mas não é necessário. |
-| Abrir PR | ver nota no fim deste ficheiro | — | — |
+| Abrir PR | `gh api -X POST .../pulls` | OK — ver "Abertura de PR" no fim `[VISTO]` | PRs possíveis por REST. |
 
 ## 4. Docker
 
@@ -143,11 +143,13 @@ A CLI tenta primeiro `public.ecr.aws` e depois `ghcr.io`; ambos falham no downlo
 - Vite: `--host 127.0.0.1` na VM; testes E2E com `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` do Supabase local.
 - Usar o `pnpm` global, não o `corepack pnpm`.
 - Push de branches: sim. Push de tags: não (403).
-- PR: `gh pr ...` (GraphQL) bloqueado; usar REST ou MCP do GitHub (resultado abaixo).
+- PR: `gh pr ...` (GraphQL) bloqueado; usar `gh api` (REST), que funcionou.
 - Superpowers ausentes; subagentes presentes.
 
 ## Abertura de PR
 
-(preenchido depois do push deste ficheiro)
+| Verificação | Comando | Resultado | Consequência |
+|---|---|---|---|
+| PR rascunho `dev` → `main` | `gh api -X POST repos/RafaelPilartes/monorepo-portal_dos_interprete-ts/pulls --input pr.json` (`draft: true`) | criado: https://github.com/RafaelPilartes/monorepo-portal_dos_interprete-ts/pull/1, `draft=true`, `state=open` `[VISTO]` | **Consigo abrir PRs** pela REST do `gh` (não por `gh pr create`, que usa GraphQL). |
 
 VEREDICTO: AMARELO (os cinco do verde funcionam, mas falha tags e Superpowers)
