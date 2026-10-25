@@ -14,3 +14,9 @@ GRANT EXECUTE ON FUNCTION audit.record(uuid, text, text, text, text, jsonb, json
 GRANT EXECUTE ON FUNCTION notify.enqueue(text, uuid, jsonb), notify.enqueue_email(text, text, jsonb)
   TO service_role;
 GRANT EXECUTE ON FUNCTION auth_helper.account_id(), auth_helper.is_active() TO authenticated, service_role;
+
+-- Step G: what the API plugins and the email worker call.
+GRANT EXECUTE ON FUNCTION auth_helper.account_status(uuid), auth_helper.staff_level_of(uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION notify.claim_emails(integer), notify.mark_email_sent(uuid),
+  notify.mark_email_failed(uuid, text) TO service_role;
+GRANT EXECUTE ON FUNCTION util.can_access_file(uuid, text, uuid, text) TO service_role;

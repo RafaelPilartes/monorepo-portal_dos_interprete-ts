@@ -169,23 +169,27 @@ def line_of(text: str, offset: int) -> int:
 
 # --- check: no-direct-data-access (since C) ---------------------------------
 
-DATA_ACCESS = re.compile(
-    r"\bsupabase\s*\.\s*(from|rpc|storage|channel|auth)\b"
-    r"|(?:(?<![\w.$])|\b(?:window|globalThis|self)\s*\.\s*)fetch\s*\("
-)
+SUPABASE_ACCESS = re.compile(r"\bsupabase\s*\.\s*(from|rpc|storage|channel|auth)\b")
+FETCH_CALL = re.compile(r"(?:(?<![\w.$])|\b(?:window|globalThis|self)\s*\.\s*)fetch\s*\(")
+# The API's one door to outside services (Storage, Auth, email); see docs/plan/step-plans/G.md.
+API_INTEGRATIONS_DIR = "apps/api/src/integrations/"
 IMPORT_SPEC = re.compile(r"""(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\s*\(\s*)(['"])([^'"]+)\1""")
 
 
 def check_no_direct_data_access(ctx: Context) -> list[Violation]:
-    """Only packages/data/src/dao/ talks to Supabase or calls fetch (architecture.md §2, rule 4)."""
+    """Only packages/data/src/dao/ talks to Supabase or calls fetch (architecture.md §2, rule 4);
+    the API may also call fetch in apps/api/src/integrations/ (its door to Storage and Auth)."""
     violations = []
     for path in code_files(ctx.root):
         rel = relative(ctx.root, path)
         if rel.startswith(DAO_DIR):
             continue
         code, with_strings = mask_source(path.read_text())
-        for match in DATA_ACCESS.finditer(code):
+        for match in SUPABASE_ACCESS.finditer(code):
             violations.append(Violation(rel, line_of(code, match.start()), f"data access outside {DAO_DIR}"))
+        if not rel.startswith(API_INTEGRATIONS_DIR):
+            for match in FETCH_CALL.finditer(code):
+                violations.append(Violation(rel, line_of(code, match.start()), f"fetch outside {DAO_DIR} and {API_INTEGRATIONS_DIR}"))
         for match in IMPORT_SPEC.finditer(with_strings):
             if match.group(2).startswith("@supabase/"):
                 line = line_of(with_strings, match.start())
@@ -740,6 +744,63 @@ def check_schema_lists(ctx: Context) -> list[Violation]:
     return violations
 
 
+
+# --- check: bucket-limits (since G) -------------------------------------------------------------
+
+FILE_RULES_PATH = "apps/api/src/lib/files.ts"
+BUCKET_SECTION = re.compile(r"^\[storage\.buckets\.([\w-]+)\]\s*$((?:\n(?!\[).*)*)", re.M)
+RULE_LINE = re.compile(r"^\s*(\w+):\s*\{\s*bucket:\s*'([\w-]+)',\s*types:\s*(\w+),\s*maxBytes:\s*(\d+)\s*\*\s*MB\s*\}", re.M)
+TYPE_LIST = re.compile(r"^const\s+(\w+)\s*=\s*\[([^\]]*)\]", re.M)
+
+
+def check_bucket_limits(ctx: Context) -> list[Violation]:
+    """The API's file rules (type and size per purpose) equal the bucket limits in supabase/config.toml."""
+    rules_path, config_path = ctx.root / FILE_RULES_PATH, ctx.root / "supabase" / "config.toml"
+    if not rules_path.is_file():
+        return []
+    rules = rules_path.read_text(encoding="utf-8")
+    config = config_path.read_text(encoding="utf-8") if config_path.is_file() else ""
+    buckets = {}
+    for m in BUCKET_SECTION.finditer(config):
+        size = re.search(r'^file_size_limit\s*=\s*"(\d+)MiB"', m.group(2), re.M)
+        types = re.search(r"^allowed_mime_types\s*=\s*\[([^\]]*)\]", m.group(2), re.M)
+        buckets[m.group(1)] = (int(size.group(1)) if size else None, set(re.findall(r'"([^"]+)"', types.group(1))) if types else set())
+    lists = {m.group(1): set(re.findall(r"'([^']+)'", m.group(2))) for m in TYPE_LIST.finditer(rules)}
+    violations = []
+    for m in RULE_LINE.finditer(rules):
+        purpose, bucket, list_name, megabytes = m.group(1), m.group(2), m.group(3), int(m.group(4))
+        line = line_of(rules, m.start())
+        if bucket not in buckets:
+            violations.append(Violation(FILE_RULES_PATH, line, f"{purpose}: bucket {bucket} is not in supabase/config.toml"))
+            continue
+        size, types = buckets[bucket]
+        if size != megabytes:
+            violations.append(Violation(FILE_RULES_PATH, line, f"{purpose}: {megabytes} MB here, {size} MiB for bucket {bucket} in supabase/config.toml"))
+        if lists.get(list_name) != types:
+            violations.append(Violation(FILE_RULES_PATH, line, f"{purpose}: types {sorted(lists.get(list_name, set()))} here, {sorted(types)} for bucket {bucket}"))
+    return violations
+
+
+# --- check: api-error-shape (since G) -------------------------------------------------------------
+
+API_ERROR_OWNERS = {"apps/api/src/lib/sendApiError.ts", "apps/api/src/lib/dbErrors.ts"}
+# An object-literal key (after "{" or ","), not a parameter or property type annotation.
+ERROR_KEYS = re.compile(r"[{,]\s*(field|message)\s*:(?!\s*(?:string|number|boolean|unknown)\b)")
+
+
+def check_api_error_shape(ctx: Context) -> list[Violation]:
+    """No API code writes an error's field or message by hand: they come from the catalog through
+    lib/sendApiError.ts and lib/dbErrors.ts (foundation.md, verify.py table, since G)."""
+    violations = []
+    for path in code_files(ctx.root):
+        rel = relative(ctx.root, path)
+        if not rel.startswith("apps/api/src/") or rel in API_ERROR_OWNERS or ".test." in rel or "/testing/" in rel:
+            continue
+        code, _ = mask_source(path.read_text())
+        for match in ERROR_KEYS.finditer(code):
+            violations.append(Violation(rel, line_of(code, match.start(1)), f"error {match.group(1)} written outside lib/sendApiError.ts and lib/dbErrors.ts"))
+    return violations
+
 CHECKS: dict[str, Callable[[Context], list[Violation]]] = {
     "no-direct-data-access": check_no_direct_data_access,
     "no-cross-app-import": check_no_cross_app_import,
@@ -757,6 +818,8 @@ CHECKS: dict[str, Callable[[Context], list[Violation]]] = {
     "notify-kinds": check_notify_kinds,
     "rule-clock": check_rule_clock,
     "schema-lists": check_schema_lists,
+    "bucket-limits": check_bucket_limits,
+    "api-error-shape": check_api_error_shape,
 }
 
 

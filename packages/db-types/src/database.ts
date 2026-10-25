@@ -344,6 +344,18 @@ export type Database = {
             [_ in never]: never;
         };
         Functions: {
+            "claim_emails": {
+                Args: {
+                    "p_limit": number;
+                };
+                Returns: {
+                    "attempts": number;
+                    "id": string;
+                    "payload": Json;
+                    "template": string;
+                    "to_email": string;
+                }[];
+            };
             "enqueue": {
                 Args: {
                     "p_account": string;
@@ -359,6 +371,19 @@ export type Database = {
                     "p_payload"?: Json;
                 };
                 Returns: string;
+            };
+            "mark_email_failed": {
+                Args: {
+                    "p_error": string;
+                    "p_id": string;
+                };
+                Returns: undefined;
+            };
+            "mark_email_sent": {
+                Args: {
+                    "p_id": string;
+                };
+                Returns: undefined;
             };
         };
         Enums: {

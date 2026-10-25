@@ -117,7 +117,8 @@ enabled = true
 # Port to use for the email testing server web interface.
 port = 54324
 # Uncomment to expose additional ports for testing user applications that send emails.
-# smtp_port = 54325
+# Exposed for the API email worker (api.md §15), which sends through Mailpit in development.
+smtp_port = 54325
 # pop3_port = 54326
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
@@ -159,6 +160,13 @@ file_size_limit = "20MiB"
 allowed_mime_types = ["application/pdf"]
 
 [storage.buckets.chat-attachments]
+public = false
+file_size_limit = "5MiB"
+allowed_mime_types = ["application/pdf", "image/jpeg", "image/png"]
+
+# Not in architecture.md §5: ticket attachments (support.md R-SUP-01, PDF/JPG/PNG up to 5 MB;
+# step plan G, AD-027).
+[storage.buckets.support-attachments]
 public = false
 file_size_limit = "5MiB"
 allowed_mime_types = ["application/pdf", "image/jpeg", "image/png"]

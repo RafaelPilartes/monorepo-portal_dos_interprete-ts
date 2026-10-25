@@ -21,11 +21,12 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   fi
   if [ -z "$base" ]; then
     # Unknown range: assume the database may have changed (fail safe, not silent).
-    echo "pre-push: cannot compute the pushed range for ${remote_ref}; treating packages/db/ as changed." >&2
+    echo "pre-push: cannot compute the pushed range for ${remote_ref}; treating the database as changed." >&2
     touches_db=true
     continue
   fi
-  changed="$(git diff --name-only "$base" "$local_sha" -- packages/db/)"
+  # The database, its configuration, and the API (whose db tests run inside db:verify).
+  changed="$(git diff --name-only "$base" "$local_sha" -- packages/db/ supabase/ apps/api/)"
   if [ -n "$changed" ]; then
     touches_db=true
   fi

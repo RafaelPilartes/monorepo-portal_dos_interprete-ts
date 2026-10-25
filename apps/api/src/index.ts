@@ -1,11 +1,64 @@
+import { EnvError, loadEnv } from './config/env.js'
+import { createSmtpAdapter } from './integrations/email/adapter.js'
+import { createStorageClient } from './integrations/storage.js'
+import { startEmailWorker } from './jobs/emailOutbox.js'
 import { resolveCommit } from './lib/commit.js'
+import { createDatabase } from './lib/db.js'
+import { resolveMigrationInBuild } from './lib/migrations.js'
+import { createTokenVerifier } from './lib/tokens.js'
 import { buildServer } from './server.js'
 
-const port = Number(process.env.PORT ?? 3000)
-const server = buildServer({ commit: resolveCommit(), logger: true })
+let env
+try {
+  env = loadEnv()
+} catch (error) {
+  if (error instanceof EnvError) {
+    console.error(error.message)
+    process.exit(1)
+  }
+  throw error
+}
+
+const db = createDatabase(env.DATABASE_URL)
+const server = await buildServer({
+  commit: resolveCommit(),
+  logger: { level: env.LOG_LEVEL },
+  migrationInBuild: resolveMigrationInBuild(env.MIGRATION_IN_BUILD),
+  trustProxyHops: env.TRUST_PROXY_HOPS,
+  appOrigins: env.APP_ORIGINS,
+  db,
+  verifyToken: createTokenVerifier({ supabaseUrl: env.SUPABASE_URL, jwtSecret: env.SUPABASE_JWT_SECRET }),
+  storage: createStorageClient({ supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY }),
+})
+
+const stopWorker = env.EMAIL_WORKER_ENABLED
+  ? startEmailWorker({
+      db,
+      log: server.log,
+      appUrl: env.APP_ORIGINS[0],
+      adapter: createSmtpAdapter({
+        host: env.SMTP_HOST,
+        port: env.SMTP_PORT,
+        secure: env.SMTP_SECURE,
+        user: env.SMTP_USER,
+        password: env.SMTP_PASSWORD,
+        from: env.EMAIL_FROM,
+      }),
+    })
+  : async () => undefined
+
+async function shutdown(signal: string): Promise<void> {
+  server.log.info({ signal }, 'shutting down')
+  await stopWorker()
+  await server.close()
+  await db.close()
+  process.exit(0)
+}
+process.once('SIGTERM', () => void shutdown('SIGTERM'))
+process.once('SIGINT', () => void shutdown('SIGINT'))
 
 // Railway and Docker need 0.0.0.0 (architecture.md §6).
-server.listen({ host: '0.0.0.0', port }).catch((error: unknown) => {
+server.listen({ host: env.HOST, port: env.PORT }).catch((error: unknown) => {
   server.log.error(error)
   process.exit(1)
 })

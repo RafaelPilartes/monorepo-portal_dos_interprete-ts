@@ -60,3 +60,50 @@ BEGIN
   RETURN v_id;
 END;
 $$;
+
+-- The email worker's state machine (api.md §15, R-NOT-03). The API worker only renders and sends.
+-- Claims up to p_limit due emails: queued and due, or still `sending` 15 minutes after being
+-- claimed (a worker that died mid-send). The claim is a lease: next_attempt_at becomes its end.
+-- FOR UPDATE SKIP LOCKED: two workers never take the same row.
+CREATE OR REPLACE FUNCTION notify.claim_emails(p_limit integer)
+RETURNS TABLE (id uuid, to_email text, template text, payload jsonb, attempts integer)
+  LANGUAGE sql VOLATILE SECURITY DEFINER
+  SET search_path = ''
+AS $$
+  WITH due AS (
+    SELECT e.id
+      FROM notify.email_outbox AS e
+     WHERE e.status IN ('queued', 'sending') AND e.next_attempt_at <= util.now()
+     ORDER BY e.next_attempt_at
+     LIMIT greatest(least(p_limit, 100), 0)
+       FOR UPDATE SKIP LOCKED
+  )
+  UPDATE notify.email_outbox AS e
+     SET status = 'sending', attempts = e.attempts + 1, next_attempt_at = util.now() + interval '15 minutes'
+    FROM due
+   WHERE e.id = due.id
+  RETURNING e.id, e.to_email::text, e.template, e.payload, e.attempts
+$$;
+
+CREATE OR REPLACE FUNCTION notify.mark_email_sent(p_id uuid) RETURNS void
+  LANGUAGE sql VOLATILE SECURITY DEFINER
+  SET search_path = ''
+AS $$
+  UPDATE notify.email_outbox
+     SET status = 'sent', sent_at = util.now(), last_error = NULL
+   WHERE id = p_id AND status = 'sending'
+$$;
+
+-- Retries 1, 5 and 30 minutes after the first, second and third failures; `failed` at the fourth.
+CREATE OR REPLACE FUNCTION notify.mark_email_failed(p_id uuid, p_error text) RETURNS void
+  LANGUAGE sql VOLATILE SECURITY DEFINER
+  SET search_path = ''
+AS $$
+  UPDATE notify.email_outbox
+     SET status = CASE WHEN attempts >= 4 THEN 'failed' ELSE 'queued' END,
+         next_attempt_at = util.now() + CASE attempts WHEN 1 THEN interval '1 minute'
+                                                      WHEN 2 THEN interval '5 minutes'
+                                                      ELSE interval '30 minutes' END,
+         last_error = left(p_error, 500)
+   WHERE id = p_id AND status = 'sending'
+$$;

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # pnpm db:verify (architecture.md §5): a clean instance, the six phases, the reapplicable phases a
 # second time with the catalog compared, the generated types compared with the committed file,
-# and the SQL assertions. Temporary instance: it is deleted at the end, also on failure or Ctrl+C.
+# the SQL assertions, and the API tests that need a database. Temporary instance: it is deleted at the end, also on failure or Ctrl+C.
 source "$(dirname "$0")/lib.sh"
 
 # claude-code-rules.md §5; cleanup_instance (lib.sh) also ignores a second Ctrl+C while it stops.
@@ -56,5 +56,8 @@ fi
 
 say "== 6/6 asserções"
 bash "$scripts/run-tests.sh"
+
+say "== 6b/6 API contra esta base (apps/api, pnpm test:db)"
+pnpm --filter @portal-dos-interpretes/api test:db >&2
 
 say "db:verify passou."

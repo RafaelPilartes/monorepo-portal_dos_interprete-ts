@@ -148,6 +148,14 @@ Uma app por subpasso, por esta ordem: `site-web`, `admin-web`, `requester-web`, 
 
 **Feito quando:** os testes passam; um pedido sem token dá `401 UNAUTHENTICATED`; um erro forçado na base chega ao cliente como `INTERNAL_ERROR` sem texto técnico; um email enfileirado aparece no servidor de email local.
 
+### Melhorias da execução (passo G, 2026-10-25)
+
+- **A API empacotada** (`tsup`): os pacotes do workspace entram no bundle; versão e migration do build por `define` (AD-026, AD-027).
+- **Rotas fechadas por omissão:** sem `config.access`, uma rota exige conta activa com termos aceites.
+- **Fila de email com prazo de reserva:** um email que fique em `sending` volta à fila 15 minutos depois.
+- **Prova com o binário real:** `node dist/index.js` e a imagem Docker arrancam, recusam configuração em falta com a lista de nomes em português, e respondem a `/health`.
+- **`verify.py` desde G:** `api-error-shape` (nenhuma rota escreve `field`/`message` à mão), `bucket-limits` (os limites dos ficheiros na API iguais aos de `supabase/config.toml`), e `fetch` só em `apps/api/src/integrations/`.
+
 ---
 
 ## Verificações estruturais (`scripts/verify.py`)
