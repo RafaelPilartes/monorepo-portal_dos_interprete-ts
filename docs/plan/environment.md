@@ -115,7 +115,8 @@ A CLI tenta primeiro `public.ecr.aws` e depois `ghcr.io`; ambos falham no downlo
 | Verificação | Como | Resultado | Consequência |
 |---|---|---|---|
 | Subagentes | ferramenta `Agent` presente; lancei um subagente que correu `uname -n` | devolveu `vm` `[VISTO]` | **Há subagentes.** |
-| Skills Superpowers (`brainstorming`, `writing-plans`) | lista de skills da sessão; `ls ~/.claude/skills ~/.claude/plugins`; `find / -iname '*superpowers*'` | nenhuma; só `session-start-hook` em `~/.claude/skills`; zero resultados no `find` `[VISTO]` (zero é ausência de prova, mas a lista de skills da sessão também não as tem) | **Superpowers não estão disponíveis.** O plano não pode depender delas sem as instalar (o que exige autorização). |
+| Skills Superpowers (`brainstorming`, `writing-plans`) — 1.ª verificação | lista de skills da sessão; `ls ~/.claude/skills ~/.claude/plugins`; `find / -iname '*superpowers*'` | nenhuma; zero resultados no `find` `[VISTO]` | Ausentes no início da sessão. |
+| Skills Superpowers — depois de o Rafael activar o plugin no claude.ai (2026-10-25) | lista de skills da sessão; `find / -iname '*superpowers*'`; `cat .claude-plugin/plugin.json` | **presentes nesta mesma sessão, sem reiniciar**: 15 skills `superpowers:*`, incluindo `brainstorming` e `writing-plans`; plugin `superpowers` 6.4.2, autor Jesse Vincent, em `~/.claude/plugins/synced/.../skills/` `[VISTO]`. Contradição: `ListPlugins` (filtro "superpowers") devolveu zero resultados `[VISTO]` — inconclusivo, os ficheiros e a lista de skills mostram-no instalado | **Superpowers disponíveis.** Activação na conta, sincronizada para a VM; numa sessão nova devem voltar a aparecer sozinhas `[INFERIDO]`, não verificado. O plugin traz um hook `SessionStart`. |
 
 ## 9. Segredos
 
@@ -144,7 +145,7 @@ A CLI tenta primeiro `public.ecr.aws` e depois `ghcr.io`; ambos falham no downlo
 - Usar o `pnpm` global, não o `corepack pnpm`.
 - Push de branches: sim. Push de tags: não (403).
 - PR: `gh pr ...` (GraphQL) bloqueado; usar `gh api` (REST), que funcionou.
-- Superpowers ausentes; subagentes presentes.
+- Superpowers presentes (activadas a meio da sessão); subagentes presentes.
 
 ## Abertura de PR
 
@@ -152,4 +153,4 @@ A CLI tenta primeiro `public.ecr.aws` e depois `ghcr.io`; ambos falham no downlo
 |---|---|---|---|
 | PR rascunho `dev` → `main` | `gh api -X POST repos/RafaelPilartes/monorepo-portal_dos_interprete-ts/pulls --input pr.json` (`draft: true`) | criado: https://github.com/RafaelPilartes/monorepo-portal_dos_interprete-ts/pull/1, `draft=true`, `state=open` `[VISTO]` | **Consigo abrir PRs** pela REST do `gh` (não por `gh pr create`, que usa GraphQL). |
 
-VEREDICTO: AMARELO (os cinco do verde funcionam, mas falha tags e Superpowers)
+VEREDICTO: AMARELO (os cinco do verde funcionam, mas falha tags)
