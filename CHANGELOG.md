@@ -2,6 +2,12 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.5.0 — 2026-10-25 — Passo D3 (mover o `requester-web`)
+
+- A área do solicitante passa para `apps/requester-web`, nos caminhos novos, com as páginas de perfil do intérprete e as de entrada.
+- Os links "Entrar", "Registar" e "Ver Perfil" do site chegam a páginas reais.
+- Relatório: `docs/plan/step-reports/D3.md`.
+
 ## 0.4.0 — 2026-10-25 — Passo D2 (mover o `admin-web`)
 
 - O painel da equipa passa para `apps/admin-web`, nos caminhos novos (sem `/dashboard/admin`).

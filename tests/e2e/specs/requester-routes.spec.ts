@@ -1,4 +1,4 @@
-import { test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { type SmokeRoute, visitAndCapture } from './smoke'
 
 const REQUESTER = process.env.REQUESTER_URL ?? 'http://localhost:5171'
@@ -30,3 +30,21 @@ for (const route of routes) {
     await visitAndCapture(page, REQUESTER, 'D3', route)
   })
 }
+
+test('requester: a card on /interpreters opens the profile inside requester-web', async ({ page }) => {
+  await page.goto(`${REQUESTER}/interpreters`)
+  await page.getByRole('link', { name: /Ver Perfil/ }).first().click()
+  await expect(page).toHaveURL(new RegExp(`^${REQUESTER}/interpreters/[a-z-]+$`))
+  await expect(page.getByText('Sobre o Intérprete').first()).toBeVisible()
+})
+
+test('requester: /requests/new keeps the ?interpreter= pre-selection', async ({ page }) => {
+  await page.goto(`${REQUESTER}/requests/new?interpreter=maria-silva`)
+  await expect(page).toHaveURL(`${REQUESTER}/requests/new?interpreter=maria-silva`)
+  await expect(page.getByText('Nova Solicitação').first()).toBeVisible()
+})
+
+test('requester: a path that never existed (e.g. /requests/REQ-001/edit) gets the Portuguese 404', async ({ page }) => {
+  await page.goto(`${REQUESTER}/requests/REQ-001/edit`)
+  await expect(page.getByText('Página não encontrada')).toBeVisible()
+})

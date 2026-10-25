@@ -137,3 +137,11 @@
 - **Porquê:** quem as vê já tem sessão; a barra lateral leva de volta à lista e ao resto da app; não há cópia do cabeçalho do site.
 - **Como se desfaz:** mudar as quatro rotas para fora do `<Route element={<RequesterLayout />}>`.
 - **Marcas:** —
+
+## AD-016 — O que o `requester-web` herda da SPA antiga e fica como está até aos passos H
+- **Passo:** D3
+- **Contexto:** a revisão do D3 confirmou comportamentos antigos que o "mover, não reescrever" mantém, e que contrariam `claude-code-rules.md` §9 ("Nada falha em silêncio").
+- **Registo:** (1) `RequestDetails` liga a `/requests/:id/edit`, rota que nunca existiu; mostra o 404 em português (testado no e2e) e só aparece em pedidos `pending`, que o mock não tem. (2) O botão "Avaliar" em `RequestDetails` muda um estado que nada lê (`_showReviewModal`): não faz nada, como na SPA antiga. (3) `NewRequest`, `RequesterProfile`, `RequesterSettings` e `RecoverPassword` mostram avisos de sucesso sem nada por trás. (4) AD-013 fica fechado para "Entrar" e "Registar" (o site já chega ao login e ao registo reais); falta só o `returnTo`, do H2/H4.
+- **Escolha:** ficam como estão; cada passo H que liga o ecrã à base substitui o comportamento (H2 entrada, H5 pedidos, H9 avaliações).
+- **Como se desfaz:** nos passos H indicados.
+- **Marcas:** [RISCO] avisos de sucesso falsos à vista enquanto os ecrãs usam mocks.

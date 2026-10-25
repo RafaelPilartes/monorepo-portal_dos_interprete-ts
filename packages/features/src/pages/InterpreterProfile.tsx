@@ -287,7 +287,7 @@ export default function InterpreterProfile() {
             >
               {/* Tab Navigation */}
               <div
-                className="w-full flex gap-1 bg-muted/50 p-1.5 rounded-xl mb-8 border border-border/50"
+                className="w-full flex gap-1 overflow-x-auto bg-muted/50 p-1.5 rounded-xl mb-8 border border-border/50"
                 role="tablist"
               >
                 {tabs.map(tab => {
