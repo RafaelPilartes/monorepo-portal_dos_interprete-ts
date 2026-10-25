@@ -117,6 +117,8 @@ A CLI tenta primeiro `public.ecr.aws` e depois `ghcr.io`; ambos falham no downlo
 | Subagentes | ferramenta `Agent` presente; lancei um subagente que correu `uname -n` | devolveu `vm` `[VISTO]` | **Há subagentes.** |
 | Skills Superpowers (`brainstorming`, `writing-plans`) — 1.ª verificação | lista de skills da sessão; `ls ~/.claude/skills ~/.claude/plugins`; `find / -iname '*superpowers*'` | nenhuma; zero resultados no `find` `[VISTO]` | Ausentes no início da sessão. |
 | Skills Superpowers — depois de o Rafael activar o plugin no claude.ai (2026-10-25) | lista de skills da sessão; `find / -iname '*superpowers*'`; `cat .claude-plugin/plugin.json` | **presentes nesta mesma sessão, sem reiniciar**: 15 skills `superpowers:*`, incluindo `brainstorming` e `writing-plans`; plugin `superpowers` 6.4.2, autor Jesse Vincent, em `~/.claude/plugins/synced/.../skills/` `[VISTO]`. Contradição: `ListPlugins` (filtro "superpowers") devolveu zero resultados `[VISTO]` — inconclusivo, os ficheiros e a lista de skills mostram-no instalado | **Superpowers disponíveis.** Activação na conta, sincronizada para a VM; numa sessão nova devem voltar a aparecer sozinhas `[INFERIDO]`, não verificado. O plugin traz um hook `SessionStart`. |
+| Impeccable (design de frontend) — catálogo da conta | `SearchPlugins` e `SearchSkills` ("impeccable") | zero resultados em ambos `[VISTO]` (inconclusivo, mas não há cartão para activar) | Não se activa pela conta como o Superpowers. |
+| Impeccable — instalação local na VM (pedido do Rafael, 2026-10-25) | `claude plugin marketplace add pbakaus/impeccable`; `claude plugin install impeccable@impeccable --scope user`; `claude plugin list` | marketplace clonado do GitHub; plugin `impeccable` 4.7.1 (Paul Bakaus) `enabled`, scope `user`; o lançador descarregou o binário das releases do GitHub e `impeccable --version` → `4.7.1` `[VISTO]`. Traz 1 skill (`impeccable`, 24 comandos), 4 agentes e hooks `SessionStart`, `PostToolUse` (em cada `Edit`/`Write`, 5 s) e `Stop` (30 s) que correm esse binário `[VISTO]` | **Instalado só neste contentor** (`~/.claude`): desaparece quando o contentor for reclamado `[INFERIDO]`. Nesta sessão ainda não aparece na lista de skills; deve exigir uma sessão nova ou recarregar plugins `[INFERIDO]`. Para durar, ver a proposta na resposta ao Rafael (configuração do projecto, não feita). Os hooks correm em cada edição: ter em conta no custo e no ruído. |
 
 ## 9. Segredos
 
@@ -145,7 +147,7 @@ A CLI tenta primeiro `public.ecr.aws` e depois `ghcr.io`; ambos falham no downlo
 - Usar o `pnpm` global, não o `corepack pnpm`.
 - Push de branches: sim. Push de tags: não (403).
 - PR: `gh pr ...` (GraphQL) bloqueado; usar `gh api` (REST), que funcionou.
-- Superpowers presentes (activadas a meio da sessão); subagentes presentes.
+- Superpowers presentes (activadas a meio da sessão); Impeccable instalado só nesta VM; subagentes presentes.
 
 ## Abertura de PR
 
