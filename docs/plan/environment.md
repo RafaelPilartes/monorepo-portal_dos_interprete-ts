@@ -54,6 +54,7 @@ Tudo abaixo foi **corrido** nesta sessão. Marcas: `[VISTO]` = saída do comando
 | Arranque manual | `nohup dockerd > log 2>&1 &` | "Daemon has completed initialization" em ~1 s; storage `overlayfs`, cgroup v1; proxy HTTPS herdado `[VISTO]` | **Cada sessão nova tem de arrancar o `dockerd` à mão** (ou num hook de arranque da sessão). Pôr isto no plano. |
 | hello-world (Docker Hub) | `docker run --rm hello-world` | **`429 Too Many Requests`** (3 tentativas, espaçadas) `[VISTO]` | Limite anónimo do Docker Hub, partilhado pelo IP de saída `[INFERIDO]`. Intermitente. |
 | hello-world (ECR) | `docker run --rm public.ecr.aws/docker/library/hello-world` | manifesto OK, **blob 403** em `d2glxqk2uabbnd.cloudfront.net` `[VISTO]` | O proxy bloqueia o CDN de blobs do ECR público. |
+| Reinício da VM a meio | `uptime` às 16:59 | 32 min, contra 11 min às 16:00: a VM reiniciou por volta das 16:27, sem aviso; o `dockerd` parou e as imagens em cache **sobreviveram** `[VISTO]` (2026-10-25, passo C) | Antes de usar Docker, confirmar `docker info` e arrancar o `dockerd` se preciso. |
 | Contentores a correr | 12 contentores Supabase (§5) | arrancaram e responderam `[VISTO]` | **O Docker funciona**; o problema é só obter imagens. |
 
 ## 5. Supabase local

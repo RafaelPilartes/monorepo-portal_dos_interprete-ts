@@ -51,6 +51,18 @@ O inventário de 2026-10-15 já existe em `docs/inventory/` (00 a 04). Este pass
 
 **Feito quando:** `pnpm install && pnpm build && pnpm typecheck && pnpm lint` passam; `pnpm dev` arranca as cinco; `curl localhost:<porta>/health` responde; `docker build -f apps/api/Dockerfile .` termina.
 
+### Melhorias da execução (passo C, 2026-10-25)
+
+Respostas dadas pelo Claude Code às perguntas da skill `brainstorming`, pelas regras de `claude-code-rules.md` §3. Nenhuma muda uma decisão.
+
+- **Nome dos pacotes:** `@portal-dos-interpretes/<nome>`, como `architecture.md` §2; o `@portal/api` do `MASTER-PLAN.md` (passo G) lê-se como `@portal-dos-interpretes/api` (AD-007).
+- **O código de hoje durante C–D:** a SPA antiga passa, sem mudar uma linha, para `legacy/` (pacote `@portal-dos-interpretes/legacy-spa` do workspace), para a raiz poder ser a raiz do monorepo. Continua a arrancar e a compilar como hoje, serve de comparação nos passos D, e apaga-se no D4 ("`src/` antigo apaga-se só quando a última app migrar"). As verificações estruturais e o ESLint estrito não se aplicam a `legacy/` (AD-008).
+- **Versões das ferramentas:** as do código de hoje onde o código vai mudar de sítio (React 18, Vite 5, Tailwind 3, shadcn/ui), para "mover, não reescrever" ser possível; Fastify 5 e Vitest na API e nos pacotes; TypeScript 5.
+- **Versão e commit no rodapé:** injectados pelo Vite (`__APP_VERSION__`, `__APP_COMMIT__`) a partir do `package.json` da raiz e de `git rev-parse --short HEAD`.
+- **`verify.py` no passo C:** as quatro verificações "Desde C" (fetch/Supabase fora de `packages/data/src/dao/`, app a importar app, `.env` versionado, identificadores em inglês), cada uma com um ficheiro de violação deliberada em `scripts/fixtures/` que tem de apanhar (`verify.py --self-test`).
+- **Portas:** AD-006. **Host do Vite:** AD-004.
+- **`docker build`:** a imagem base `node:22-alpine` vem do Docker Hub, que nesta VM dá 429 intermitente; o passo tenta de novo e regista o resultado (`environment.md` §4).
+
 ## D — Mover o código app a app
 
 **Objectivo:** os ecrãs de hoje a funcionar nas apps novas, **exactamente como funcionam hoje** (com mocks), antes de ligar qualquer dado real.

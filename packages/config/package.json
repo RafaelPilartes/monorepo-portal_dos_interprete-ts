@@ -1,0 +1,46 @@
+{
+  "name": "@portal-dos-interpretes/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./eslint": {
+      "types": "./eslint.d.ts",
+      "default": "./eslint.js"
+    },
+    "./vite": {
+      "types": "./vite.d.ts",
+      "default": "./vite.js"
+    },
+    "./tailwind": {
+      "types": "./tailwind.d.ts",
+      "default": "./tailwind.js"
+    },
+    "./tsconfig/react.json": "./tsconfig/react.json",
+    "./tsconfig/node.json": "./tsconfig/node.json"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "node --check eslint.js && node --check vite.js && node --check tailwind.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.32.0",
+    "@vitejs/plugin-react-swc": "^3.11.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^15.15.0",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript-eslint": "^8.38.0"
+  },
+  "peerDependencies": {
+    "eslint": "^9.32.0",
+    "tailwindcss": "^3.4.17",
+    "vite": "^5.4.19"
+  },
+  "devDependencies": {
+    "eslint": "^9.32.0",
+    "tailwindcss": "^3.4.19",
+    "vite": "^5.4.21"
+  }
+}

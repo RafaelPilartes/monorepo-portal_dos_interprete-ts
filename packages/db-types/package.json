@@ -1,0 +1,22 @@
+{
+  "name": "@portal-dos-interpretes/db-types",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Types generated from the applied database.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@portal-dos-interpretes/config": "workspace:*",
+    "eslint": "^9.32.0",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.7",
+    "@types/node": "^22.16.5"
+  }
+}

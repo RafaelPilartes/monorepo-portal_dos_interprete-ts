@@ -56,3 +56,21 @@
 - **Porquê:** as quatro apps arrancam ao mesmo tempo (`pnpm dev`) e os links entre apps precisam de endereços estáveis; os cookies de `localhost` partilham-se entre portas (`architecture.md` §4).
 - **Como se desfaz:** mudar `.env.example` e a configuração de cada app.
 - **Marcas:** —
+
+## AD-007 — Nome dos pacotes do monorepo
+- **Passo:** C
+- **Contexto:** `architecture.md` §2 manda `@portal-dos-interpretes/<nome>`; o `MASTER-PLAN.md` (passo G) escreve `pnpm --filter @portal/api test`.
+- **Opções:** A) `@portal/*`; B) `@portal-dos-interpretes/*`.
+- **Escolha:** B
+- **Porquê:** a arquitectura é o documento que decide onde vive cada coisa; o comando do plano é um exemplo.
+- **Como se desfaz:** renomear os `name` dos `package.json` e os imports.
+- **Marcas:** —
+
+## AD-008 — A SPA antiga vive em `legacy/` até ao D4
+- **Passo:** C a D4
+- **Contexto:** `foundation.md` §C pede o monorepo "sem tocar ainda no código de hoje", e a raiz do repositório tem de passar a ser a raiz do workspace (`package.json` com Turborepo). A SPA antiga ocupa a raiz (`src/`, `package.json`, `vite.config.ts`, …).
+- **Opções:** A) deixar a SPA na raiz e misturar as dependências dela com as da raiz do monorepo; B) mover os ficheiros da SPA, sem mudar o conteúdo, para `legacy/`, como pacote do workspace com o seu próprio `package.json`; C) apagar já a SPA.
+- **Escolha:** B
+- **Porquê:** a raiz fica limpa; a SPA continua a compilar e a arrancar para comparação no passo D; o D4 apaga `legacy/` inteiro.
+- **Como se desfaz:** `git mv legacy/* .` antes do D4.
+- **Marcas:** —
