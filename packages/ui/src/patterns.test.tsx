@@ -65,3 +65,12 @@ describe('PaginationBar', () => {
     expect(onPageChange).toHaveBeenCalledWith(3)
   })
 })
+
+describe('MoneyAmount with a wrong amount', () => {
+  it('says the value is unavailable instead of blanking the screen', () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    render(<MoneyAmount amount={10.5} />)
+    expect(screen.getByTestId('money-amount').textContent).toBe('Valor indisponível')
+    log.mockRestore()
+  })
+})

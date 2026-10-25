@@ -9,6 +9,7 @@ import {
   ibanAoSchema,
   nifSchema,
   normalizePhone,
+  paramsFromMessage,
   phoneSchema,
 } from './index'
 
@@ -23,7 +24,11 @@ describe('normalizePhone', () => {
     expect(normalizePhone(input)).toBe(expected)
   })
 
-  it.each(['', 'abc', '12', '+0123456789', '+2449230000000000'])('rejects %j', (input) => {
+  it('adds +244 to an Angolan fixed number (starts with 2)', () => {
+    expect(normalizePhone('222 000 000')).toBe('+244222000000')
+  })
+
+  it.each(['', 'abc', '12', '+0123456789', '+2449230000000000', '123456789', '5123456789'])('rejects %j instead of guessing a country', (input) => {
     expect(normalizePhone(input)).toBeNull()
   })
 })
@@ -46,7 +51,7 @@ describe('patterns', () => {
 describe('schemas', () => {
   it('phoneSchema outputs E.164 and reports a Portuguese message', () => {
     expect(phoneSchema.parse('923000000')).toBe('+244923000000')
-    expect(phoneSchema.safeParse('12').error?.issues[0]?.message).toBe('Telefone inválido.')
+    expect(phoneSchema.safeParse('12').error?.issues[0]?.message).toBe('Número de telefone inválido. Usa o formato 923 000 000.')
   })
 
   it('nifSchema and ibanAoSchema normalise case and spaces', () => {
@@ -54,10 +59,21 @@ describe('schemas', () => {
     expect(ibanAoSchema.parse('ao06 0000 0000 0000 0000 0000 0')).toBe('AO06000000000000000000000')
   })
 
-  it('amounts are whole kwanzas (D-37)', () => {
+  it('amounts are whole kwanzas above zero (D-37, INVALID_AMOUNT)', () => {
     expect(amountAoaSchema.safeParse(14040).success).toBe(true)
     expect(amountAoaSchema.safeParse(14040.5).success).toBe(false)
-    expect(amountAoaSchema.safeParse(-1).success).toBe(false)
+    expect(amountAoaSchema.safeParse(0).success).toBe(false)
+    expect(amountAoaSchema.safeParse(1e300).success).toBe(false)
+  })
+
+  it('every schema message is the catalog text in Portuguese, including wrong types', () => {
+    const amount = 'Indica um valor maior que zero, em kwanzas.'
+    expect(amountAoaSchema.safeParse(-5).error?.issues[0]?.message).toBe(amount)
+    expect(amountAoaSchema.safeParse('100').error?.issues[0]?.message).toBe(amount)
+    expect(ibanAoSchema.safeParse(42).error?.issues[0]?.message).toBe(
+      'IBAN inválido. Um IBAN angolano começa por AO06 e tem 25 caracteres.',
+    )
+    expect(nifSchema.safeParse('x').error?.issues[0]?.message).toBe('NIF inválido.')
   })
 })
 
@@ -69,6 +85,16 @@ describe('error catalog', () => {
       message: 'IBAN inválido. Um IBAN angolano começa por AO06 e tem 25 caracteres.',
       field: 'iban',
     })
+  })
+
+  it('fills placeholders, and never shows raw braces when a value is missing', () => {
+    expect(errorFor('START_TOO_SOON', { min: 60 }).message).toBe('O serviço tem de começar pelo menos 60 minutos a partir de agora.')
+    expect(errorFor('START_TOO_SOON').message).toBe('O serviço tem de começar pelo menos … minutos a partir de agora.')
+  })
+
+  it('reads placeholder values back only from text that follows the catalog template', () => {
+    expect(paramsFromMessage('START_TOO_SOON', 'O serviço tem de começar pelo menos 60 minutos a partir de agora.')).toEqual({ min: '60' })
+    expect(paramsFromMessage('START_TOO_SOON', 'ERROR: relation "x" does not exist')).toBeNull()
   })
 
   it('turns an unknown code into INTERNAL_ERROR, never showing technical text', () => {

@@ -1,3 +1,4 @@
+import { COMMON_TEXTS } from '@portal-dos-interpretes/i18n'
 import { Button } from './button'
 
 export interface PaginationBarProps {
@@ -13,13 +14,13 @@ export function PaginationBar({ page, pageCount, onPageChange }: PaginationBarPr
   return (
     <nav aria-label="Paginação" className="flex items-center justify-between gap-2 pt-4">
       <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
-        Anterior
+        {COMMON_TEXTS.previousPage}
       </Button>
       <span className="text-sm text-muted-foreground">
-        Página {page} de {pageCount}
+        {COMMON_TEXTS.pageOf(page, pageCount)}
       </span>
       <Button variant="outline" size="sm" disabled={page >= pageCount} onClick={() => onPageChange(page + 1)}>
-        Seguinte
+        {COMMON_TEXTS.nextPage}
       </Button>
     </nav>
   )

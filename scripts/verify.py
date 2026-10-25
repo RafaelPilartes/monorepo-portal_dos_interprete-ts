@@ -361,8 +361,14 @@ def check_error_catalog(ctx: Context) -> list[Violation]:
     doc = ctx.root / "docs" / "plan" / "api.md"
     target = ctx.root / "packages" / "core" / "src" / "errors" / "catalog.ts"
     if not doc.is_file():
-        return []
-    expected = error_catalog.render(error_catalog.parse(doc.read_text(encoding="utf-8")))
+        return [Violation("docs/plan/api.md", 1, "missing: the error catalog has no source")]
+    text = doc.read_text(encoding="utf-8")
+    section = text[text.find("## 2. Erros"): text.find("## 3. Sistema")]
+    code_rows = [i for i, line in enumerate(section.splitlines(), 1) if line.startswith("| `")]
+    parsed = error_catalog.parse(text)
+    if len(parsed) != len(code_rows):
+        return [Violation("docs/plan/api.md", 1, f"{len(code_rows) - len(parsed)} error row(s) in §2 do not parse (code must be UPPER_SNAKE)")]
+    expected = error_catalog.render(parsed)
     current = target.read_text(encoding="utf-8") if target.is_file() else ""
     if current == expected:
         return []
@@ -381,8 +387,11 @@ def _component_key(path: Path) -> str:
 
 
 def _content_key(path: Path) -> str:
-    code, _ = mask_source(path.read_text())
-    return re.sub(r"\s+", "", re.sub(r"^\s*import[^\n]*$", "", code, flags=re.M))
+    """The code without imports (single- or multi-line), export style or whitespace."""
+    _, with_strings = mask_source(path.read_text())
+    body = re.sub(r"^\s*import\b[\s\S]*?from\s*['\"][^'\"]+['\"];?|^\s*import\s*['\"][^'\"]+['\"];?", "", with_strings, flags=re.M)
+    body = re.sub(r"\bexport\s+default\s+", "export ", body)
+    return re.sub(r"\s+", "", body)
 
 
 def check_no_duplicated_component(ctx: Context) -> list[Violation]:

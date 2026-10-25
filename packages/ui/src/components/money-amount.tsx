@@ -1,4 +1,4 @@
-import { formatAoa } from '@portal-dos-interpretes/i18n'
+import { COMMON_TEXTS, formatAoa } from '@portal-dos-interpretes/i18n'
 import { cn } from '../lib/utils'
 
 export interface MoneyAmountProps {
@@ -9,9 +9,17 @@ export interface MoneyAmountProps {
 
 /** Shows an amount the database computed; no arithmetic here (claude-code-rules.md §9). */
 export function MoneyAmount({ amount, className }: MoneyAmountProps) {
+  let text: string
+  try {
+    text = formatAoa(amount)
+  } catch (error) {
+    // A wrong amount from the data must not blank the screen; it says so instead.
+    console.error('MoneyAmount:', error)
+    text = COMMON_TEXTS.amountUnavailable
+  }
   return (
     <span className={cn('tabular-nums whitespace-nowrap', className)} data-testid="money-amount">
-      {formatAoa(amount)}
+      {text}
     </span>
   )
 }

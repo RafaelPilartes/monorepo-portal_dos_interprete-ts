@@ -2,6 +2,12 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.7.0 — 2026-10-25 — Passo E (pacotes partilhados)
+
+- Validações e catálogo de erros únicos (`core`), formatação de kwanzas e datas de Luanda (`i18n`), componentes base (`ui`), camada de dados (`data`) e sessão com guardas (`auth`).
+- O selo de estado já não rebenta com estados desconhecidos; a fonte do site passa a carregar.
+- Relatório: `docs/plan/step-reports/E.md`.
+
 ## 0.6.0 — 2026-10-25 — Passo D4 (mover o `interpreter-web`; apagar a SPA antiga)
 
 - A área do intérprete passa para `apps/interpreter-web`, nos caminhos novos; áreas sem ecrã têm aviso honesto.

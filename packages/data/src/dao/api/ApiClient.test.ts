@@ -35,6 +35,7 @@ describe('ApiClient', () => {
   })
 
   it('treats an unknown code or a network failure as INTERNAL_ERROR', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     const unknown = (await client(vi.fn(async () => json(500, { error: { code: 'SOMETHING_NEW' } }))).get('/x').catch((e: unknown) => e)) as DataError
     expect(unknown.code).toBe('INTERNAL_ERROR')
     const offline = (await client(vi.fn(async () => Promise.reject(new TypeError('Failed to fetch')))).get('/x').catch((e: unknown) => e)) as DataError
@@ -46,5 +47,47 @@ describe('ApiClient', () => {
     await client(fetchImpl, null).get('/health')
     const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
     expect((init.headers as Record<string, string>).Authorization).toBeUndefined()
+  })
+})
+
+describe('ApiClient (review of step E)', () => {
+  it('fills placeholders from params, or from catalog text the server rendered', async () => {
+    const withParams = (await client(vi.fn(async () => json(400, { error: { code: 'START_TOO_SOON', params: { min: 60 } } })))
+      .post('/requests', {})
+      .catch((e: unknown) => e)) as DataError
+    expect(withParams.message).toBe('O serviço tem de começar pelo menos 60 minutos a partir de agora.')
+
+    const fromText = (await client(
+      vi.fn(async () =>
+        json(400, { error: { code: 'START_TOO_SOON', message: 'O serviço tem de começar pelo menos 90 minutos a partir de agora.' } }),
+      ),
+    )
+      .post('/requests', {})
+      .catch((e: unknown) => e)) as DataError
+    expect(fromText.message).toBe('O serviço tem de começar pelo menos 90 minutos a partir de agora.')
+  })
+
+  it('never treats a 2xx that is not JSON as success (API_URL pointing at a web app)', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const html = new Response('<!doctype html>', { status: 200, headers: { 'Content-Type': 'text/html' } })
+    await expect(client(vi.fn(async () => html)).post('/payments', {})).rejects.toMatchObject({ code: 'INTERNAL_ERROR' })
+    log.mockRestore()
+  })
+
+  it('maps bodiless 403, 404 and 429 to their catalog codes', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    for (const [status, code] of [
+      [403, 'FORBIDDEN'],
+      [404, 'NOT_FOUND'],
+      [429, 'RATE_LIMITED'],
+    ] as const) {
+      const error = (await client(vi.fn(async () => new Response(null, { status }))).get('/x').catch((e: unknown) => e)) as DataError
+      expect(error.code).toBe(code)
+    }
+    log.mockRestore()
+  })
+
+  it('accepts 204 No Content as success with no body', async () => {
+    await expect(client(vi.fn(async () => new Response(null, { status: 204 }))).delete('/x')).resolves.toBeUndefined()
   })
 })

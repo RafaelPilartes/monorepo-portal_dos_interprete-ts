@@ -15,6 +15,14 @@ function Loading() {
   )
 }
 
+function SessionUnavailable() {
+  return (
+    <p role="alert" className="p-8 text-center">
+      {COMMON_TEXTS.sessionUnavailable}
+    </p>
+  )
+}
+
 function Forbidden() {
   return (
     <p role="alert" className="p-8 text-center">
@@ -28,6 +36,7 @@ export function RequireSession({ children }: { children: ReactNode }) {
   const session = useSession()
   const location = useLocation()
   if (session.status === 'loading') return <Loading />
+  if (session.status === 'error') return <SessionUnavailable />
   if (session.status === 'anonymous') {
     const returnTo = `${location.pathname}${location.search}`
     return <Navigate to={`/login?returnTo=${encodeURIComponent(returnTo)}`} replace />
@@ -47,7 +56,8 @@ export function RequireRole({ role, children }: { role: Role; children: ReactNod
 /** Staff areas by level (D-60); super_admin passes everywhere (api.md §1). */
 export function RequireStaffLevel({ levels, children }: { levels: StaffLevel[]; children: ReactNode }) {
   const session = useSession()
-  const level = session.status === 'authenticated' ? session.account.staffLevel : null
+  const isStaff = session.status === 'authenticated' && session.account.roles.includes('staff')
+  const level = isStaff && session.status === 'authenticated' ? session.account.staffLevel : null
   const allowed = level !== null && (level === 'super_admin' || levels.includes(level))
   return <RequireSession>{allowed ? children : <Forbidden />}</RequireSession>
 }

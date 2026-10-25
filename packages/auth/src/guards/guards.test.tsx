@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { SessionProvider, type Account, type SessionSource } from '../session/SessionContext'
 import { RequireRole, RequireSession, RequireStaffLevel } from './guards'
 
@@ -46,6 +46,39 @@ describe('RequireSession', () => {
   })
 })
 
+describe('session read failures and races (review of step E)', () => {
+  it('says the session could not be read instead of sending the person to login', async () => {
+    const failing: SessionSource = { load: async () => Promise.reject(new Error('network')), subscribe: () => () => {} }
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    renderGuarded(failing, <RequireSession>secret</RequireSession>)
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Não foi possível verificar a tua sessão. Verifica a ligação e tenta outra vez.',
+    )
+    log.mockRestore()
+  })
+
+  it('does not let an older, slower read bring back a session after sign-out', async () => {
+    let notify = () => {}
+    let resolveFirst: (account: Account | null) => void = () => {}
+    let call = 0
+    const racing: SessionSource = {
+      load: () => {
+        call += 1
+        return call === 1 ? new Promise((resolve) => (resolveFirst = resolve)) : Promise.resolve(null)
+      },
+      subscribe: (onChange) => {
+        notify = onChange
+        return () => {}
+      },
+    }
+    renderGuarded(racing, <RequireSession>secret</RequireSession>)
+    await act(async () => notify()) // sign-out event: second read resolves to "no session"
+    await act(async () => resolveFirst(requester)) // the first, older read finishes late
+    expect(screen.queryByText('secret')).toBeNull()
+    expect((await screen.findByText(/^login/)).textContent).toContain('returnTo')
+  })
+})
+
 describe('RequireRole', () => {
   it('refuses another role with the catalog message', async () => {
     renderGuarded(source(requester), <RequireRole role="interpreter">secret</RequireRole>)
@@ -62,6 +95,11 @@ describe('RequireStaffLevel (D-60)', () => {
 
   it('refuses a level that is not listed', async () => {
     renderGuarded(source(finance), <RequireStaffLevel levels={['moderator']}>reports</RequireStaffLevel>)
+    expect(await screen.findByRole('alert')).toBeTruthy()
+  })
+
+  it('refuses a staff level on an account that is not staff', async () => {
+    renderGuarded(source({ ...superAdmin, roles: ['requester'] }), <RequireStaffLevel levels={['moderator']}>reports</RequireStaffLevel>)
     expect(await screen.findByRole('alert')).toBeTruthy()
   })
 

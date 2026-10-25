@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { DataError } from '../../domain/errors/DataError'
 
 /** What the apps need to know about the Supabase Auth session; roles come from GET /me (H2). */
 export interface AuthSession {
@@ -18,10 +19,11 @@ export interface ISessionRepository {
 export class SessionDAO implements ISessionRepository {
   constructor(private readonly client: SupabaseClient) {}
 
+  /** null means "no session"; a failure to read it is an error, not an anonymous visitor. */
   async current(): Promise<AuthSession | null> {
     const { data, error } = await this.client.auth.getSession()
-    if (error || !data.session) return null
-    return toAuthSession(data.session)
+    if (error) throw new DataError('INTERNAL_ERROR', { cause: error })
+    return data.session ? toAuthSession(data.session) : null
   }
 
   onChange(listener: (session: AuthSession | null) => void): () => void {
@@ -31,8 +33,10 @@ export class SessionDAO implements ISessionRepository {
     return () => data.subscription.unsubscribe()
   }
 
+  /** Throws when the sign-out did not happen, so the screen never claims it did. */
   async signOut(): Promise<void> {
-    await this.client.auth.signOut()
+    const { error } = await this.client.auth.signOut()
+    if (error) throw new DataError('INTERNAL_ERROR', { cause: error })
   }
 }
 

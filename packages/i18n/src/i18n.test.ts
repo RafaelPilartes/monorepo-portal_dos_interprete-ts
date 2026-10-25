@@ -14,8 +14,10 @@ describe('formatAoa', () => {
     expect(formatAoa(amount)).toBe(expected)
   })
 
-  it('refuses cents (D-37)', () => {
+  it('refuses cents (D-37) and numbers past the safe integer range', () => {
     expect(() => formatAoa(10.5)).toThrow(RangeError)
+    expect(() => formatAoa(1e21)).toThrow(RangeError)
+    expect(() => formatAoa(Number.MAX_SAFE_INTEGER + 2)).toThrow(RangeError)
   })
 })
 

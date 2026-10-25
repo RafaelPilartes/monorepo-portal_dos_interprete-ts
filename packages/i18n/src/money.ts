@@ -4,8 +4,9 @@ const NO_BREAK_SPACE = ' '
 
 /** 14040 -> "14 040 Kz" (no-break spaces). */
 export function formatAoa(amount: number): string {
-  if (!Number.isInteger(amount)) {
-    throw new RangeError(`formatAoa expects whole kwanzas (D-37), got ${amount}`)
+  // Safe integers only: past 2^53 a number silently loses kwanzas.
+  if (!Number.isSafeInteger(amount)) {
+    throw new RangeError(`formatAoa expects whole kwanzas within the safe integer range (D-37), got ${amount}`)
   }
   const sign = amount < 0 ? '-' : ''
   const digits = Math.abs(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, NO_BREAK_SPACE)

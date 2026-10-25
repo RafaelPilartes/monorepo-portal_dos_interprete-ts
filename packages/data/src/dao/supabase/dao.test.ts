@@ -69,3 +69,10 @@ describe('BaseSupabaseDAO', () => {
     expect(calls.map((call) => call.method)).toEqual(['schema', 'from', 'update', 'eq', 'select', 'single'])
   })
 })
+
+describe('translatePostgrestError (review of step E)', () => {
+  it('treats an expired JWT as UNAUTHENTICATED', async () => {
+    const { client } = fakeSupabase({ error: { code: 'PGRST301', message: 'JWT expired' } })
+    await expect(new ReadOnlyDAO<InterpreterRow>(client, 'directory', 'interpreters').list()).rejects.toMatchObject({ code: 'UNAUTHENTICATED' })
+  })
+})

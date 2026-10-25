@@ -18,6 +18,10 @@ export function translatePostgrestError(error: PostgrestLikeError, where: string
   if (error.code === '42501') {
     return new DataError('FORBIDDEN', { cause: error })
   }
+  // PostgREST: JWT expired or invalid -> the session ended.
+  if (error.code === 'PGRST301' || error.code === 'PGRST303') {
+    return new DataError('UNAUTHENTICATED', { cause: error })
+  }
   console.error(`[data] ${where}: ${error.code ?? 'no code'} ${error.message}`)
   return new DataError('INTERNAL_ERROR', { cause: error })
 }

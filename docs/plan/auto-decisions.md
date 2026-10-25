@@ -171,3 +171,17 @@
 - **Porquê:** uma só porta para o Supabase, verificada pelo ESLint e pelo `verify.py`; as guardas testam-se sem rede.
 - **Como se desfaz:** permitir o Supabase em `packages/auth/src/session/` e tirar a dependência de `data`.
 - **Marcas:** —
+
+## AD-020 — Números de telefone sem indicativo: só os angolanos de 9 dígitos
+- **Passo:** E (revisão)
+- **Contexto:** `data-model.md` §1 dá só o exemplo de telemóvel (`923000000` → `+244923000000`). A primeira versão de `normalizePhone` punha um `+` à frente de qualquer outro número sem indicativo, o que transformava um fixo de Luanda (`222000000`) num número da Mauritânia (`+222…`), aceite como válido.
+- **Opções:** A) adivinhar o país; B) número nacional angolano (9 dígitos, começa por 9 ou por 2) recebe `+244`; qualquer outro número tem de vir com o indicativo (`+` ou `00`), senão é recusado com `INVALID_PHONE`.
+- **Escolha:** B
+- **Porquê:** recusar é reversível e não grava um contacto errado; a pessoa vê a mensagem do catálogo e corrige.
+- **Como se desfaz:** alargar a expressão em `packages/core/src/phone.ts`. **Por confirmar** com a Academia se os fixos angolanos interessam (só há exemplo de telemóvel).
+- **Marcas:** [RISCO] dados pessoais (contacto).
+
+## AD-021 — Notas da revisão do passo E
+- **Passo:** E
+- **Contexto e registo:** (1) o cliente Supabase vive em `packages/data/src/dao/supabase/client.ts` e não em `packages/data/src/config/` como desenha `architecture.md` §7, porque a regra 4 da mesma arquitectura só deixa falar com o Supabase dentro de `dao/` (verificado pelo ESLint e pelo `verify.py`). (2) `claude-code-rules.md` §9 diz que o catálogo de erros vive em `apps/api/src/lib/`; `architecture.md` §6 e `data-model.md` §0 dizem `@portal-dos-interpretes/core/errors`. Segue-se a arquitectura (um sítio só, partilhado pela API e pelas apps); `apps/api/src/lib/dbErrors.ts` (passo G) traduz da base para esses códigos. (3) As mensagens dos formulários vêm do catálogo (`catalogMessage`), para o formulário e a API dizerem o mesmo; os textos de ecrã comuns vivem em `packages/i18n`. (4) As mensagens com parâmetros (`{min}`, `{max}`, …) preenchem-se com `params` vindos da API, ou lendo-os de um texto que siga exactamente o modelo do catálogo; nunca aparecem chavetas no ecrã. (5) O `returnTo` ainda não é lido por ninguém; o H2 tem de o validar (só caminhos relativos ou as quatro origens das apps) para não abrir um redireccionamento para fora.
+- **Marcas:** [RISCO] visibilidade (item 5, redireccionamento aberto se mal feito no H2).

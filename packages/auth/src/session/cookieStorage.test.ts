@@ -48,6 +48,23 @@ describe('createCookieStorage (ADR-007)', () => {
     expect(doc.cookie).toBe('')
   })
 
+  it('keeps every cookie under the browser limit even when encoding triples the size', () => {
+    const doc = fakeDocument()
+    const storage = createCookieStorage({ document: doc, domain: '.portal.ao', secure: true })
+    const session = JSON.stringify({ user: { name: 'Ângela Conceição', note: '"{}"'.repeat(1500) } })
+    storage.setItem('sb-session', session)
+    expect(storage.getItem('sb-session')).toBe(session)
+    for (const written of doc.writes) expect(new TextEncoder().encode(written).length).toBeLessThan(4096)
+  })
+
+  it('ignores a malformed cookie that is not ours', () => {
+    const doc = fakeDocument()
+    const storage = createCookieStorage({ document: doc })
+    storage.setItem('k', 'value')
+    doc.cookie = '_ga=%E0%A4%A; max-age=100'
+    expect(storage.getItem('k')).toBe('value')
+  })
+
   it('treats a session with a missing chunk as no session', () => {
     const doc = fakeDocument()
     const storage = createCookieStorage({ document: doc })

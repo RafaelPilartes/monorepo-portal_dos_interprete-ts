@@ -1,33 +1,44 @@
 import { z } from 'zod'
+import { catalogMessage } from './errors'
 import { normalizePhone } from './phone'
 import { EMAIL_PATTERN, IBAN_AO_PATTERN, NIF_PATTERN } from './patterns'
 
-// Shared form schemas. Messages are what the user reads (Portuguese, D-84).
+// Shared form schemas. Every message comes from the error catalog (api.md §2),
+// so the form and the API say the same thing (one rule, one place).
 
-export const emailSchema = z.string().trim().regex(EMAIL_PATTERN, 'Email inválido.')
+const INVALID_INPUT = catalogMessage('VALIDATION_FAILED')
 
-/** Accepts any common way of writing a phone and outputs E.164. */
+export const emailSchema = z
+  .string({ invalid_type_error: INVALID_INPUT, required_error: INVALID_INPUT })
+  .trim()
+  .regex(EMAIL_PATTERN, INVALID_INPUT)
+
+/** Accepts the usual ways of writing a phone and outputs E.164. */
 export const phoneSchema = z
-  .string()
+  .string({ invalid_type_error: catalogMessage('INVALID_PHONE'), required_error: catalogMessage('INVALID_PHONE') })
   .transform((value, context) => {
     const normalized = normalizePhone(value)
     if (normalized === null) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: 'Telefone inválido.' })
+      context.addIssue({ code: z.ZodIssueCode.custom, message: catalogMessage('INVALID_PHONE') })
       return z.NEVER
     }
     return normalized
   })
 
 export const nifSchema = z
-  .string()
+  .string({ invalid_type_error: catalogMessage('INVALID_NIF'), required_error: catalogMessage('INVALID_NIF') })
   .trim()
   .transform((value) => value.toUpperCase())
-  .pipe(z.string().regex(NIF_PATTERN, 'NIF inválido.'))
+  .pipe(z.string().regex(NIF_PATTERN, catalogMessage('INVALID_NIF')))
 
 export const ibanAoSchema = z
-  .string()
+  .string({ invalid_type_error: catalogMessage('INVALID_IBAN'), required_error: catalogMessage('INVALID_IBAN') })
   .transform((value) => value.replace(/\s/g, '').toUpperCase())
-  .pipe(z.string().regex(IBAN_AO_PATTERN, 'IBAN inválido. Um IBAN angolano começa por AO06 e tem 25 caracteres.'))
+  .pipe(z.string().regex(IBAN_AO_PATTERN, catalogMessage('INVALID_IBAN')))
 
-/** Kwanzas are whole numbers (D-37). */
-export const amountAoaSchema = z.number().int('O valor tem de ser em kwanzas inteiros.').nonnegative()
+/** A price or amount someone types: whole kwanzas (D-37), greater than zero (INVALID_AMOUNT). */
+export const amountAoaSchema = z
+  .number({ invalid_type_error: catalogMessage('INVALID_AMOUNT'), required_error: catalogMessage('INVALID_AMOUNT') })
+  .int(catalogMessage('INVALID_AMOUNT'))
+  .positive(catalogMessage('INVALID_AMOUNT'))
+  .max(Number.MAX_SAFE_INTEGER, catalogMessage('INVALID_AMOUNT'))

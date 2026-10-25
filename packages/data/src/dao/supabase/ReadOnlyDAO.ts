@@ -67,14 +67,18 @@ export class ReadOnlyDAO<Row extends { id: string }> implements IReadRepository<
     return (data as Row | null) ?? null
   }
 
-  listenById(id: string, onChange: (row: Row) => void, onError?: (error: Error) => void): () => void {
+  listenById(
+    id: string,
+    handlers: { onChange: (row: Row) => void; onDelete: () => void; onError: (error: Error) => void },
+  ): () => void {
     const channel = this.client
       .channel(`${this.where}:id=${id}`)
       .on('postgres_changes', { event: '*', schema: this.schemaName, table: this.tableName, filter: `id=eq.${id}` }, (payload) => {
-        if (payload.new && Object.keys(payload.new).length > 0) onChange(payload.new as Row)
+        if (payload.eventType === 'DELETE') handlers.onDelete()
+        else if (payload.new && Object.keys(payload.new).length > 0) handlers.onChange(payload.new as Row)
       })
       .subscribe((status, error) => {
-        if (status === 'CHANNEL_ERROR' && onError) onError(error ?? new DataError('INTERNAL_ERROR'))
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') handlers.onError(new DataError('INTERNAL_ERROR', { cause: error }))
       })
     return () => {
       void this.client.removeChannel(channel)

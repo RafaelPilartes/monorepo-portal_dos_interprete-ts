@@ -1,5 +1,6 @@
 import { useId, useState, type ChangeEvent } from 'react'
 import { Upload } from 'lucide-react'
+import { COMMON_TEXTS } from '@portal-dos-interpretes/i18n'
 import { cn } from '../lib/utils'
 
 export interface FileUploadProps {
@@ -29,12 +30,12 @@ export function FileUpload({ label, accept, maxBytes, onSelect, disabled, classN
     const file = event.target.files?.[0]
     if (!file) return
     if (!accept.includes(file.type)) {
-      setError('Este tipo de ficheiro não é aceite.')
+      setError(COMMON_TEXTS.fileTypeNotAccepted)
       setFileName(null)
       return
     }
     if (file.size > maxBytes) {
-      setError(`O ficheiro é demasiado grande. O máximo é ${formatSize(maxBytes)}.`)
+      setError(COMMON_TEXTS.fileTooLarge(formatSize(maxBytes)))
       setFileName(null)
       return
     }
