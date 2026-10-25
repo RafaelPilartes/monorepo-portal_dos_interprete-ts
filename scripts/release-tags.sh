@@ -23,6 +23,7 @@ create_tag v0.2.0 e847394cbd34fa032d3db9e01a5fec86655e1573 "v0.2.0 - step C, emp
 create_tag v0.3.0 7c9988d3e4f44a11bcfd755332520b228dc40aaa "v0.3.0 - step D1, site-web moved (2026-10-25)"
 create_tag v0.4.0 ff501169798ac99dd860da041339543773bd9f5b "v0.4.0 - step D2, admin-web moved (2026-10-25)"
 create_tag v0.5.0 ad16ab05f49bf8ebcd4eea5ee3c683bbd7c1785e "v0.5.0 - step D3, requester-web moved (2026-10-25)"
+create_tag v0.6.0 03035dc862e410abe4314b5da44d0ad49b73ceda "v0.6.0 - step D4, interpreter-web moved, old SPA deleted (2026-10-25)"
 # TAGS-END
 
 git push origin --tags
