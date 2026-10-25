@@ -9,7 +9,8 @@
     "./pages/*": "./src/pages/*.tsx",
     "./components/*": "./src/components/*.tsx",
     "./mocks/*": "./src/mocks/*.ts",
-    "./routes": "./src/routes.ts"
+    "./routes": "./src/routes.ts",
+    "./app/*": "./src/app/*.tsx"
   },
   "scripts": {
     "lint": "eslint .",
@@ -35,7 +36,10 @@
   },
   "dependencies": {
     "@portal-dos-interpretes/ui": "workspace:*",
+    "@tanstack/react-query": "^5.83.0",
     "lucide-react": "^0.462.0",
-    "react-router-dom": "^6.30.1"
+    "next-themes": "^0.3.0",
+    "react-router-dom": "^6.30.1",
+    "sonner": "^1.7.4"
   }
 }

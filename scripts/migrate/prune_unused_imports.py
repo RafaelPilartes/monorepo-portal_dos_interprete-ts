@@ -12,6 +12,7 @@ by_file = {}
 for f, line, col, name in pat.findall(out):
     by_file.setdefault(os.path.normpath(os.path.join(pkg, f)), []).append((int(line), name))
 for path, items in by_file.items():
+    items.sort(reverse=True)  # bottom-up, so earlier line numbers stay valid
     lines = open(path).read().split('\n')
     text = '\n'.join(lines)
     changed = False
@@ -22,7 +23,7 @@ for path, items in by_file.items():
         end = text.find(';', start)
         stmt_end = text.find('\n', end if end != -1 else start)
         m = re.match(r"import\s+(type\s+)?(\w+\s*,\s*)?\{([^}]*)\}\s*from\s*(['\"][^'\"]+['\"]);?", text[start:])
-        if not m or start > offset + len(lines[line_no - 1]):
+        if not m or start > offset + len(lines[line_no - 1]) or start + m.end() < offset:
             continue
         names = [n.strip() for n in m.group(3).split(',') if n.strip()]
         keep = [n for n in names if re.split(r'\s+as\s+', n)[-1] != name]

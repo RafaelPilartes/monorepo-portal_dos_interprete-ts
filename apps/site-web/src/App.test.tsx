@@ -2,7 +2,8 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import rootPackage from '../../../package.json'
-import { App, AppProviders, SiteRoutes } from './App'
+import { AppProviders } from '@portal-dos-interpretes/features/app/AppProviders'
+import { App, SiteRoutes } from './App'
 
 function LocationProbe() {
   return <output data-testid="location">{useLocation().pathname}</output>

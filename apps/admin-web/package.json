@@ -12,9 +12,17 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@portal-dos-interpretes/auth": "workspace:*",
+    "@portal-dos-interpretes/features": "workspace:*",
     "@portal-dos-interpretes/ui": "workspace:*",
+    "@tanstack/react-query": "^5.83.0",
+    "date-fns": "^3.6.0",
+    "lucide-react": "^0.462.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.30.1",
+    "recharts": "^2.15.4",
+    "sonner": "^1.7.4"
   },
   "devDependencies": {
     "@portal-dos-interpretes/config": "workspace:*",

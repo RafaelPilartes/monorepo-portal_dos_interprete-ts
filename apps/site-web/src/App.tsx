@@ -1,13 +1,8 @@
-import type React from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { AppProviders } from '@portal-dos-interpretes/features/app/AppProviders'
 import { AppFooter } from '@portal-dos-interpretes/ui'
-import { Toaster as Sonner } from '@portal-dos-interpretes/ui/components/sonner'
-import { ThemeProvider } from '@portal-dos-interpretes/ui/components/theme-provider'
-import { Toaster } from '@portal-dos-interpretes/ui/components/toaster'
-import { TooltipProvider } from '@portal-dos-interpretes/ui/components/tooltip'
+import NotFound from '@portal-dos-interpretes/ui/components/not-found'
 import { PublicLayout } from '@/components/layout/PublicLayout'
-import NotFound from '@/pages/NotFound'
 import Contact from '@/pages/portal/Contact'
 import ForInterpreters from '@/pages/portal/ForInterpreters'
 import ForRequesters from '@/pages/portal/ForRequesters'
@@ -17,8 +12,6 @@ import Impact from '@/pages/portal/Impact'
 import Interpreters from '@/pages/portal/Interpreters'
 import Services from '@/pages/portal/Services'
 import Tutorials from '@/pages/portal/Tutorials'
-
-const queryClient = new QueryClient()
 
 /** Public site routes (architecture.md §3, site-web). */
 export function SiteRoutes() {
@@ -38,21 +31,6 @@ export function SiteRoutes() {
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
-  )
-}
-
-/** Theme, data cache, tooltips and toasts shared by every screen. */
-export function AppProviders({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          {children}
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
   )
 }
 

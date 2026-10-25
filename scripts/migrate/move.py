@@ -28,6 +28,24 @@ def specifier(from_pkgdir, from_sub, target):
         raise SystemExit(f'cross-app import to {target}')
     return f"{pkg_name(pkgdir)}/{sub}"
 
+ROUTES_FILE = os.environ.get('ROUTES')
+ROUTES = json.load(open(ROUTES_FILE)) if ROUTES_FILE else {}
+OLD_PATH = re.compile(r"(?<=['\"`])(/dashboard/[a-z]+(?:/[A-Za-z0-9_-]+)*)")
+
+
+def rewrite_routes(text):
+    """Old dashboard paths -> the app's new paths, longest prefix first (architecture.md §3)."""
+    if not ROUTES:
+        return text
+    def repl(m):
+        path = m.group(1)
+        for old in sorted(ROUTES, key=len, reverse=True):
+            if path == old or path.startswith(old + '/'):
+                return ROUTES[old] + path[len(old):] if ROUTES[old] != '/' or path == old else path[len(old):]
+        return path
+    return OLD_PATH.sub(repl, text)
+
+
 IMPORT = re.compile(r"""((?:from|import)\s*\(?\s*)(['"])@/([^'"]+)\2""")
 
 def rewrite(text, from_pkgdir, from_sub, app_local_pkgdir):
@@ -48,7 +66,10 @@ def copy(mod_with_ext, pkgdir, sub_with_ext):
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     if src.endswith(('.ts', '.tsx', '.js', '.jsx')):
         text = open(src).read()
-        open(dst, 'w').write(rewrite(text, pkgdir, sub_with_ext, pkgdir))
+        text = rewrite_routes(rewrite(text, pkgdir, sub_with_ext, pkgdir))
+        # exactOptionalPropertyTypes: Lucide icons pass className as string | undefined.
+        text = text.replace('ComponentType<{ className?: string }>', 'ComponentType<{ className?: string | undefined }>')
+        open(dst, 'w').write(text)
     else:
         shutil.copyfile(src, dst)
     print(f'{LEG}{mod_with_ext} -> {pkgdir}/src/{sub_with_ext}')

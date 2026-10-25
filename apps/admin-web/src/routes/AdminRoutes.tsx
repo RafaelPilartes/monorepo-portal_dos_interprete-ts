@@ -1,0 +1,150 @@
+import AdminInterpreterDetails from '@/pages/dashboard/admin/AdminInterpreterDetails'
+import AdminInterpreters from '@/pages/dashboard/admin/AdminInterpreters'
+import AdminInterpreterVerifications from '@/pages/dashboard/admin/AdminInterpreterVerifications'
+import AdminLayout from '@/pages/dashboard/admin/AdminLayout'
+import AdminOverview from '@/pages/dashboard/admin/AdminOverview'
+import AdminPayments from '@/pages/dashboard/admin/AdminPayments'
+import AdminReports from '@/pages/dashboard/admin/AdminReports'
+import AdminRequestDetails from '@/pages/dashboard/admin/AdminRequestDetails'
+import AdminRequesterDetails from '@/pages/dashboard/admin/AdminRequesterDetails'
+import AdminRequesters from '@/pages/dashboard/admin/AdminRequesters'
+import AdminRequests from '@/pages/dashboard/admin/AdminRequests'
+import AdminServices from '@/pages/dashboard/admin/AdminServices'
+import AdminSettings from '@/pages/dashboard/admin/AdminSettings'
+import AdminTeam from '@/pages/dashboard/admin/AdminTeam'
+import AdminAudit from '@/pages/dashboard/admin/AdminAudit'
+import AdminSuccessCases from '@/pages/dashboard/admin/AdminSuccessCases'
+import AdminTestimonials from '@/pages/dashboard/admin/AdminTestimonials'
+import AdminVerificationHistory from '@/pages/dashboard/admin/AdminVerificationHistory'
+import AdminVerificationRequests from '@/pages/dashboard/admin/AdminVerificationRequests'
+import ModulePlaceholder from '@portal-dos-interpretes/ui/components/module-placeholder'
+import { Route } from 'react-router-dom'
+
+/** Admin routes at their new paths (architecture.md §3, admin-web; AD-005 for verifications). */
+const AdminRoutes = () => {
+  return (
+    <Route path="/" element={<AdminLayout />}>
+      <Route index element={<AdminOverview />} />
+      <Route path="interpreters" element={<AdminInterpreters />} />
+      <Route path="interpreters/:id" element={<AdminInterpreterDetails />} />
+      <Route
+        path="verifications"
+        element={<AdminInterpreterVerifications />}
+      />
+      <Route path="requesters" element={<AdminRequesters />} />
+      <Route path="requesters/:id" element={<AdminRequesterDetails />} />
+      <Route path="requests" element={<AdminRequests />} />
+      <Route path="requests/:id" element={<AdminRequestDetails />} />
+      <Route path="content/testimonials" element={<AdminTestimonials />} />
+      <Route path="content/success-cases" element={<AdminSuccessCases />} />
+      <Route path="reports" element={<AdminReports />} />
+      <Route path="payments" element={<AdminPayments />} />
+      <Route path="catalog/services" element={<AdminServices />} />
+      <Route path="settings/config" element={<AdminSettings />} />
+      <Route path="team" element={<AdminTeam />} />
+      <Route path="audit" element={<AdminAudit />} />
+      <Route
+        path="verifications/requests"
+        element={<AdminVerificationRequests />}
+      />
+      <Route
+        path="verifications/history"
+        element={<AdminVerificationHistory />}
+      />
+
+      {/* Admin Modules */}
+      <Route
+        path="community/opportunities"
+        element={
+          <ModulePlaceholder
+            title="Gestão de Oportunidades"
+            description="Gerir vagas e pedidos no Portal."
+          />
+        }
+      />
+      <Route
+        path="community/library"
+        element={
+          <ModulePlaceholder
+            title="Gestão da Biblioteca"
+            description="Adicionar e rever materiais da biblioteca."
+          />
+        }
+      />
+      <Route
+        path="community/feed"
+        element={
+          <ModulePlaceholder
+            title="Comunidade"
+            description="Moderação da área comunitária."
+          />
+        }
+      />
+      <Route
+        path="community/events"
+        element={
+          <ModulePlaceholder
+            title="Gestão de Eventos"
+            description="Adicionar e organizar eventos no portal."
+          />
+        }
+      />
+      <Route
+        path="community/training"
+        element={
+          <ModulePlaceholder
+            title="Gestão de Formação"
+            description="Administrar cursos e aprovações."
+          />
+        }
+      />
+      <Route
+        path="community/mentorship"
+        element={
+          <ModulePlaceholder
+            title="Gestão de Mentorias"
+            description="Gerir programas de tutoria."
+          />
+        }
+      />
+      <Route
+        path="community/forum"
+        element={
+          <ModulePlaceholder
+            title="Gestão do Fórum"
+            description="Moderação e aprovação de discussões."
+          />
+        }
+      />
+      <Route
+        path="community/library/legal"
+        element={
+          <ModulePlaceholder
+            title="Gestão Jurídica/Ética"
+            description="Administrar documentação e recursos de apoio."
+          />
+        }
+      />
+      <Route
+        path="community/partners"
+        element={
+          <ModulePlaceholder
+            title="Gestão de Parcerias"
+            description="Acompanhar e adicionar novas parcerias."
+          />
+        }
+      />
+      <Route
+        path="support/tickets"
+        element={
+          <ModulePlaceholder
+            title="Suporte e Ouvidoria"
+            description="Responder a bilhetes e queixas no helpdesk."
+          />
+        }
+      />
+    </Route>
+  )
+}
+
+export default AdminRoutes

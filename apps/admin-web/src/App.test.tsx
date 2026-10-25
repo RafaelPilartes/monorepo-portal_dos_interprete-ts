@@ -1,12 +1,46 @@
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
+import { AppProviders } from '@portal-dos-interpretes/features/app/AppProviders'
 import rootPackage from '../../../package.json'
-import { App } from './App'
+import { AdminAppRoutes, App } from './App'
+
+function renderAt(path: string) {
+  return render(
+    <AppProviders>
+      <MemoryRouter initialEntries={[path]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <AdminAppRoutes />
+      </MemoryRouter>
+    </AppProviders>,
+  )
+}
+
+describe('admin-web routes (new paths, architecture.md §3)', () => {
+  it('renders the overview at /', () => {
+    renderAt('/')
+    expect(screen.getAllByText('Dashboard Administrativo').length).toBeGreaterThan(0)
+  })
+
+  it('renders the team page with the preview team (AD-014)', async () => {
+    renderAt('/team')
+    expect(screen.getAllByText('Gestão de Equipa').length).toBeGreaterThan(0)
+    expect((await screen.findAllByText('Rafael Pilartes')).length).toBeGreaterThan(0)
+  })
+
+  it('no longer answers on the old /dashboard/admin prefix', () => {
+    renderAt('/dashboard/admin/team')
+    expect(screen.getByText('Página não encontrada')).toBeTruthy()
+  })
+
+  it('serves the login page from packages/auth', () => {
+    renderAt('/login')
+    expect(screen.getByText('Bem-vindo de volta')).toBeTruthy()
+  })
+})
 
 describe('admin-web App', () => {
-  it('renders the starting page with the monorepo version in the footer', () => {
+  it('shows the monorepo version in the footer', () => {
     render(<App />)
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Portal dos Intérpretes — painel da equipa a arrancar')
     expect(screen.getByTestId('app-footer').textContent).toContain(`v${rootPackage.version}`)
   })
 })

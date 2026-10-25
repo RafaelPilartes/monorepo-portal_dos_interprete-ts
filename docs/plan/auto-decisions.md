@@ -118,3 +118,12 @@
 - **Porquê:** os links ficam certos uma só vez; o estado intermédio dura do D1 ao D3 e está à vista no HANDOFF.
 - **Como se desfaz:** nada a desfazer depois do D3; o `returnTo` fecha-se no H2/H4.
 - **Marcas:** [RISCO] visibilidade (D-05): até ao H4 o regresso ao perfil depois do login não acontece.
+
+## AD-014 — `admin-web`: equipa com dados de pré-visualização, caminhos provisórios e layout partilhado
+- **Passo:** D2
+- **Contexto:** (1) `AdminTeam` é o único ecrã que lia dados reais, pela camada de dados antiga (`viewModels` → `UseCase` → `SupabaseDAO`), que não se migra (`architecture.md` §7) e chamava o Supabase fora de `packages/data/src/dao/` (regra `no-direct-data-access`); o projecto remoto também não se toca (`claude-code-rules.md` §1.1). (2) A arquitectura tem 8 rotas de comunidade para 10 placeholders antigos. (3) O `DashboardLayout` tinha "Meu Perfil" em `/dashboard/<papel>/perfil` e "Configurações" em `/home`, rotas que não existiam, e precisa do `react-router-dom` em `packages/ui`.
+- **Opções:** (1) A) migrar a camada antiga; B) substitutos locais com as mesmas assinaturas, dados fictícios de leitura e escritas recusadas com mensagem em português; C) esconder o ecrã. (2) A) fundir já; B) caminhos provisórios. (3) A) manter os links partidos; B) props `profileHref`/`settingsHref`, escondendo o item quando a app não tem a rota.
+- **Escolha:** (1) B — `apps/admin-web/src/viewModels/*.viewmodel.ts` e `team-preview-data.ts`; o ecrã nunca mostra um sucesso que não aconteceu (as escritas falham com "A gestão da equipa fica disponível quando a base de dados for ligada. Nada foi alterado."). O H1 substitui-os pela camada nova. (2) B — `modules/community` → `/community/feed`, `modules/benefits` → `/community/partners`, `modules/legal` → `/community/library/legal` (a arquitectura põe o apoio jurídico dentro da biblioteca, D-76), `modules/support` → `/support/tickets`; os restantes como na tabela. (3) B, com `react-router-dom` como dependência par de `packages/ui`.
+- **Porquê:** mover sem reescrever, sem tocar no remoto e sem falhas silenciosas.
+- **Como se desfaz:** H1 apaga os substitutos; os passos de comunidade (H16–H19) fixam as rotas finais.
+- **Marcas:** —

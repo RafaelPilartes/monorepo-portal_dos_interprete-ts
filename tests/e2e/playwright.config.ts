@@ -17,5 +17,11 @@ export default defineConfig({
       reuseExistingServer: true,
       timeout: 120_000,
     },
+    {
+      command: 'pnpm --filter @portal-dos-interpretes/admin-web exec vite --port 5173 --strictPort',
+      url: 'http://localhost:5173',
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
   ],
 })
