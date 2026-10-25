@@ -1,1 +1,1 @@
-packages/db/seed/0001-notify-kinds.sql:1
+packages/db/functions/35-notify-kinds.sql:1

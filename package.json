@@ -1,6 +1,6 @@
 {
   "name": "@portal-dos-interpretes/root",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "packageManager": "pnpm@10.28.0",
   "engines": {
@@ -20,8 +20,7 @@
     "e2e": "pnpm --filter @portal-dos-interpretes/e2e e2e",
     "db:reset": "bash packages/db/scripts/reset-local.sh",
     "db:types": "bash packages/db/scripts/gen-types.sh",
-    "db:status": "bash packages/db/scripts/migrate.sh --status && bash packages/db/scripts/migrate.sh --seed --status",
-    "db:test": "bash packages/db/scripts/run-tests.sh"
+    "db:status": "bash packages/db/scripts/migrate.sh --status"
   },
   "devDependencies": {
     "supabase": "2.122.0",

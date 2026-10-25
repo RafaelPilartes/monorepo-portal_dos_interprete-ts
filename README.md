@@ -140,6 +140,16 @@ pnpm e2e              # Playwright (instalar o browser uma vez:
                       # pnpm --filter @portal-dos-interpretes/e2e exec playwright install chromium)
 ```
 
+Base de dados local (Docker; precisa de 10 GB livres):
+
+```bash
+pnpm db:up            # arranca o Supabase local e aplica o que falta
+pnpm db:down          # pára e apaga contentores e volumes
+pnpm db:verify        # base limpa, seis fases, reaplicação, tipos e asserções
+pnpm db:types         # regenera packages/db-types com a base de pé
+pnpm db:status        # migrations aplicadas e por aplicar
+```
+
 Variáveis de ambiente: copiar `.env.example` para `.env` (nunca versionar o `.env`).
 
 ---

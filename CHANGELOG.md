@@ -2,6 +2,14 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.8.0 — 2026-10-25 — Passo F (base de dados local)
+
+- Base local em Docker pela CLI do Supabase: `pnpm db:up`, `db:down`, `db:verify`, `db:reset`, `db:types`, `db:status`.
+- Primeira migration: schemas por domínio, domínios partilhados, auditoria que não se altera nem apaga, avisos e fila de emails, com o catálogo de avisos gerado da spec.
+- Tudo nasce fechado: só a leitura dos próprios avisos e marcá-los como lidos ficam abertos à sessão.
+- `db:verify` levanta uma base limpa, reaplica e compara, confere os tipos e corre 22 asserções; um Ctrl+C a meio não deixa contentores.
+- Relatório: `docs/plan/step-reports/F.md`.
+
 ## 0.7.0 — 2026-10-25 — Passo E (pacotes partilhados)
 
 - Validações e catálogo de erros únicos (`core`), formatação de kwanzas e datas de Luanda (`i18n`), componentes base (`ui`), camada de dados (`data`) e sessão com guardas (`auth`).

@@ -4,10 +4,11 @@
 # and the SQL assertions. Temporary instance: it is deleted at the end, also on failure or Ctrl+C.
 source "$(dirname "$0")/lib.sh"
 
-cleanup() { pnpm exec supabase stop --no-backup >/dev/null 2>&1 || true; }
-trap cleanup EXIT INT TERM
+# claude-code-rules.md §5; cleanup_instance (lib.sh) also ignores a second Ctrl+C while it stops.
+cleanup() { cleanup_instance; }
+trap cleanup EXIT INT TERM HUP
 # An interrupted script must not carry on to the next step: clean up and stop here.
-trap 'cleanup; trap - EXIT; exit 130' INT TERM
+trap 'cleanup; trap - EXIT; exit 130' INT TERM HUP
 
 check_disk
 work="$(mktemp -d)"
@@ -37,6 +38,15 @@ if ! diff -u "$work/first.sql" "$work/second.sql" >&2; then
   die "reaplicar as fases mudou o catálogo (diferença acima): algum ficheiro não é reaplicável."
 fi
 bash "$scripts/migrate.sh" --status
+
+say "== 4b/6 uma migration aplicada que mudou é recusada"
+cp -r "$DB_ROOT/migrations" "$work/migrations"
+copies=("$work/migrations"/*.sql)
+echo "-- changed after being applied" >> "${copies[0]}"
+if DB_PHASE_DIR="$work/migrations" bash "$scripts/migrate.sh" 2>"$work/refusal.txt"; then
+  die "migrate.sh aceitou uma migration aplicada que mudou."
+fi
+grep -q "MUDOU" "$work/refusal.txt" || { cat "$work/refusal.txt" >&2; die "migrate.sh falhou, mas não pela razão certa (acima)."; }
 
 say "== 5/6 tipos gerados iguais aos do repositório"
 bash "$scripts/gen-types.sh" "$work/database.ts"

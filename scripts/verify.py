@@ -485,10 +485,11 @@ def check_migration_transaction(ctx: Context) -> list[Violation]:
 
 CREATE_TABLE = re.compile(r"\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([\w.\"]+)", re.I)
 ENABLE_RLS = re.compile(r"\bALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:ONLY\s+)?([\w.\"]+)\s+ENABLE\s+ROW\s+LEVEL\s+SECURITY", re.I)
+DISABLE_RLS = re.compile(r"\b(DISABLE\s+ROW\s+LEVEL\s+SECURITY|NO\s+FORCE\s+ROW\s+LEVEL\s+SECURITY)\b", re.I)
 
 
 def check_table_rls(ctx: Context) -> list[Violation]:
-    """Every table is created schema-qualified and has ENABLE ROW LEVEL SECURITY (data-model.md §0)."""
+    """Every table is created schema-qualified, has ENABLE ROW LEVEL SECURITY, and RLS is never turned off (data-model.md §0)."""
     files = [(path, mask_sql(path.read_text(encoding="utf-8"))) for path in sql_files(ctx.root)]
     enabled = {m.group(1).lower() for _, text in files for m in ENABLE_RLS.finditer(text)}
     violations = []
@@ -499,6 +500,8 @@ def check_table_rls(ctx: Context) -> list[Violation]:
                 violations.append(Violation(relative(ctx.root, path), line_of(text, match.start()), f"table {name} must be schema-qualified"))
             elif name not in enabled:
                 violations.append(Violation(relative(ctx.root, path), line_of(text, match.start()), f"{name} has no ENABLE ROW LEVEL SECURITY"))
+        for match in DISABLE_RLS.finditer(text):
+            violations.append(Violation(relative(ctx.root, path), line_of(text, match.start()), "row level security is never turned off"))
     return violations
 
 
@@ -507,20 +510,39 @@ DOLLAR_TAG = re.compile(r"\$(\w*)\$")
 
 
 def sql_functions(text: str) -> list[tuple[str, int, str, int, int]]:
-    """(name, offset, options, body_start, body_end) of each CREATE FUNCTION; options exclude the body."""
+    """(name, offset, options, body_start, body_end) of each CREATE FUNCTION; options exclude the body.
+
+    The body is the dollar-quoted or single-quoted string after AS, looked for only up to the next
+    CREATE, so one function never borrows the body of the next.
+    """
     found = []
-    for match in CREATE_FUNCTION.finditer(text):
-        opening = DOLLAR_TAG.search(text, match.end())
-        if not opening:
+    starts = [m for m in CREATE_FUNCTION.finditer(text)]
+    for index, match in enumerate(starts):
+        limit = starts[index + 1].start() if index + 1 < len(starts) else len(text)
+        as_body = re.compile(r"\bAS\s+(\$\w*\$|')", re.I).search(text, match.end(), limit)
+        if not as_body:
             continue
-        tag = opening.group(0)
-        closing = text.find(tag, opening.end())
-        if closing == -1:
-            continue
-        end = text.find(";", closing + len(tag))
+        opener = as_body.group(1)
+        body_start = as_body.end()
+        if opener == "'":
+            body_end = body_start
+            while body_end < len(text):
+                if text.startswith("''", body_end):
+                    body_end += 2
+                    continue
+                if text[body_end] == "'":
+                    break
+                body_end += 1
+            after = body_end + 1
+        else:
+            body_end = text.find(opener, body_start)
+            if body_end == -1:
+                continue
+            after = body_end + len(opener)
+        end = text.find(";", after)
         end = len(text) if end == -1 else end
-        options = text[match.start():opening.start()] + " " + text[closing + len(tag):end]
-        found.append((match.group(1).lower(), match.start(), options, opening.end(), closing))
+        options = text[match.start():as_body.start()] + " " + text[after:end]
+        found.append((match.group(1).lower(), match.start(), options, body_start, body_end))
     return found
 
 
@@ -599,13 +621,13 @@ def check_fk_index(ctx: Context) -> list[Violation]:
     return violations
 
 
-SQL_DOMAIN = re.compile(r"\bCREATE\s+DOMAIN\s+util\.(\w+)\s+AS\s+text\s+CHECK\s*\(\s*VALUE\s+~\s+'((?:[^']|'')*)'\s*\)", re.I)
+SQL_DOMAIN = re.compile(r"\bCREATE\s+DOMAIN\s+util\.(\w+)\s+AS\s+[\w.]+\s+CHECK\s*\(\s*VALUE\s+~\s+'((?:[^']|'')*)'\s*\)", re.I)
 CORE_PATTERN = re.compile(r"^export\s+const\s+(\w+)_PATTERN\s*=\s*/(.+)/\s*$", re.M)
-SHARED_PATTERNS = {"phone_e164": "PHONE_E164", "nif": "NIF", "iban_ao": "IBAN_AO"}
+SHARED_PATTERNS = {"phone_e164": "PHONE_E164", "nif": "NIF", "iban_ao": "IBAN_AO", "email": "EMAIL"}
 
 
 def check_domain_patterns(ctx: Context) -> list[Violation]:
-    """util.phone_e164, util.nif and util.iban_ao use the same expressions as packages/core (R-CFG-05)."""
+    """util.phone_e164, util.nif, util.iban_ao and util.email use the same expressions as packages/core (R-CFG-05)."""
     core_path = ctx.root / "packages" / "core" / "src" / "patterns.ts"
     core_text = core_path.read_text(encoding="utf-8") if core_path.is_file() else ""
     core = {m.group(1): m.group(2) for m in CORE_PATTERN.finditer(core_text)}
@@ -643,20 +665,78 @@ def check_notify_kinds(ctx: Context) -> list[Violation]:
     return [Violation(str(notify_kinds.TARGET), 1, "differs from the catalog; run python3 scripts/notify_kinds.py --write")]
 
 
-RULE_SCHEMAS = ("booking.", "billing.", "verification.", "community.")
-BARE_NOW = re.compile(r"(?<![\w.])(now\s*\(\s*\)|current_timestamp\b|transaction_timestamp\s*\(|statement_timestamp\s*\(|clock_timestamp\s*\()", re.I)
+# data-model.md §12 names booking, billing, verification and community; identity and support also
+# run time-based tasks (expire_org_invites, autoclose_resolved), so they follow the same rule.
+RULE_SCHEMAS = ("booking.", "billing.", "verification.", "community.", "identity.", "support.")
+CLOCK_CALL = re.compile(
+    r"([\w.]*?)\bnow\s*\("
+    r"|\b(current_timestamp|current_date|current_time|localtimestamp|localtime)\b"
+    r"|\b(transaction_timestamp|statement_timestamp|clock_timestamp|timeofday)\s*\(",
+    re.I,
+)
+CLOCK_LITERAL = re.compile(r"'(now|today|tomorrow|yesterday)'", re.I)
 
 
 def check_rule_clock(ctx: Context) -> list[Violation]:
-    """Rule functions read the time from util.now(), never now() (data-model.md §12)."""
+    """Rule functions read the time from util.now(), never from the server clock (data-model.md §12)."""
     violations = []
     for path in sql_files(ctx.root):
-        text = mask_sql(path.read_text(encoding="utf-8"))
+        text = strip_sql_comments(path.read_text(encoding="utf-8"))
         for name, _, _, body_start, body_end in sql_functions(text):
             if not name.startswith(RULE_SCHEMAS):
                 continue
-            for m in BARE_NOW.finditer(text, body_start, body_end):
-                violations.append(Violation(relative(ctx.root, path), line_of(text, m.start()), f"{name} reads the clock with {m.group(1).strip()}; use util.now()"))
+            body = text[body_start:body_end]
+            if text[body_start - 1] == "'":
+                body = body.replace("''", "'")  # a single-quoted body: its code, unescaped
+            first_line = line_of(text, body_start)
+            masked = mask_sql(body)  # calls inside the body's own strings are text, not clock reads
+            hits = [m for m in CLOCK_CALL.finditer(masked) if not (m.group(1) or "").lower() == "util."]
+            hits += list(CLOCK_LITERAL.finditer(body))
+            for m in hits:
+                line = first_line + body.count("\n", 0, m.start())
+                violations.append(Violation(relative(ctx.root, path), line, f"{name} reads the server clock ({m.group(0).strip()}); use util.now()"))
+    return violations
+
+
+SCHEMA_LIST_SOURCES = {
+    "packages/db/functions/10-util.sql": re.compile(r"project_schemas\(\)[\s\S]*?ARRAY\[([^\]]*)\]"),
+    "packages/db/scripts/lib.sh": re.compile(r'^OWN_SCHEMAS="([^"]*)"', re.M),
+}
+
+
+def _names(listing: str) -> set[str]:
+    return {name for name in re.split(r"[\s,'\"]+", listing) if name}
+
+
+def check_schema_lists(ctx: Context) -> list[Violation]:
+    """The project's schemas are written the same everywhere: migrations, util.project_schemas(),
+    lib.sh, and the exposed lists of lib.sh and supabase/config.toml (architecture.md §5)."""
+    created: set[str] = set()
+    for path in sql_files(ctx.root, "migrations"):
+        created |= {m.group(1).lower() for m in re.finditer(r"\bCREATE\s+SCHEMA\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)", strip_sql_comments(path.read_text(encoding="utf-8")), re.I)}
+    if not created:
+        return []
+    internal = {"util", "auth_helper"}
+    violations = []
+    for rel, pattern in SCHEMA_LIST_SOURCES.items():
+        path = ctx.root / rel
+        match = pattern.search(path.read_text(encoding="utf-8")) if path.is_file() else None
+        if not match:
+            violations.append(Violation(rel, 1, "the list of project schemas is missing"))
+        elif _names(match.group(1)) != created:
+            violations.append(Violation(rel, line_of(path.read_text(encoding="utf-8"), match.start()), f"schemas differ from the migrations: {sorted(_names(match.group(1)) ^ created)}"))
+    exposed_sources = {
+        "packages/db/scripts/lib.sh": re.compile(r'^EXPOSED_SCHEMAS="([^"]*)"', re.M),
+        "supabase/config.toml": re.compile(r"^schemas = \[([^\]]*)\]", re.M),
+    }
+    for rel, pattern in exposed_sources.items():
+        path = ctx.root / rel
+        match = pattern.search(path.read_text(encoding="utf-8")) if path.is_file() else None
+        exposed = _names(match.group(1)) - {"graphql_public"} if match else set()
+        if not match:
+            violations.append(Violation(rel, 1, "the list of exposed schemas is missing"))
+        elif exposed != created - internal:
+            violations.append(Violation(rel, line_of(path.read_text(encoding="utf-8"), match.start()), f"exposed schemas differ from the migrations minus util and auth_helper: {sorted(exposed ^ (created - internal))}"))
     return violations
 
 
@@ -676,6 +756,7 @@ CHECKS: dict[str, Callable[[Context], list[Violation]]] = {
     "domain-patterns": check_domain_patterns,
     "notify-kinds": check_notify_kinds,
     "rule-clock": check_rule_clock,
+    "schema-lists": check_schema_lists,
 }
 
 

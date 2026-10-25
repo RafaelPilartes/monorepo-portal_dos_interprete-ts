@@ -4,10 +4,11 @@
 # to work against, use pnpm db:down && pnpm db:up.
 source "$(dirname "$0")/lib.sh"
 
-cleanup() { pnpm exec supabase stop --no-backup >/dev/null 2>&1 || true; }
-trap cleanup EXIT INT TERM
+# claude-code-rules.md §5; cleanup_instance (lib.sh) also ignores a second Ctrl+C while it stops.
+cleanup() { cleanup_instance; }
+trap cleanup EXIT INT TERM HUP
 # An interrupted script must not carry on to the next step: clean up and stop here.
-trap 'cleanup; trap - EXIT; exit 130' INT TERM
+trap 'cleanup; trap - EXIT; exit 130' INT TERM HUP
 
 check_disk
 supabase_cli stop --no-backup >/dev/null 2>&1 || true

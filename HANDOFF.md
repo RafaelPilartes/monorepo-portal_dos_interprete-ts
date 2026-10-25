@@ -1,11 +1,11 @@
 # HANDOFF
-- Versão: v0.7.0 (E fechado em 2026-10-25)
-- Próximo passo: F — base de dados local (docs/plan/specs/foundation.md §F; plano em docs/plan/step-plans/F.md)
+- Versão: v0.8.0 (F fechado em 2026-10-25)
+- Próximo passo: G — API (docs/plan/specs/foundation.md §G; plano em docs/plan/step-plans/G.md)
 - Remoto: https://github.com/RafaelPilartes/monorepo-portal_dos_interprete-ts (trabalho em `dev`; `main` não se toca)
-- Estado: 177 testes unitários verdes; e2e 99/99; verify.py 8/8 (self-test 8/8); migrations 0; db:verify ainda não existe (passo F)
+- Estado: 175 testes unitários verdes; e2e 99/99 (v0.7.0, sem mudanças de ecrã depois); verify.py 16/16 (self-test 16/16); migrations 1; db:verify passa de raiz em ~70 s com 22 asserções
 - Em aberto neste momento: nada
-- Auto-decisões novas neste passo: AD-018 a AD-021
+- Auto-decisões novas neste passo: AD-022 a AD-026
 - Bloqueios: bundle do histórico antigo (AD-001); push de tags (correr scripts/release-tags.sh, AD-002)
-- Por confirmar com a Academia: fixos angolanos nos contactos (AD-020)
-- O que o Rafael pode ver no ecrã: `pnpm install && pnpm dev` → site 5170, solicitante 5171, intérprete 5172, equipa 5173 (sem login até ao H1/H2; ecrãs com dados fictícios).
-- Ambiente: arrancar o `dockerd` à mão se `docker info` falhar; `docker build` precisa do CA do proxy (cabeçalho de apps/api/Dockerfile)
+- Por confirmar com a Academia: fixos angolanos (AD-020); limites dos buckets sem spec (AD-022); `reset-local.sh` deixa a base apagada ou de pé (AD-025)
+- O que o Rafael pode ver no ecrã: `pnpm install && pnpm db:up` → Supabase local em http://127.0.0.1:54321, email em http://127.0.0.1:54324; `pnpm db:verify` prova tudo de raiz; `pnpm dev` → apps em 5170–5173 (ainda com dados fictícios).
+- Ambiente: arrancar o `dockerd` à mão se `docker info` falhar; o primeiro `db:up` de uma sessão pode precisar de várias tentativas (limite do Docker Hub); `pnpm db:down` no fim

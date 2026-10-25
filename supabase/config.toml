@@ -10,8 +10,10 @@ enabled = true
 port = 54321
 # Schemas to expose in your API. Tables, views and stored procedures in this schema will get API
 # endpoints. `public` and `graphql_public` schemas are included by default.
+# `public` is not exposed: the project creates nothing there (AD-024), and a table created there by
+# mistake must not reach the API.
 schemas = [
-  "public", "graphql_public",
+  "graphql_public",
   "identity", "catalog", "directory", "config", "booking", "billing",
   "verification", "community", "support", "notify", "audit", "analytics",
 ]
@@ -24,7 +26,8 @@ max_rows = 1000
 # `postgres` are reachable through the Data API roles (`anon`, `authenticated`, `service_role`)
 # without explicit GRANTs, matching the cloud default. Set to `false` to require explicit GRANTs
 # instead. Left unset, a fresh project falls back to `true`.
-# auto_expose_new_tables = true
+# Off: a new table reaches the API only through the grants in packages/db/grants/.
+auto_expose_new_tables = false
 
 [api.tls]
 # Enable HTTPS endpoints locally using a self-signed certificate.

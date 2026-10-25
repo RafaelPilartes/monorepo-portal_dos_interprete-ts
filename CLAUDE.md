@@ -14,7 +14,7 @@ Monorepo pnpm + Turborepo desde o passo C; os ecrãs da SPA antiga foram movidos
 
 - **Os ecrãs ainda mostram mocks.** Cada passo H liga os seus ecrãs à base nova e apaga os mocks que substitui. Até lá há avisos de sucesso sem nada por trás (AD-014, AD-016).
 - **Sem autenticação ligada** até ao H1 (equipa) e H2 (contas); as rotas não têm guardas até lá.
-- **Zero migrations** até ao passo F; a base nova constrói-se **só localmente**, por ficheiros em `packages/db/` (ADR-004 (schema recomeçado de raiz)). O projecto Supabase remoto antigo não se toca.
+- **Uma migration** (`0001-foundation`, passo F): a base nova constrói-se **só localmente**, por ficheiros em `packages/db/` (ADR-004 (schema recomeçado de raiz)), com `pnpm db:up` / `db:down` / `db:verify`. O projecto Supabase remoto antigo não se toca.
 - O inventário da SPA de partida (2026-10-15) continua em `docs/inventory/` (00–05) como referência histórica.
 
 ---

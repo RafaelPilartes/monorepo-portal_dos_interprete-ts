@@ -19,7 +19,8 @@ for arg in "$@"; do
 done
 
 instance_running || die "a base local não está a correr (pnpm db:up)."
-dir="$DB_ROOT/$phase"
+# DB_PHASE_DIR points at another copy of the directory; db:verify uses it to prove the refusal.
+dir="${DB_PHASE_DIR:-$DB_ROOT/$phase}"
 
 registry_exists="$(psql_value "SELECT to_regclass('util.applied_migrations') IS NOT NULL")"
 applied=""
@@ -77,12 +78,18 @@ fi
 
 for file in "${pending[@]}"; do
   name="${prefix}$(basename "$file")"
+  sha="$(file_sha256 "$file")"
+  record="INSERT INTO util.applied_migrations (name, sha256) VALUES ('$name', '$sha');"
   say "a aplicar $name"
-  # Migrations bring their own BEGIN/COMMIT; seed files run inside one transaction.
-  single=(); [ "$phase" = "seed" ] && single=(-1)
-  psql_quiet "${single[@]}" -f - < "$file" || die "$name falhou; nada dela ficou aplicado."
-  psql_db -c "INSERT INTO util.applied_migrations (name, sha256) VALUES ('$name', '$(file_sha256 "$file")')" \
-    || die "$name foi aplicada mas não ficou registada; regista-a à mão antes de continuar."
+  if [ "$phase" = "migrations" ]; then
+    # The record goes in just before the migration's own COMMIT: applied and recorded together.
+    commit_line="$(awk '!/^[[:space:]]*(--|$)/ { n = NR } END { print n }' "$file")"
+    { head -n "$((commit_line - 1))" "$file"; echo "$record"; echo "COMMIT;"; } \
+      | psql_quiet -f - || die "$name falhou; nada dela ficou aplicado."
+  else
+    # Seed files run inside one transaction, with their record.
+    { cat "$file"; echo; echo "$record"; } | psql_quiet -1 -f - || die "$name falhou; nada dele ficou aplicado."
+  fi
 done
 [ "${#pending[@]}" -eq 0 ] && say "nada por aplicar em $phase."
 exit 0

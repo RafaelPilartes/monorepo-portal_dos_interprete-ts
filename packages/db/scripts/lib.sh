@@ -5,7 +5,8 @@ set -euo pipefail
 
 DB_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "$DB_ROOT/../.." && pwd)"
-PROJECT_ID="portal-dos-interpretes"
+# One source for the project id: supabase/config.toml (the CLI names the containers after it).
+PROJECT_ID="$(sed -n 's/^project_id = "\(.*\)"$/\1/p' "$REPO_ROOT/supabase/config.toml")"
 DB_CONTAINER="supabase_db_${PROJECT_ID}"
 MIN_FREE_GB="${MIN_FREE_GB:-10}"
 # The schemas the project owns (architecture.md §5); types and catalog snapshots cover these.
@@ -55,23 +56,35 @@ start_instance() {
   die "a base local não arrancou ao fim de 5 tentativas."
 }
 
-# After the phases: PostgREST reloads its schema cache and every container reports healthy.
+# After the phases: PostgREST reloads its schema cache and every project container is running and,
+# when it has a health check, healthy. `docker ps -a` so a stopped container counts as a failure.
 wait_for_api() {
-  local waited=0 unhealthy
+  local waited=0 statuses bad
   psql_db -c "NOTIFY pgrst, 'reload schema'" >/dev/null
   while true; do
-    unhealthy="$(docker ps --filter "name=_${PROJECT_ID}" --format '{{.Names}} {{.Status}}' | grep -v '(healthy)' | grep '(' || true)"
-    [ -z "$unhealthy" ] && return 0
+    statuses="$(docker ps -a --filter "name=_${PROJECT_ID}" --format '{{.Names}} {{.Status}}')"
+    [ -n "$statuses" ] || die "não encontrei os contentores do projecto ${PROJECT_ID}."
+    bad="$(printf '%s\n' "$statuses" | grep -v ' Up .*(healthy)$' | grep -v ' Up [^(]*$' || true)"
+    [ -z "$bad" ] && return 0
     if [ "$waited" -eq 30 ]; then
       docker restart "supabase_rest_${PROJECT_ID}" >/dev/null
     fi
     if [ "$waited" -ge 120 ]; then
-      say "$unhealthy"
-      die "a base local arrancou mas há serviços que não ficaram saudáveis em 120 s (acima)."
+      say "$bad"
+      die "a base local arrancou mas há serviços parados ou sem saúde ao fim de 120 s (acima)."
     fi
     sleep 3
     waited=$((waited + 3))
   done
+}
+
+# The cleanup of the temporary instances (claude-code-rules.md §5). A second Ctrl+C, or the
+# terminal closing, while it runs must not cut the stop short: signals are ignored from here on.
+cleanup_instance() {
+  trap '' INT TERM HUP
+  pnpm exec supabase stop --no-backup >/dev/null 2>&1 || true
+  [ -n "${work:-}" ] && [ -d "$work" ] && rm -r -- "$work"
+  return 0
 }
 
 stop_instance() {
@@ -106,7 +119,11 @@ catalog_snapshot() {
   docker exec "$DB_CONTAINER" pg_dump -U postgres -d postgres --schema-only --no-owner "${args[@]}" \
     | grep -v '^-- Dumped \|^\\restrict\|^\\unrestrict'
   printf '\n-- cron jobs\n'
-  psql_db -At -c "SELECT jobname || ' | ' || schedule || ' | ' || command FROM cron.job ORDER BY jobname"
-  printf '\n-- storage buckets\n'
-  psql_db -At -c "SELECT id || ' | ' || public || ' | ' || coalesce(file_size_limit::text, '') || ' | ' || coalesce(array_to_string(allowed_mime_types, ','), '') FROM storage.buckets ORDER BY id"
+  psql_db -At -c "SELECT concat_ws(' | ', jobname, schedule, command, database, username, active) FROM cron.job ORDER BY jobname"
+  printf '\n-- storage: buckets, policies and privileges (bucket rules live outside the project schemas)\n'
+  psql_db -At -c "SELECT concat_ws(' | ', id, public, file_size_limit, array_to_string(allowed_mime_types, ',')) FROM storage.buckets ORDER BY id"
+  psql_db -At -c "SELECT concat_ws(' | ', schemaname, tablename, policyname, permissive, roles::text, cmd, qual, with_check) FROM pg_policies WHERE schemaname = 'storage' ORDER BY 1"
+  psql_db -At -c "SELECT concat_ws(' | ', c.relname, c.relacl::text) FROM pg_class AS c JOIN pg_namespace AS n ON n.oid = c.relnamespace WHERE n.nspname = 'storage' AND c.relkind = 'r' ORDER BY 1"
+  printf '\n-- rows per project table (a reapplicable file that inserts without a key duplicates rows)\n'
+  psql_db -At -c "SELECT format('%I.%I', n.nspname, c.relname) || ' ' || (xpath('/row/c/text()', query_to_xml(format('SELECT count(*) AS c FROM %I.%I', n.nspname, c.relname), false, true, '')))[1]::text FROM pg_class AS c JOIN pg_namespace AS n ON n.oid = c.relnamespace WHERE c.relkind IN ('r', 'p') AND n.nspname = ANY (util.project_schemas()) ORDER BY 1"
 }

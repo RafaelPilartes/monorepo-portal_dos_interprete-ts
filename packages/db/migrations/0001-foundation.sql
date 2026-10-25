@@ -43,7 +43,10 @@ CREATE DOMAIN util.phone_e164 AS text CHECK (VALUE ~ '^\+[1-9][0-9]{7,14}$');
 CREATE DOMAIN util.nif AS text CHECK (VALUE ~ '^[0-9A-Z]{9,14}$');
 CREATE DOMAIN util.iban_ao AS text CHECK (VALUE ~ '^AO06[0-9]{21}$');
 CREATE DOMAIN util.slug AS text CHECK (VALUE ~ '^[a-z0-9]+(-[a-z0-9]+)*$');
-GRANT USAGE ON DOMAIN util.phone_e164, util.nif, util.iban_ao, util.slug
+CREATE DOMAIN util.email AS extensions.citext CHECK (VALUE ~ '^[^\s@]+@[^\s@]+\.[^\s@]+$');
+-- A link inside the portal: one leading slash, never "//host" or "/\host" (which leave the site).
+CREATE DOMAIN util.relative_link AS text CHECK (VALUE ~ '^/([^/\\]|$)');
+GRANT USAGE ON DOMAIN util.phone_e164, util.nif, util.iban_ao, util.slug, util.email, util.relative_link
   TO anon, authenticated, service_role;
 
 -- Trigger functions -------------------------------------------------------------------------------
@@ -79,6 +82,15 @@ CREATE TABLE util.applied_migrations (
   marked_only boolean NOT NULL DEFAULT false
 );
 ALTER TABLE util.applied_migrations ENABLE ROW LEVEL SECURITY;
+
+-- The test clock (claude-code-rules.md §5): util.now() returns frozen_at while this table has a
+-- row. Only the owner writes it (no grants, RLS on), and tests insert it inside a transaction that
+-- is rolled back, so no session can move the clock of another.
+CREATE TABLE util.test_clock (
+  singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
+  frozen_at timestamptz NOT NULL
+);
+ALTER TABLE util.test_clock ENABLE ROW LEVEL SECURITY;
 
 -- One counter per prefix and year, used by util.next_code (PI-2026-000123).
 CREATE TABLE util.code_sequences (
@@ -133,7 +145,7 @@ CREATE TABLE notify.notifications (
   account_id uuid NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
   kind text NOT NULL REFERENCES notify.kinds (code),
   payload jsonb NOT NULL DEFAULT '{}' CHECK (jsonb_typeof(payload) = 'object'),
-  link text CHECK (link IS NULL OR link ~ '^/'),
+  link util.relative_link,
   read_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -149,7 +161,7 @@ CREATE TRIGGER notifications_set_updated_at BEFORE UPDATE ON notify.notification
 CREATE TABLE notify.email_outbox (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   account_id uuid REFERENCES auth.users (id) ON DELETE SET NULL,
-  to_email extensions.citext NOT NULL CHECK (to_email ~ '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$'),
+  to_email util.email NOT NULL,
   template text NOT NULL REFERENCES notify.kinds (code),
   payload jsonb NOT NULL DEFAULT '{}' CHECK (jsonb_typeof(payload) = 'object'),
   status text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'sending', 'sent', 'failed')),
