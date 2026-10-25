@@ -7,7 +7,7 @@ const SITE = process.env.SITE_URL ?? 'http://localhost:5170'
 const routes: SmokeRoute[] = [
   { path: '/', name: 'home', expectText: 'Acesso Universal.' },
   { path: '/services', name: 'services', expectText: 'Serviços de Interpretação' },
-  { path: '/how-it-works', name: 'how-it-works', expectText: 'Como Funciona' },
+  { path: '/how-it-works', name: 'how-it-works', expectText: 'Entenda o processo completo' },
   { path: '/impact', name: 'impact', expectText: 'Transformando Vidas' },
   { path: '/contact', name: 'contact', expectText: 'Entre em Contacto' },
   { path: '/for-requesters', name: 'for-requesters', expectText: 'Precisa de um' },
@@ -27,10 +27,8 @@ test('site /home redirects to /', async ({ page }) => {
   await expect(page).toHaveURL(`${SITE}/`)
 })
 
-test('site unknown path shows the Portuguese 404', async ({ page }) => {
-  await page.goto(`${SITE}/does-not-exist`)
-  await expect(page.getByText('Página não encontrada')).toBeVisible()
-  await page.screenshot({ path: '../../docs/plan/evidence/D1/not-found.jpg', type: 'jpeg', quality: 75 })
+test('site unknown path shows the Portuguese 404 without errors', async ({ page }) => {
+  await visitAndCapture(page, SITE, 'D1', { path: '/does-not-exist', name: 'not-found', expectText: 'Página não encontrada' })
 })
 
 test('site interpreter card leads to the requester login with returnTo', async ({ page }) => {

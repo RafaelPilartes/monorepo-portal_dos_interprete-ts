@@ -1,6 +1,6 @@
 {
   "name": "@portal-dos-interpretes/i18n",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "pt-AO texts, kwanza formatting, Luanda dates and times.",

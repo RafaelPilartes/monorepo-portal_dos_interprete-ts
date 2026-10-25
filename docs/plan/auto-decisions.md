@@ -83,3 +83,38 @@
 - **Porquê:** é a mudança mais pequena que dá HTML válido; o destino continua o mesmo (login do solicitante com `returnTo`, D-05). Perde-se só o clique no resto do cartão.
 - **Como se desfaz:** voltar a pôr o `<a>` à volta e tirar o link interior no modo compacto.
 - **Marcas:** —
+
+## AD-010 — `site-web` usa `packages/features`; endereços das apps em `packages/ui`
+- **Passo:** D1
+- **Contexto:** `architecture.md` §2 não lista `features` nas dependências do `site-web`, mas o directório público do site (D-05) usa o mesmo cartão de intérprete (`InterpreterCard`) que o `requester-web`, e o cartão tem domínio (não pode ir para `ui`). Os endereços das quatro apps (`appUrl`) também não cabem em nenhum pacote da regra: `core` não pode depender do Vite.
+- **Opções:** A) duplicar o cartão no site; B) permitir `site-web → features` e registá-lo na regra de `verify.py` (`package-dependencies`); C) pôr o cartão em `ui` com dados genéricos.
+- **Escolha:** B. `appUrl` fica em `packages/ui/src/lib/app-urls.ts` (configuração de navegação, sem domínio).
+- **Porquê:** uma só cópia do cartão; a excepção fica escrita e verificada, e qualquer outra dependência fora da regra falha o `verify.py`.
+- **Como se desfaz:** mover o cartão para o site e tirar a excepção de `ALLOWED_DEPENDENCIES`.
+- **Marcas:** —
+
+## AD-011 — O 404 regista um aviso, não um erro, na consola
+- **Passo:** D1
+- **Contexto:** o `NotFound` antigo fazia `console.error` a cada visita; o passo D exige rotas sem erros de consola, e o 404 é agora uma rota alcançável (`foundation.md` §D, item 4).
+- **Opções:** A) manter `console.error` e excluir o 404 da verificação; B) `console.warn`.
+- **Escolha:** B
+- **Porquê:** uma página inexistente não é um erro da app; a verificação de erros continua a valer para o 404.
+- **Como se desfaz:** voltar a `console.error`.
+- **Marcas:** —
+
+## AD-012 — Links das páginas de entrada corrigidos ao mudar de app
+- **Passo:** D1
+- **Contexto:** as páginas de entrada antigas apontavam para rotas inexistentes (`/home/register`, `/home/login`, `/portal-interpretes`) e para `/home` do site, que agora é outra app.
+- **Opções:** A) movê-las com os links partidos; B) `/register` e `/login` dentro da app; logótipo para o site por `appUrl('site')`.
+- **Escolha:** B (`foundation.md` §D, item 3: os links entre apps usam as variáveis `*_URL`). Testado em `packages/auth/src/pages/links.test.tsx`.
+- **Como se desfaz:** `git revert` das linhas.
+- **Marcas:** —
+
+## AD-013 — Entre o D1 e o D3, "Entrar", "Registar" e "Ver Perfil" do site levam a um ecrã provisório
+- **Passo:** D1 a D3; `returnTo` só no H2/H4
+- **Contexto:** o site já aponta para `requester-web` (`/login`, `/register`, `/login?returnTo=/interpreters/<slug>`), mas o `requester-web` só recebe as rotas no D3, e o login real (que lê `returnTo`) é do H2; o regresso ao perfil é critério do H4 (`MASTER-PLAN.md`).
+- **Opções:** A) manter os links internos antigos até ao D3; B) apontar já para o destino final e aceitar o ecrã provisório entretanto.
+- **Escolha:** B
+- **Porquê:** os links ficam certos uma só vez; o estado intermédio dura do D1 ao D3 e está à vista no HANDOFF.
+- **Como se desfaz:** nada a desfazer depois do D3; o `returnTo` fecha-se no H2/H4.
+- **Marcas:** [RISCO] visibilidade (D-05): até ao H4 o regresso ao perfil depois do login não acontece.

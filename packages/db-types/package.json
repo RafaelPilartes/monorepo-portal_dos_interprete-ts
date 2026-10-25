@@ -1,6 +1,6 @@
 {
   "name": "@portal-dos-interpretes/db-types",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Types generated from the applied database.",

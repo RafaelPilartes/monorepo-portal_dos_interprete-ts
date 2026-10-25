@@ -1,14 +1,19 @@
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import rootPackage from '../../../package.json'
 import { App, AppProviders, SiteRoutes } from './App'
+
+function LocationProbe() {
+  return <output data-testid="location">{useLocation().pathname}</output>
+}
 
 function renderAt(path: string) {
   return render(
     <AppProviders>
       <MemoryRouter initialEntries={[path]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <SiteRoutes />
+        <LocationProbe />
       </MemoryRouter>
     </AppProviders>,
   )
@@ -22,6 +27,7 @@ describe('site-web routes', () => {
 
   it('keeps old /home links working by redirecting to /', () => {
     renderAt('/home')
+    expect(screen.getByTestId('location').textContent).toBe('/')
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Acesso Universal.')
   })
 

@@ -10,7 +10,7 @@ export interface SmokeRoute {
   path: string
   /** File name of the screenshot (without extension). */
   name: string
-  /** Text that must be visible once the screen rendered. */
+  /** Text that must be visible inside the page's <main> (not in the header or footer). */
   expectText: string
 }
 
@@ -32,10 +32,19 @@ export async function visitAndCapture(page: Page, baseUrl: string, step: string,
     }
   })
 
+  // A failing request to the app's own server is a broken screen, not the VM's network.
+  page.on('response', (response) => {
+    if (response.url().startsWith(baseUrl) && response.status() >= 400) {
+      errors.push(`HTTP ${response.status()}: ${response.url()}`)
+    }
+  })
+
   const response = await page.goto(`${baseUrl}${route.path}`, { waitUntil: 'domcontentloaded' })
   expect(response?.status(), `HTTP status of ${route.path}`).toBe(200)
   await expect.poll(async () => (await page.locator('#root').innerText()).trim().length, { message: `blank screen at ${route.path}` }).toBeGreaterThan(0)
-  await expect(page.getByText(route.expectText, { exact: false }).first()).toBeVisible()
+  const main = page.locator('main')
+  const scope = (await main.count()) > 0 ? main.first() : page.locator('body')
+  await expect(scope.getByText(route.expectText, { exact: false }).first()).toBeVisible()
   await page.waitForTimeout(500)
 
   const dir = path.join(repoRoot, 'docs/plan/evidence', step)

@@ -6,3 +6,4 @@
 |---|---|---|---|---|---|
 | 2026-10-25 | A + B | v0.1.0 | sem testes (só documentação e higiene de Git); `git ls-files \| grep -E '(^\|/)\.env$'` vazio | sem revisão independente: nenhum código mudou (só fins de linha e documentação) | AD-001 a AD-006 |
 | 2026-10-25 | C | v0.2.0 | 17 testes em 14 pacotes; verify.py 5/5; self-test 5/5; docker build ok | 17 achados (14 confirmados): cache do Turborepo, buracos do verify.py, regra do Supabase no ESLint, hook pre-push; corrigidos (ver step-reports/C.md) | AD-007, AD-008 |
+| 2026-10-25 | D1 | v0.3.0 | 28 unitários em 14 pacotes; e2e 12/12; verify.py 6/6; self-test 6/6 | 12 achados (10 confirmados): dependência site→features sem registo, regra de dependências sem verificação, e2e com texto do cabeçalho, SEO perdido, falta de testes; corrigidos (step-reports/D1.md) | AD-009 a AD-013 |

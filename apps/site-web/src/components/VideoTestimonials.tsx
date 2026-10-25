@@ -24,7 +24,9 @@ export function VideoTestimonials({
   testimonials,
   className = ""
 }: VideoTestimonialsProps) {
-  const [activeVideo, setActiveVideo] = useState<Testimonial>(testimonials[0]!);
+  const [selectedVideo, setActiveVideo] = useState<Testimonial | undefined>(testimonials[0]);
+  // Falls back to the first testimonial when the list arrives after the first render.
+  const activeVideo = selectedVideo ?? testimonials[0];
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Extract video embed URL
@@ -55,7 +57,7 @@ export function VideoTestimonials({
     setIsPlaying(false);
   };
 
-  if (!testimonials.length) return null;
+  if (!testimonials.length || !activeVideo) return null;
 
   return (
     <section className={cn("section-padding bg-muted/30", className)}>

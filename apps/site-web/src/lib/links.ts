@@ -1,3 +1,4 @@
+import { interpreterProfilePath } from '@portal-dos-interpretes/features/routes'
 import { appUrl } from '@portal-dos-interpretes/ui/lib/app-urls'
 
 /** Registration and login live in requester-web (architecture.md §3). */
@@ -9,4 +10,4 @@ export const loginUrl = (): string => appUrl('requester', '/login')
  * requester login, which returns to the profile after signing in.
  */
 export const interpreterProfileLoginUrl = (slug: string): string =>
-  appUrl('requester', `/login?returnTo=${encodeURIComponent(`/interpreters/${slug}`)}`)
+  appUrl('requester', `/login?returnTo=${encodeURIComponent(interpreterProfilePath(slug))}`)

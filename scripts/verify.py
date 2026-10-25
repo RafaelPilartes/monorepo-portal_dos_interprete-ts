@@ -75,6 +75,20 @@ def blank(text: str) -> str:
     return re.sub(r"[^\n]", " ", text)
 
 
+def _regex_can_start(source: str, index: int) -> bool:
+    """A "/" starts a regex literal when it follows an operator, a bracket or a keyword."""
+    k = index - 1
+    while k >= 0 and source[k] in " \t\r\n":
+        k -= 1
+    if k < 0:
+        return True
+    # "<" and ">" are left out: in JSX they precede closing tags ("</span>").
+    if source[k] in "(,=:[!&|?{};+-*%~^":
+        return True
+    word = re.search(r"([A-Za-z_$][\w$]*)$", source[: k + 1])
+    return bool(word and word.group(1) in {"return", "typeof", "case", "do", "else", "in", "of", "void", "yield", "await"})
+
+
 def mask_source(source: str) -> tuple[str, str]:
     """Return (code, code_with_strings).
 
@@ -99,6 +113,25 @@ def mask_source(source: str) -> tuple[str, str]:
             end = n if end == -1 else end + 2
             code.append(blank(source[i:end]))
             keep.append(blank(source[i:end]))
+            i = end
+        elif char == "/" and _regex_can_start(source, i):
+            j = i + 1
+            in_class = False
+            while j < n and source[j] != "\n":
+                if source[j] == "\\":
+                    j += 2
+                    continue
+                if source[j] == "[":
+                    in_class = True
+                elif source[j] == "]":
+                    in_class = False
+                elif source[j] == "/" and not in_class:
+                    break
+                j += 1
+            end = min(j + 1, n)
+            literal = source[i:end]
+            code.append("/" + blank(literal[1:-1]) + (literal[-1] if len(literal) > 1 else ""))
+            keep.append(literal)
             i = end
         elif char in "'\"`":
             j = i + 1
@@ -269,12 +302,60 @@ def check_single_version(ctx: Context) -> list[Violation]:
     return violations
 
 
+# --- check: package-dependencies (since D1) ----------------------------------
+
+# architecture.md §2 "Regra de dependências"; config (tooling) is allowed everywhere.
+# site-web -> features is AD-010 (public directory components).
+ALLOWED_DEPENDENCIES: dict[str, set[str]] = {
+    "site-web": {"ui", "i18n", "core", "db-types", "data", "auth", "features"},
+    "requester-web": {"ui", "i18n", "core", "db-types", "data", "auth", "features"},
+    "interpreter-web": {"ui", "i18n", "core", "db-types", "data", "auth", "features"},
+    "admin-web": {"ui", "i18n", "core", "db-types", "data", "auth", "features"},
+    "api": {"core", "i18n", "db-types"},
+    "features": {"ui", "data", "i18n", "core"},
+    "data": {"db-types", "core"},
+    "auth": {"ui", "i18n", "db-types"},
+    "core": set(),
+    "ui": set(),
+    "i18n": set(),
+    "db": set(),
+    "db-types": set(),
+    "config": set(),
+    "e2e": set(),
+    "legacy-spa": set(),
+}
+
+
+def check_package_dependencies(ctx: Context) -> list[Violation]:
+    """Workspace packages depend only on what architecture.md §2 allows."""
+    violations = []
+    manifests = [*ctx.root.glob("apps/*/package.json"), *ctx.root.glob("packages/*/package.json"), *ctx.root.glob("tests/*/package.json")]
+    for manifest in sorted(manifests):
+        data = json.loads(manifest.read_text())
+        name = str(data.get("name", "")).removeprefix(f"{SCOPE_NAME}/")
+        allowed = ALLOWED_DEPENDENCIES.get(name)
+        rel = relative(ctx.root, manifest)
+        if allowed is None:
+            violations.append(Violation(rel, 1, f"package '{name}' has no entry in the dependency rule"))
+            continue
+        declared = {**data.get("dependencies", {}), **data.get("devDependencies", {}), **data.get("peerDependencies", {})}
+        for dependency in sorted(declared):
+            if not dependency.startswith(f"{SCOPE_NAME}/"):
+                continue
+            target = dependency.removeprefix(f"{SCOPE_NAME}/")
+            if target != "config" and target not in allowed:
+                line = next((i for i, l in enumerate(manifest.read_text().splitlines(), 1) if f'"{dependency}"' in l), 1)
+                violations.append(Violation(rel, line, f"'{name}' may not depend on '{target}' (architecture.md §2)"))
+    return violations
+
+
 CHECKS: dict[str, Callable[[Context], list[Violation]]] = {
     "no-direct-data-access": check_no_direct_data_access,
     "no-cross-app-import": check_no_cross_app_import,
     "no-versioned-env": check_no_versioned_env,
     "english-identifiers": check_english_identifiers,
     "single-version": check_single_version,
+    "package-dependencies": check_package_dependencies,
 }
 
 

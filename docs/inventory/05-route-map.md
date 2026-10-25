@@ -93,14 +93,14 @@ Nota: as páginas públicas do perfil do intérprete (`InterpreterProfile`, `Int
 | Componente | Usado por | Destino proposto |
 |---|---|---|
 | `src/components/AboutSection.tsx` | site | fica na app `site` |
-| `src/components/AnimatedSection.tsx` | site | fica na app `site` |
+| `src/components/AnimatedSection.tsx` | site (e as páginas de perfil que vão para `features`) | `packages/ui` (sem domínio) — corrigido no D1 |
 | `src/components/DecorativeBackground.tsx` | site | fica na app `site` |
 | `src/components/FloatingButtons.tsx` | site | fica na app `site` |
 | `src/components/InterpreterCard.tsx` | requester, site | `packages/features` (tem domínio) |
 | `src/components/InterpretersCarousel.tsx` | site | fica na app `site` |
 | `src/components/NavLink.tsx` | — | sem uso alcançável → não migra |
 | `src/components/PageBanner.tsx` | site | fica na app `site` |
-| `src/components/RequestServiceModal.tsx` | site | fica na app `site` |
+| `src/components/RequestServiceModal.tsx` | site (e as páginas de perfil que vão para `features`) | `packages/features` (tem domínio) — corrigido no D1 |
 | `src/components/ServiceDetailsModal.tsx` | site | fica na app `site` |
 | `src/components/VideoSection.tsx` | site | fica na app `site` |
 | `src/components/VideoTestimonials.tsx` | site | fica na app `site` |

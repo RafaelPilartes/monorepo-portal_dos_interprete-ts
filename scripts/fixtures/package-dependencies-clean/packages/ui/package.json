@@ -1,0 +1,4 @@
+{
+  "name": "@portal-dos-interpretes/ui",
+  "devDependencies": { "@portal-dos-interpretes/config": "workspace:*" }
+}

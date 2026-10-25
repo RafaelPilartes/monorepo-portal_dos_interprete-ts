@@ -1,6 +1,6 @@
 {
   "name": "@portal-dos-interpretes/features",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Domain screens shared by more than one app.",
@@ -8,7 +8,8 @@
     ".": "./src/index.ts",
     "./pages/*": "./src/pages/*.tsx",
     "./components/*": "./src/components/*.tsx",
-    "./mocks/*": "./src/mocks/*.ts"
+    "./mocks/*": "./src/mocks/*.ts",
+    "./routes": "./src/routes.ts"
   },
   "scripts": {
     "lint": "eslint .",

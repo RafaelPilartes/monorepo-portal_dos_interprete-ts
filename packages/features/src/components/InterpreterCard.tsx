@@ -1,3 +1,4 @@
+import { interpreterProfilePath } from '../routes'
 import { Link } from "react-router-dom";
 import { Button } from "@portal-dos-interpretes/ui/components/button";
 import { Badge } from "@portal-dos-interpretes/ui/components/badge";
@@ -123,7 +124,7 @@ export function InterpreterCard({ interpreter, compact = false, profileHref }: I
             {href ? (
             <a href={href}>Ver Perfil<ArrowRight className="h-3 w-3" /></a>
           ) : (
-            <Link to={`/interpreters/${interpreter.slug}`}>Ver Perfil<ArrowRight className="h-3 w-3" /></Link>
+            <Link to={interpreterProfilePath(interpreter.slug)}>Ver Perfil<ArrowRight className="h-3 w-3" /></Link>
           )}
           </Button>
         </div>
@@ -195,7 +196,7 @@ export function InterpreterCard({ interpreter, compact = false, profileHref }: I
           {href ? (
             <a href={href}>Ver Perfil Completo<ArrowRight className="h-4 w-4" /></a>
           ) : (
-            <Link to={`/interpreters/${interpreter.slug}`}>Ver Perfil Completo<ArrowRight className="h-4 w-4" /></Link>
+            <Link to={interpreterProfilePath(interpreter.slug)}>Ver Perfil Completo<ArrowRight className="h-4 w-4" /></Link>
           )}
         </Button>
       </div>

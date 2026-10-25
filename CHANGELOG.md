@@ -2,6 +2,13 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.3.0 — 2026-10-25 — Passo D1 (mover o `site-web`)
+
+- O site público passa para `apps/site-web`, igual ao de hoje (mocks incluídos); `/home` redirecciona para `/`; 404 em português.
+- Base partilhada em `packages/ui`; cartão e páginas de perfil em `packages/features`; páginas de entrada em `packages/auth`.
+- Verificação de rotas por Playwright (`pnpm e2e`); `verify.py` com 6 verificações.
+- Relatório: `docs/plan/step-reports/D1.md`.
+
 ## 0.2.0 — 2026-10-25 — Passo C (monorepo vazio a compilar)
 
 - pnpm + Turborepo; a SPA antiga passa intacta para `legacy/` (AD-008).
