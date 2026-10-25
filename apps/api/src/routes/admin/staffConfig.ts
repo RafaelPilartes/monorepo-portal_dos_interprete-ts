@@ -65,21 +65,10 @@ export function registerStaffConfigRoutes(server: FastifyInstance, deps: { db: D
   server.patch('/admin/staff/:accountId', superOnly, async (request) => {
     const { accountId } = accountParam.parse(request.params)
     const body = bodies.changeStaff.parse(request.body)
-    return deps.db.transaction(async (client) => {
-      const current = await client.query<{ level: string; active: boolean }>(
-        'SELECT level, active FROM identity.staff_members WHERE account_id = $1',
-        [accountId],
-      )
-      const row = current.rows[0]
-      if (!row) throw new ApiError('NOT_FOUND')
-      const result = await client.query('SELECT * FROM identity.set_staff_member($1, $2, $3, $4)', [
-        actor(request),
-        accountId,
-        body.level ?? row.level,
-        body.active ?? row.active,
-      ])
-      return result.rows[0]
-    }, context(request))
+    // A missing field keeps its value; SQL reads it under the same lock as the change.
+    return call(deps.db, request, 'SELECT * FROM identity.set_staff_member($1, $2, $3, $4)', [
+      actor(request), accountId, body.level ?? null, body.active ?? null,
+    ])
   })
 
   // Configuration versions (R-CFG-01, R-CFG-02)

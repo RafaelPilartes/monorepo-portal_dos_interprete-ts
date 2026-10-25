@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@portal-dos-interpretes/ui/components/input'
 import { Label } from '@portal-dos-interpretes/ui/components/label'
 import { PageHeader } from '@portal-dos-interpretes/ui/components/page-header'
-import { Switch } from '@portal-dos-interpretes/ui/components/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@portal-dos-interpretes/ui/components/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@portal-dos-interpretes/ui/components/table'
 import { Textarea } from '@portal-dos-interpretes/ui/components/textarea'
 import { errorDetails, errorMessage } from '@/components/errorText'
@@ -20,6 +20,10 @@ import { useConfigMutations, useConfigVersions, useStaffList } from '@/viewModel
 
 // /settings/config (staff-and-config.md, R-CFG-01..04): the version in force, read only; drafts
 // are edited and published with the list of differences; the history of versions.
+
+const UNSET = '__unset__'
+/** Server field names that differ from the form's (INVALID_IBAN reports "iban"). */
+const SERVER_FIELDS: Record<string, string> = { iban: 'academia_iban' }
 
 /** The history shows the most recent versions first; the rest on request. */
 const HISTORY_SIZE = 10
@@ -92,7 +96,7 @@ function DraftEditor({ draft, current, onClose }: { draft: ConfigVersionRow; cur
       return await updateDraft.mutateAsync({ id: draft.id, values, notes })
     } catch (error) {
       setSaveError(error)
-      setFieldErrors(errorDetails(error))
+      setFieldErrors(Object.fromEntries(Object.entries(errorDetails(error)).map(([key, message]) => [SERVER_FIELDS[key] ?? key, message])))
       return null
     }
   }
@@ -147,14 +151,18 @@ function DraftEditor({ draft, current, onClose }: { draft: ConfigVersionRow; cur
                         {field.unit ? ` (${field.unit})` : field.kind === 'percent' ? ' (%)' : field.kind === 'money' ? ' (Kz)' : ''}
                       </Label>
                       {field.kind === 'boolean' ? (
-                        <div className="flex items-center gap-2 pt-1">
-                          <Switch
-                            id={id}
-                            checked={inputs[field.field] === 'true'}
-                            onCheckedChange={(checked) => setInputs((current) => ({ ...current, [field.field]: String(checked) }))}
-                          />
-                          <span className="text-sm">{inputs[field.field] === 'true' ? 'Sim' : 'Não'}</span>
-                        </div>
+                        // Three states: an empty value is "Por definir", never a hidden "Não".
+                        <Select
+                          value={inputs[field.field] === '' ? UNSET : inputs[field.field]}
+                          onValueChange={(next) => setInputs((current) => ({ ...current, [field.field]: next === UNSET ? '' : next }))}
+                        >
+                          <SelectTrigger id={id}><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={UNSET}>Por definir</SelectItem>
+                            <SelectItem value="true">Sim</SelectItem>
+                            <SelectItem value="false">Não</SelectItem>
+                          </SelectContent>
+                        </Select>
                       ) : (
                         <Input
                           id={id}

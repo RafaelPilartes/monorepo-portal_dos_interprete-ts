@@ -28,6 +28,11 @@ export interface DatabaseErrorAnswer {
 
 // "<table>_<column>_check": Postgres's name for a column CHECK; the column is the form field.
 const COLUMN_CHECK = /^[a-z_]+?_((?:[a-z0-9]+_)*[a-z0-9]+)_check$/
+/** Unique constraints whose duplicate is a form error: the field and what the person reads. */
+export const UNIQUE_FIELDS: Readonly<Record<string, { field: string; message: string }>> = {
+  verification_document_types_code_key: { field: 'code', message: 'Já existe um tipo de documento com este código.' },
+}
+
 const DOMAIN_CODES: Readonly<Record<string, ErrorCode>> = {
   iban_ao_check: 'INVALID_IBAN',
   nif_check: 'INVALID_NIF',
@@ -37,6 +42,8 @@ const DOMAIN_CODES: Readonly<Record<string, ErrorCode>> = {
 /** Like codeForDatabaseError, and for a value the database refuses, the field it belongs to. */
 export function answerForDatabaseError(error: DatabaseErrorLike & { column?: string; table?: string }, fieldMessage: string): DatabaseErrorAnswer {
   const constraint = error.constraint ?? ''
+  const unique = error.code === '23505' ? UNIQUE_FIELDS[constraint] : undefined
+  if (unique) return { code: 'VALIDATION_FAILED', details: { [unique.field]: unique.message } }
   if (error.code === '23514' && DOMAIN_CODES[constraint]) return { code: DOMAIN_CODES[constraint] as ErrorCode }
   if (error.code === '23514' && error.table && constraint.startsWith(`${error.table}_`) && COLUMN_CHECK.test(constraint)) {
     const field = constraint.slice(error.table.length + 1, -'_check'.length)

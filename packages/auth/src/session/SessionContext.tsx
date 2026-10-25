@@ -45,7 +45,9 @@ export function SessionProvider({ source, children }: { source: SessionSource; c
         })
         .catch((error: unknown) => {
           console.error('[auth] session could not be read', error)
-          if (isCurrent()) setState({ status: 'error' })
+          // A failed refresh (e.g. the network, while renewing the token) keeps the session the
+          // screen already has; only a first read that fails is shown as an error.
+          if (isCurrent()) setState((current) => (current.status === 'authenticated' ? current : { status: 'error' }))
         })
     }
     refresh()
@@ -57,6 +59,11 @@ export function SessionProvider({ source, children }: { source: SessionSource; c
   }, [source])
 
   return <SessionContext.Provider value={state}>{children}</SessionContext.Provider>
+}
+
+/** The session, or null in an app without a SessionProvider (sign-in arrives in H2 there). */
+export function useOptionalSession(): SessionState | null {
+  return useContext(SessionContext)
 }
 
 export function useSession(): SessionState {

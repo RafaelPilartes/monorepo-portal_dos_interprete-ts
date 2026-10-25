@@ -2,6 +2,14 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.10.0 — 2026-10-25 — Passo H1 (equipa, configuração e auditoria)
+
+- A área da equipa (`admin-web`) tem login real; quem não é da equipa vê que a área é só para a equipa.
+- Equipa, configuração da plataforma por versões publicadas, documentos legais, tipos de documento da verificação e auditoria, sobre a base de dados.
+- Publicar a configuração mostra as diferenças, não edita versões em vigor e fica na auditoria com o valor antes e depois.
+- `pnpm db:bootstrap-admin <email>` cria o primeiro super-administrador na base local.
+- Relatório: `docs/plan/step-reports/H1.md`.
+
 ## 0.9.0 — 2026-10-25 — Passo G (API)
 
 - A API arranca só com a configuração completa e diz em português o que falta.

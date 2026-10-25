@@ -19,6 +19,7 @@ import AdminSuccessCases from '@/pages/dashboard/admin/AdminSuccessCases'
 import AdminTestimonials from '@/pages/dashboard/admin/AdminTestimonials'
 import AdminVerificationHistory from '@/pages/dashboard/admin/AdminVerificationHistory'
 import AdminVerificationRequests from '@/pages/dashboard/admin/AdminVerificationRequests'
+import { RequireStaffLevel } from '@portal-dos-interpretes/auth'
 import ModulePlaceholder from '@portal-dos-interpretes/ui/components/module-placeholder'
 import { Route } from 'react-router-dom'
 
@@ -42,10 +43,12 @@ const AdminRoutes = () => {
       <Route path="reports" element={<AdminReports />} />
       <Route path="payments" element={<AdminPayments />} />
       <Route path="catalog/services" element={<AdminServices />} />
-      <Route path="settings/config" element={<AdminSettings />} />
-      <Route path="settings/legal" element={<AdminLegal />} />
-      <Route path="settings/document-types" element={<AdminDocumentTypes />} />
-      <Route path="team" element={<AdminTeam />} />
+      {/* R-STF-01: configuration, legal documents and the team are super_admin's; document types
+          also the moderator's (super_admin passes every check). */}
+      <Route path="settings/config" element={<RequireStaffLevel levels={['super_admin']}><AdminSettings /></RequireStaffLevel>} />
+      <Route path="settings/legal" element={<RequireStaffLevel levels={['super_admin']}><AdminLegal /></RequireStaffLevel>} />
+      <Route path="settings/document-types" element={<RequireStaffLevel levels={['moderator']}><AdminDocumentTypes /></RequireStaffLevel>} />
+      <Route path="team" element={<RequireStaffLevel levels={['super_admin']}><AdminTeam /></RequireStaffLevel>} />
       <Route path="audit" element={<AdminAudit />} />
       <Route
         path="verifications/requests"

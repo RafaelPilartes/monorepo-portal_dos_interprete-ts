@@ -1,11 +1,11 @@
 # HANDOFF
-- Versão: v0.9.0 (G fechado em 2026-10-25)
-- Próximo passo: H1 — equipa, configuração versionada, auditoria, login do admin (docs/plan/specs/staff-and-config.md; plano em docs/plan/step-plans/H1.md)
+- Versão: v0.10.0 (H1 fechado em 2026-10-25)
+- Próximo passo: H2 — contas, papéis, troca de app, organizações e convites, suspensão, consentimento (docs/plan/specs/accounts-and-organizations.md, personal-data.md §R-PRIV-01/02)
 - Remoto: https://github.com/RafaelPilartes/monorepo-portal_dos_interprete-ts (trabalho em `dev`; `main` não se toca)
-- Estado: 216 testes unitários verdes; 13 testes da API contra a base; db:verify com 26 asserções SQL; e2e 99/99 (v0.7.0); verify.py 18/18 (self-test 18/18); migrations 1
+- Estado: 222 testes unitários; 22 testes da API contra a base; e2e 110/110; verify.py 19/19 (self-test 19/19); migrations 2
 - Em aberto neste momento: nada
-- Auto-decisões novas neste passo: AD-027, AD-028
+- Auto-decisões novas neste passo: AD-029
 - Bloqueios: bundle do histórico antigo (AD-001); push de tags (correr scripts/release-tags.sh, AD-002)
-- Por confirmar com a Academia: fixos angolanos (AD-020); limites dos buckets sem spec (AD-022); reset-local apaga ou deixa a base (AD-025); texto do email genérico dos avisos (AD-027)
-- O que o Rafael pode ver no ecrã: `pnpm db:up`, depois a API com as variáveis de .env.example (`pnpm --filter @portal-dos-interpretes/api dev`) → http://localhost:3000/health; email local em http://127.0.0.1:54324. As apps ainda com dados fictícios.
-- Ambiente: arrancar o `dockerd` à mão se `docker info` falhar; o primeiro `db:up` pode precisar de tentativas (Docker Hub); `pnpm db:down` no fim
+- Por confirmar com a Academia: fixos angolanos (AD-020); limites dos buckets (AD-022); reset-local (AD-025); email genérico (AD-027); textos legais, margem do gerido, taxa de verificação e dados bancários (PC-02, PC-03, PC-05, PC-06, já em decisions.md §10)
+- O que o Rafael pode ver no ecrã: `pnpm db:up && pnpm db:bootstrap-admin <o-teu-email>` (a palavra-passe local fica em docs/technical/TEST-CREDENTIALS.md, fora do git), API com as variáveis de .env.example e `pnpm dev` → http://localhost:5173/login: equipa, configuração (criar rascunho, publicar), documentos legais, tipos de documento, auditoria.
+- Ambiente: arrancar o `dockerd` à mão se `docker info` falhar; `pnpm db:down` no fim

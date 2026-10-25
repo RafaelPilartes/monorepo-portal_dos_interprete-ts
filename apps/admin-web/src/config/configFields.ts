@@ -118,7 +118,9 @@ export function parseFieldInput(definition: FieldDefinition, raw: string): { val
     case 'money': {
       if (!/^\d+$/.test(text)) return { error: 'Indica um número inteiro, zero ou maior.' }
       const value = Number(text)
-      return Number.isSafeInteger(value) ? { value } : { error: 'Número demasiado grande.' }
+      // integer columns hold up to 2 147 483 647; money is bigint (D-37).
+      const max = definition.kind === 'integer' ? 2_147_483_647 : Number.MAX_SAFE_INTEGER
+      return value <= max ? { value } : { error: 'Número demasiado grande.' }
     }
     case 'percent': {
       const value = Number(text.replace(',', '.'))
@@ -130,7 +132,7 @@ export function parseFieldInput(definition: FieldDefinition, raw: string): { val
     case 'text':
       return { value: text }
     case 'boolean':
-      return { value: text === 'true' }
+      return text === 'true' || text === 'false' ? { value: text === 'true' } : { error: 'Escolhe Sim ou Não.' }
   }
 }
 

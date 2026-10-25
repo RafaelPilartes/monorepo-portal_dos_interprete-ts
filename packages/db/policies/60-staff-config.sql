@@ -22,8 +22,8 @@ CREATE POLICY legal_documents_select_drafts ON identity.legal_documents
   FOR SELECT TO authenticated
   USING ((SELECT auth_helper.is_staff(ARRAY['super_admin'])));
 
--- platform_versions: the version in force for everyone (the site shows deadlines); every version
--- for the team.
+-- platform_versions: the version in force for everyone (the site shows deadlines); drafts and the
+-- history for super_admin, who alone manages the configuration (R-STF-01).
 DROP POLICY IF EXISTS platform_versions_select_published ON config.platform_versions;
 CREATE POLICY platform_versions_select_published ON config.platform_versions
   FOR SELECT TO anon, authenticated
@@ -31,7 +31,7 @@ CREATE POLICY platform_versions_select_published ON config.platform_versions
 DROP POLICY IF EXISTS platform_versions_select_staff ON config.platform_versions;
 CREATE POLICY platform_versions_select_staff ON config.platform_versions
   FOR SELECT TO authenticated
-  USING ((SELECT auth_helper.is_staff()));
+  USING ((SELECT auth_helper.is_staff(ARRAY['super_admin'])));
 
 -- verification_document_types: active types for any active account (interpreters see what to
 -- send); all of them for the team.

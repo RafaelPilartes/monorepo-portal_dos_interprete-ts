@@ -1,6 +1,6 @@
 export { createCookieStorage } from './session/cookieStorage'
 export type { CookieStorage, CookieStorageOptions } from './session/cookieStorage'
-export { SessionProvider, useSession } from './session/SessionContext'
+export { SessionProvider, useOptionalSession, useSession } from './session/SessionContext'
 export type { Account, Role, SessionSource, SessionState, StaffLevel } from './session/SessionContext'
 export { RequireRole, RequireSession, RequireStaffLevel } from './guards/guards'
 export { createPortalServices, PortalServicesProvider, usePortalServices, useRequiredPortalServices } from './services/PortalServices'

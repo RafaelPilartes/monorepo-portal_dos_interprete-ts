@@ -149,6 +149,12 @@ describe('legal documents and document types', () => {
       payload: { code, name: 'Carta de condução', description: '', required: false, active: true, sort: 9 },
     })
     expect(created.statusCode).toBe(201)
+    const duplicate = await app.inject({
+      method: 'POST', url: '/admin/document-types', headers: as(moderator),
+      payload: { code, name: 'Outra', description: '', required: false, active: true, sort: 10 },
+    })
+    expect(duplicate.statusCode).toBe(400)
+    expect(duplicate.json().error).toMatchObject({ code: 'VALIDATION_FAILED', details: { code: 'Já existe um tipo de documento com este código.' } })
     const removed = await app.inject({ method: 'DELETE', url: `/admin/document-types/${created.json().id}`, headers: as(moderator) })
     expect(removed.statusCode).toBe(204)
   })

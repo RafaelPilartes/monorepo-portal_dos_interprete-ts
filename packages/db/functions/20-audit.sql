@@ -41,7 +41,8 @@ AS $$
     WHEN p_entity_type IN ('document_type', 'language', 'specialty', 'service') THEN 'catalogs'
     WHEN p_entity_type IN ('verification_document', 'verification_request', 'badge') THEN 'verifications'
     WHEN p_entity_type IN ('payment_proof', 'payment_intent', 'refund', 'payout', 'receipt', 'export') THEN 'payments'
-    WHEN p_entity_type IN ('request', 'assignment', 'dispute', 'chat_attachment', 'thread') THEN 'requests'
+    WHEN p_entity_type IN ('chat_attachment', 'thread') THEN 'conversations'
+    WHEN p_entity_type IN ('request', 'assignment', 'dispute') THEN 'requests'
     WHEN p_entity_type IN ('account', 'organization') THEN 'accounts'
     WHEN p_entity_type IN ('content', 'review', 'report') THEN 'content'
     WHEN p_entity_type IN ('ticket', 'contact_message') THEN 'support'
@@ -57,9 +58,9 @@ CREATE OR REPLACE FUNCTION audit.level_sees(p_level text, p_area text) RETURNS b
 AS $$
   SELECT CASE p_level
     WHEN 'super_admin' THEN true
-    WHEN 'moderator' THEN p_area IN ('catalogs', 'verifications', 'requests', 'accounts', 'content', 'support')
+    WHEN 'moderator' THEN p_area IN ('catalogs', 'verifications', 'requests', 'conversations', 'accounts', 'content', 'support')
     WHEN 'finance' THEN p_area IN ('payments', 'accounts', 'requests', 'support')
-    WHEN 'request_operator' THEN p_area IN ('requests', 'accounts', 'support')
+    WHEN 'request_operator' THEN p_area IN ('requests', 'conversations', 'accounts', 'support')
     ELSE false
   END
 $$;

@@ -178,13 +178,13 @@ export default function AdminTeam() {
               <Label htmlFor="staff-email">Email da conta</Label>
               <Input id="staff-email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
               <p className="text-xs text-muted-foreground">A pessoa tem de ter uma conta registada no Portal.</p>
-              {errorDetails(addError).email && <p className="text-sm text-destructive">{errorDetails(addError).email}</p>}
+              {errorDetails(addError).email && <p role="alert" className="text-sm text-destructive">{errorDetails(addError).email}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="staff-level">Nível</Label>
               <LevelSelect id="staff-level" value={level} onChange={setLevel} />
             </div>
-            {addError !== null && <p role="alert" className="text-sm text-destructive">{errorMessage(addError)}</p>}
+            {addError !== null && !errorDetails(addError).email && <p role="alert" className="text-sm text-destructive">{errorMessage(addError)}</p>}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setAdding(false)}>{COMMON_TEXTS.cancel}</Button>
               <Button type="submit" disabled={add.isPending}>{add.isPending ? COMMON_TEXTS.loading : 'Adicionar'}</Button>

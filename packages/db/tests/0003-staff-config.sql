@@ -8,6 +8,8 @@ INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
   ('00000000-0000-4000-8000-0000000000a3', 'mo@example.ao', '{"full_name": "Mo Moderador"}'),
   ('00000000-0000-4000-8000-0000000000a4', 'fi@example.ao', '{}'),
   ('00000000-0000-4000-8000-0000000000a5', 'Pl@Example.ao', '{"full_name": "  "}');
+-- Only this file's team counts (a development database may hold others; all of this is rolled back).
+UPDATE identity.staff_members SET active = false WHERE active;
 INSERT INTO identity.staff_members (account_id, level) VALUES
   ('00000000-0000-4000-8000-0000000000a1', 'super_admin'),
   ('00000000-0000-4000-8000-0000000000a3', 'moderator'),
@@ -83,7 +85,7 @@ BEGIN
   END IF;
   v_v1 := config.current_version_id();
   v_v2 := config.create_draft('00000000-0000-4000-8000-0000000000a1');
-  PERFORM config.update_draft('00000000-0000-4000-8000-0000000000a1', v_v2.id, '{"invite_expiry_hours": 36, "verification_fee_aoa": null}');
+  PERFORM config.update_draft('00000000-0000-4000-8000-0000000000a1', v_v2.id, '{"invite_expiry_hours": 1234, "verification_fee_aoa": null}');
   PERFORM config.publish_version('00000000-0000-4000-8000-0000000000a1', v_v2.id, v_v1);
   IF (SELECT count(*) FROM config.platform_versions WHERE status = 'published') <> 1
      OR config.current_version_id() <> v_v2.id
@@ -96,8 +98,7 @@ BEGIN
   EXCEPTION WHEN raise_exception THEN v_code := SQLERRM; END;
   IF v_code IS DISTINCT FROM 'STATE_CHANGED' THEN RAISE EXCEPTION 'FAIL - a publish over a version no longer in force gives STATE_CHANGED (got %)', v_code; END IF;
   IF NOT EXISTS (SELECT 1 FROM audit.events WHERE action = 'config.published' AND entity_id = config.current_version_id()::text
-                   AND before ->> 'invite_expiry_hours' = '48' AND after ->> 'invite_expiry_hours' = '36'
-                   AND after ? 'verification_fee_aoa') THEN
+                   AND before ? 'invite_expiry_hours' AND after ->> 'invite_expiry_hours' = '1234') THEN
     RAISE EXCEPTION 'FAIL - publishing audits every changed field, before and after';
   END IF;
   RAISE NOTICE 'ok - one version in force, the previous retired, stale publishes refused, changes audited (R-CFG-01, R-CFG-02)';
@@ -130,13 +131,49 @@ END $$;
 DO $$
 DECLARE v_code text;
 BEGIN
-  IF config.require(config.current_version_id(), 'invite_expiry_hours') <> '36' THEN
+  IF config.require(config.current_version_id(), 'invite_expiry_hours') <> '1234' THEN
     RAISE EXCEPTION 'FAIL - config.require returns a value that is set';
   END IF;
   BEGIN PERFORM config.require(config.current_version_id(), 'verification_fee_aoa');
   EXCEPTION WHEN raise_exception THEN v_code := SQLERRM; END;
   IF v_code IS DISTINCT FROM 'CONFIG_VALUE_MISSING' THEN RAISE EXCEPTION 'FAIL - an empty value refuses with CONFIG_VALUE_MISSING (got %)', v_code; END IF;
   RAISE NOTICE 'ok - an empty configuration value blocks with CONFIG_VALUE_MISSING, never a default (R-CFG-04)';
+END $$;
+
+-- A super_admin may step down when another one exists; a suspended member can be deactivated.
+DO $$
+DECLARE v_row identity.staff_members;
+BEGIN
+  PERFORM identity.set_staff_member('00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000a2', 'super_admin', true);
+  v_row := identity.set_staff_member('00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000a1', 'moderator', true);
+  IF v_row.level <> 'moderator' OR NOT EXISTS (SELECT 1 FROM audit.events WHERE action = 'staff.changed'
+       AND entity_id = '00000000-0000-4000-8000-0000000000a1' AND actor_role = 'super_admin' AND after ->> 'level' = 'moderator') THEN
+    RAISE EXCEPTION 'FAIL - a super_admin steps down, audited as the super_admin who acted';
+  END IF;
+  PERFORM identity.set_staff_member('00000000-0000-4000-8000-0000000000a2', '00000000-0000-4000-8000-0000000000a1', 'super_admin', true);
+  UPDATE identity.profiles SET status = 'suspended', suspended_at = now() WHERE id = '00000000-0000-4000-8000-0000000000a4';
+  v_row := identity.set_staff_member('00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000a4', 'finance', false);
+  IF v_row.active THEN RAISE EXCEPTION 'FAIL - a suspended member can be deactivated'; END IF;
+  UPDATE identity.profiles SET status = 'active', suspended_at = NULL WHERE id = '00000000-0000-4000-8000-0000000000a4';
+  PERFORM identity.set_staff_member('00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000a4', 'finance', true);
+  RAISE NOTICE 'ok - a super_admin may step down when another exists; a suspended member can be deactivated';
+END $$;
+
+-- Verification document types: moderator and super_admin only (PC-07).
+DO $$
+DECLARE v_type config.verification_document_types; v_code text;
+BEGIN
+  v_type := config.save_document_type('00000000-0000-4000-8000-0000000000a3', NULL, 'driving_licence', 'Carta de condução', '', false, true, 9);
+  PERFORM config.save_document_type('00000000-0000-4000-8000-0000000000a3', v_type.id, 'driving_licence', 'Carta de condução', 'nova', true, true, 9);
+  BEGIN PERFORM config.delete_document_type('00000000-0000-4000-8000-0000000000a4', v_type.id);
+  EXCEPTION WHEN raise_exception THEN v_code := SQLERRM; END;
+  IF v_code IS DISTINCT FROM 'FORBIDDEN' THEN RAISE EXCEPTION 'FAIL - finance cannot change document types (got %)', v_code; END IF;
+  PERFORM config.delete_document_type('00000000-0000-4000-8000-0000000000a3', v_type.id);
+  IF EXISTS (SELECT 1 FROM config.verification_document_types WHERE code = 'driving_licence')
+     OR (SELECT count(*) FROM audit.events WHERE entity_type = 'document_type' AND entity_id = v_type.id::text) <> 3 THEN
+    RAISE EXCEPTION 'FAIL - a moderator creates, edits and removes a type, each audited';
+  END IF;
+  RAISE NOTICE 'ok - moderators manage verification document types, audited; finance cannot';
 END $$;
 
 -- Legal documents ------------------------------------------------------------------------------------
@@ -168,11 +205,13 @@ BEGIN
      OR EXISTS (SELECT 1 FROM audit.events_for_staff WHERE area IN ('configuration', 'team')) THEN
     RAISE EXCEPTION 'FAIL - a moderator sees catalog entries and no configuration or team entries';
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM config.platform_versions WHERE status = 'draft')
+  IF EXISTS (SELECT 1 FROM config.platform_versions WHERE status = 'draft')
      OR NOT EXISTS (SELECT 1 FROM identity.staff_directory WHERE email = 's1@example.ao') THEN
-    RAISE EXCEPTION 'FAIL - the team reads every version and the team list with emails';
+    RAISE EXCEPTION 'FAIL - a moderator reads the team list but not configuration drafts';
   END IF;
-  RAISE NOTICE 'ok - a moderator sees only the audit of its areas (R-AUD-03) and the team list';
+  BEGIN PERFORM ip FROM audit.events; RAISE EXCEPTION 'FAIL - the team never reads the IP of the audit';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+  RAISE NOTICE 'ok - a moderator sees only the audit of its areas (R-AUD-03), the team list, no drafts, no IPs';
 END $$;
 RESET ROLE;
 
@@ -184,6 +223,22 @@ BEGIN
     RAISE EXCEPTION 'FAIL - super_admin sees everything, with the actor name';
   END IF;
   RAISE NOTICE 'ok - super_admin sees every audit entry, with the actor name';
+END $$;
+RESET ROLE;
+
+-- finance and request_operator see their areas only (R-AUD-03).
+INSERT INTO audit.events (actor_role, action, entity_type, entity_id) VALUES
+  ('system', 'test.payment', 'payment_proof', 'p1'),
+  ('system', 'test.conversation', 'thread', 'c1');
+DO $$ BEGIN PERFORM set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000a4", "role": "authenticated"}', true); END $$;
+SET LOCAL ROLE authenticated;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM audit.events_for_staff WHERE entity_type = 'payment_proof')
+     OR EXISTS (SELECT 1 FROM audit.events_for_staff WHERE area IN ('conversations', 'catalogs', 'configuration', 'team')) THEN
+    RAISE EXCEPTION 'FAIL - finance sees payments and never conversations, catalogs, configuration or team';
+  END IF;
+  RAISE NOTICE 'ok - finance sees the payments audit and no conversation reads (D-58)';
 END $$;
 RESET ROLE;
 

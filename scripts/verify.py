@@ -823,7 +823,7 @@ def check_api_error_shape(ctx: Context) -> list[Violation]:
 
 # "(f(...)).*" runs f once per output column in Postgres: a write function would run several times
 # (two publishes, duplicate inserts). Use "SELECT * FROM f(...)".
-FUNCTION_STAR = re.compile(r"\(\s*[A-Za-z_][\w]*\.[A-Za-z_][\w]*\s*\([^()]*\)\s*\)\s*\.\s*\*")
+FUNCTION_STAR = re.compile(r"\(\s*(?:[A-Za-z_]\w*\.)?[A-Za-z_]\w*\s*\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)\s*\)\s*\.\s*\*")
 
 
 def check_no_function_star(ctx: Context) -> list[Violation]:

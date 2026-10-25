@@ -1,8 +1,11 @@
 -- Grants of step H1. Reads by RLS (api.md §16); every write through a function called by the API.
 
 GRANT SELECT ON identity.profiles, identity.staff_members, identity.legal_documents,
-  config.platform_versions, config.verification_document_types, audit.events,
+  config.platform_versions, config.verification_document_types,
   audit.events_for_staff, identity.staff_directory TO authenticated;
+-- The audit through the view's columns only: never the IP (staff-and-config.md, /audit).
+GRANT SELECT (id, occurred_at, actor_account, actor_role, action, entity_type, entity_id, before, after, request_id, note)
+  ON audit.events TO authenticated;
 GRANT SELECT ON identity.legal_documents, config.platform_versions TO anon;
 GRANT SELECT ON identity.profiles, identity.staff_members, identity.legal_documents,
   config.platform_versions, config.verification_document_types, audit.events_for_staff TO service_role;

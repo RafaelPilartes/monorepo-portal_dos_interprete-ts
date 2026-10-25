@@ -2,6 +2,8 @@
 // versions, for one environment. Idempotent: running it again changes nothing.
 //
 //   pnpm db:bootstrap-admin <email>
+//   pnpm db:bootstrap-admin <email> --reset-local-password   (a new local password for an account
+//                                                            that exists but whose password is lost)
 //
 // Local database only (the script refuses any other address). If the account does not exist it is
 // created in the local Auth with the email confirmed and a random password, written to
@@ -24,7 +26,8 @@ function fail(message) {
   process.exit(1)
 }
 
-const email = (process.argv[2] ?? '').trim().toLowerCase()
+const resetPassword = process.argv.includes('--reset-local-password')
+const email = (process.argv.slice(2).find((arg) => !arg.startsWith('--')) ?? '').trim().toLowerCase()
 if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail('indica o email do primeiro super_admin: pnpm db:bootstrap-admin <email>')
 
 let status
@@ -84,9 +87,11 @@ try {
     account = created.id
     writeCredentials(password)
     report.push('conta criada no Auth local; credenciais em docs/technical/TEST-CREDENTIALS.md')
+  } else if (readCredentials() !== email && !resetPassword) {
+    // Running again changes nothing (R-STF-03): an existing password is never replaced unasked.
+    report.push('conta já existia; a palavra-passe não foi mudada e não está em docs/technical/TEST-CREDENTIALS.md (os testes Playwright precisam dela: corre outra vez com --reset-local-password)')
   } else if (readCredentials() !== email) {
-    // The account exists but its password is unknown here: give it a new one (local only), so the
-    // Playwright tests can sign in.
+    // Asked for: a new local password, so the Playwright tests can sign in.
     const password = randomBytes(18).toString('base64url')
     await authAdmin(`users/${account}`, { method: 'PUT', body: JSON.stringify({ password, email_confirm: true }) })
     writeCredentials(password)
@@ -134,7 +139,7 @@ try {
 } catch (error) {
   await client.query('ROLLBACK').catch(() => undefined)
   console.error(error)
-  fail('o arranque falhou; nada foi alterado na base.')
+  fail(`o arranque falhou; nada foi alterado na base.${report.length > 0 ? ` Já feito antes da falha: ${report.join('; ')}.` : ''}`)
 } finally {
   await client.end()
 }

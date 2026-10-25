@@ -22,7 +22,8 @@ $$;
 -- Staff -------------------------------------------------------------------------------------------
 
 -- R-STF-01, R-STF-02: only super_admin changes the team; the last active super_admin can be
--- neither demoted nor deactivated. All active super_admin rows are locked first, so two changes
+-- neither demoted nor deactivated. A NULL level or active keeps the current value (PATCH), read
+-- under the same lock as the change. All active super_admin rows are locked first, so two changes
 -- at once cannot both remove "the other" super_admin.
 CREATE OR REPLACE FUNCTION identity.set_staff_member(p_actor uuid, p_account uuid, p_level text, p_active boolean)
 RETURNS identity.staff_members
@@ -33,13 +34,22 @@ DECLARE
   v_before identity.staff_members;
   v_after identity.staff_members;
   v_supers integer;
+  -- The actor's level before the change: a super_admin who steps down is still the one who acted.
+  v_actor_level text := identity.assert_staff(p_actor, ARRAY['super_admin']);
 BEGIN
-  PERFORM identity.assert_staff(p_actor, ARRAY['super_admin']);
-  IF NOT EXISTS (SELECT 1 FROM identity.profiles AS p WHERE p.id = p_account AND p.status = 'active') THEN
-    RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'ACCOUNT_NOT_FOUND';
-  END IF;
   PERFORM 1 FROM identity.staff_members AS s WHERE s.active AND s.level = 'super_admin' FOR UPDATE;
   SELECT * INTO v_before FROM identity.staff_members AS s WHERE s.account_id = p_account FOR UPDATE;
+  -- An active account is needed to join or to be reactivated; a suspended member can still be
+  -- deactivated or have the level changed.
+  IF v_before.account_id IS NULL AND p_level IS NULL THEN
+    RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'NOT_FOUND';
+  END IF;
+  p_level := coalesce(p_level, v_before.level);
+  p_active := coalesce(p_active, v_before.active, true);
+  IF (v_before.account_id IS NULL OR p_active)
+     AND NOT EXISTS (SELECT 1 FROM identity.profiles AS p WHERE p.id = p_account AND p.status = 'active') THEN
+    RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'ACCOUNT_NOT_FOUND';
+  END IF;
 
   IF v_before.account_id IS NOT NULL AND v_before.active AND v_before.level = 'super_admin'
      AND (NOT p_active OR p_level <> 'super_admin') THEN
@@ -54,7 +64,7 @@ BEGIN
   ON CONFLICT (account_id) DO UPDATE SET level = EXCLUDED.level, active = EXCLUDED.active
   RETURNING * INTO v_after;
 
-  PERFORM audit.record(p_actor, identity.assert_staff(p_actor, ARRAY['super_admin']),
+  PERFORM audit.record(p_actor, v_actor_level,
     CASE WHEN v_before.account_id IS NULL THEN 'staff.added' ELSE 'staff.changed' END,
     'staff_member', p_account::text,
     CASE WHEN v_before.account_id IS NULL THEN NULL ELSE to_jsonb(v_before) END, to_jsonb(v_after));
@@ -114,6 +124,9 @@ AS $$
 DECLARE
   v_value text;
 BEGIN
+  IF NOT EXISTS (SELECT 1 FROM config.platform_versions AS v WHERE v.id = p_version) THEN
+    RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'NOT_FOUND';
+  END IF;
   IF NOT p_field = ANY (config.value_columns()) THEN
     RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'INTERNAL_ERROR',
       DETAIL = format('%L is not a configuration value', p_field);

@@ -30,12 +30,12 @@ export function useStaffMutations() {
   return {
     add: useMutation({
       mutationFn: (input: { email: string; level: StaffLevel }) => api.post('/admin/staff', input),
-      onSuccess: refresh,
+      onSettled: refresh,
     }),
     change: useMutation({
       mutationFn: (input: { accountId: string; level?: StaffLevel | undefined; active?: boolean | undefined }) =>
         api.patch(`/admin/staff/${input.accountId}`, { level: input.level, active: input.active }),
-      onSuccess: refresh,
+      onSettled: refresh,
     }),
   }
 }
@@ -52,6 +52,7 @@ export function useConfigVersions() {
 export function useConfigMutations() {
   const { api } = useRequiredPortalServices()
   const queryClient = useQueryClient()
+  // Also after a failure: a STATE_CHANGED means the screen is behind, so it reloads what is in force.
   const refresh = () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.configVersions }),
@@ -60,17 +61,17 @@ export function useConfigMutations() {
   return {
     createDraft: useMutation({
       mutationFn: (fromVersionId?: string) => api.post<ConfigVersionRow>('/admin/config/versions', fromVersionId ? { from_version_id: fromVersionId } : {}),
-      onSuccess: refresh,
+      onSettled: refresh,
     }),
     updateDraft: useMutation({
       mutationFn: (input: { id: string; values: Record<string, number | boolean | string | null>; notes?: string }) =>
         api.patch<ConfigVersionRow>(`/admin/config/versions/${input.id}`, { values: input.values, notes: input.notes }),
-      onSuccess: refresh,
+      onSettled: refresh,
     }),
     publish: useMutation({
       mutationFn: (input: { id: string; expectedCurrentVersionId: string | null }) =>
         api.post<ConfigVersionRow>(`/admin/config/versions/${input.id}/publish`, { expected_current_version_id: input.expectedCurrentVersionId }),
-      onSuccess: refresh,
+      onSettled: refresh,
     }),
   }
 }
@@ -90,15 +91,15 @@ export function useLegalMutations() {
   return {
     create: useMutation({
       mutationFn: (input: { kind: 'terms' | 'privacy'; body: string }) => api.post<LegalDocumentRow>('/admin/legal-documents', input),
-      onSuccess: refresh,
+      onSettled: refresh,
     }),
     update: useMutation({
       mutationFn: (input: { id: string; body: string }) => api.patch<LegalDocumentRow>(`/admin/legal-documents/${input.id}`, { body: input.body }),
-      onSuccess: refresh,
+      onSettled: refresh,
     }),
     publish: useMutation({
       mutationFn: (id: string) => api.post<LegalDocumentRow>(`/admin/legal-documents/${id}/publish`),
-      onSuccess: refresh,
+      onSettled: refresh,
     }),
   }
 }
@@ -130,11 +131,11 @@ export function useDocumentTypeMutations() {
         const { id, ...body } = input
         return id ? api.patch<DocumentTypeRow>(`/admin/document-types/${id}`, body) : api.post<DocumentTypeRow>('/admin/document-types', body)
       },
-      onSuccess: refresh,
+      onSettled: refresh,
     }),
     remove: useMutation({
       mutationFn: (id: string) => api.delete<void>(`/admin/document-types/${id}`),
-      onSuccess: refresh,
+      onSettled: refresh,
     }),
   }
 }

@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { errorFor } from '@portal-dos-interpretes/core/errors'
 import { DataError } from '@portal-dos-interpretes/data'
 import { AUTH_TEXTS } from '@portal-dos-interpretes/i18n'
 import { usePortalServices } from '../services/PortalServices'
+import { useOptionalSession } from '../session/SessionContext'
 import { safeReturnTo } from '../services/returnTo'
 import { appUrl } from '@portal-dos-interpretes/ui/lib/app-urls'
 import { Button } from '@portal-dos-interpretes/ui/components/button'
@@ -27,6 +28,12 @@ export default function Login({ registerHref = '/register' }: LoginProps = {}) {
   const services = usePortalServices()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const session = useOptionalSession()
+
+  // Already signed in (or the session just arrived): go where the person was going.
+  useEffect(() => {
+    if (session?.status === 'authenticated') navigate(safeReturnTo(searchParams.get('returnTo')), { replace: true })
+  }, [session?.status, navigate, searchParams])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -43,13 +50,10 @@ export default function Login({ registerHref = '/register' }: LoginProps = {}) {
         setFormError(result.reason === 'invalid_credentials' ? AUTH_TEXTS.invalidCredentials : AUTH_TEXTS.emailNotConfirmed)
         return
       }
-      // A suspended account is refused here, with the catalog message (R-ACC-03).
+      // A suspended account is refused here, with the catalog message (R-ACC-03); the redirect
+      // happens when the session provider sees the new session (effect above).
       const account = await services.source.load()
-      if (!account) {
-        setFormError(errorFor('ACCOUNT_SUSPENDED').message)
-        return
-      }
-      navigate(safeReturnTo(searchParams.get('returnTo')), { replace: true })
+      if (!account) setFormError(errorFor('ACCOUNT_SUSPENDED').message)
     } catch (error) {
       console.error('[auth] sign-in failed', error)
       setFormError(error instanceof DataError ? error.message : errorFor('INTERNAL_ERROR').message)

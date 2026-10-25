@@ -33,6 +33,13 @@ function actorLabel(row: AuditRow): string {
   return row.actor_name ? `${row.actor_name} (${role})` : role ?? '—'
 }
 
+/** One line about the entry: the changed fields, or the note, or the entity. */
+function summary(row: AuditRow): string {
+  const after = row.after && typeof row.after === 'object' && !Array.isArray(row.after) ? Object.keys(row.after) : []
+  if (after.length > 0) return after.slice(0, 4).join(', ') + (after.length > 4 ? '…' : '')
+  return row.note ?? row.entity_id ?? '—'
+}
+
 /** End of the chosen day in Luanda (UTC+1), so a "to" date includes the whole day. */
 function endOfDay(date: string): string {
   return `${date}T23:59:59.999+01:00`
@@ -114,6 +121,7 @@ export default function AdminAudit() {
                     <TableHead>Quem</TableHead>
                     <TableHead>Acção</TableHead>
                     <TableHead>Entidade</TableHead>
+                    <TableHead>Resumo</TableHead>
                     <TableHead className="text-right">Detalhe</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -124,6 +132,7 @@ export default function AdminAudit() {
                       <TableCell>{actorLabel(row)}</TableCell>
                       <TableCell className="font-mono text-xs">{row.action}</TableCell>
                       <TableCell>{(row.entity_type && ENTITY_LABELS[row.entity_type]) ?? row.entity_type}</TableCell>
+                      <TableCell className="max-w-xs truncate text-sm text-muted-foreground">{summary(row)}</TableCell>
                       <TableCell className="text-right">
                         <Button variant="outline" size="sm" onClick={() => setSelected(row)}>Ver</Button>
                       </TableCell>
