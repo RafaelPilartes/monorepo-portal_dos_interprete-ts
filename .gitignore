@@ -1,0 +1,49 @@
+# ---------- Dependências e build ----------
+node_modules/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+
+# ---------- Ambiente ----------
+# Nada de segredos no repositório. A cópia cifrada vai em secrets/,
+# e o procedimento está em docs/infrastructure/SECRETS-BACKUP.md.
+.env
+.env.*
+!.env.example
+
+# ---------- Segredos cifrados ----------
+# Ignora tudo dentro de secrets/, e deixa passar só o que tem `.enc.`
+# no nome. Um ficheiro desencriptado por engano aqui dentro não chega
+# a ser proposto para commit — é esta linha que salva.
+secrets/*
+!secrets/*.enc.yaml
+!secrets/.sops.yaml
+
+# A chave privada age. NUNCA no repositório.
+*.age
+keys.txt
+
+# ---------- Supabase local ----------
+supabase/.branches/
+supabase/.temp/
+
+# ---------- Sistema e editores ----------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# ---------- Logs e temporários ----------
+*.log
+npm-debug.log*
+coverage/
+
+# ---------- Artefactos das skills do Superpowers (não fazem parte do produto) ----------
+docs/superpowers/
+.superpowers/
+
+# O import de scripts/column_grants.py pelo verify.py compila para aqui.
+__pycache__/
