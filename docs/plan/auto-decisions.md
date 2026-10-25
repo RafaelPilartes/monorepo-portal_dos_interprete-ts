@@ -47,3 +47,12 @@
 - **Porquê:** cumpre "mover, não reescrever" e não perde nenhum ecrã; a fusão exige comportamento novo, que é do H12.
 - **Como se desfaz:** no H12 as rotas provisórias dão lugar às finais.
 - **Marcas:** —
+
+## AD-006 — Portas de desenvolvimento das apps e da API
+- **Passo:** B (`.env.example`), C
+- **Contexto:** `architecture.md` dá os nomes `SITE_URL`, `REQUESTER_URL`, `INTERPRETER_URL`, `ADMIN_URL`, `API_URL`, sem portas.
+- **Opções:** A) portas por omissão do Vite (todas 5173, em conflito); B) portas fixas: site 5170, requester 5171, interpreter 5172, admin 5173, API 3000.
+- **Escolha:** B
+- **Porquê:** as quatro apps arrancam ao mesmo tempo (`pnpm dev`) e os links entre apps precisam de endereços estáveis; os cookies de `localhost` partilham-se entre portas (`architecture.md` §4).
+- **Como se desfaz:** mudar `.env.example` e a configuração de cada app.
+- **Marcas:** —
