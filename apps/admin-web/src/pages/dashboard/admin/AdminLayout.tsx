@@ -4,7 +4,7 @@ import {
   NavGroup
 } from '@portal-dos-interpretes/ui/components/dashboard-layout'
 import { LayoutDashboard, Users, UserCheck, FileText, MessageSquare, Award, BarChart3, CreditCard, Briefcase, Settings, Shield, CalendarDays, Scale, History } from 'lucide-react';
-const navigation: (NavItem | NavGroup)[] = [
+export const navigation: (NavItem | NavGroup)[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   {
     label: 'Utilizadores',

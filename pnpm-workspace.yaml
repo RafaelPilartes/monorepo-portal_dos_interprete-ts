@@ -1,7 +1,6 @@
 packages:
   - apps/*
   - packages/*
-  - legacy
   - tests/*
 
 # Dependencies allowed to run install scripts (pnpm 10 blocks them by default).

@@ -50,3 +50,9 @@ test('site "Ver Perfil" reaches the requester login with returnTo kept in the UR
   await expect(page).toHaveURL(/^http:\/\/localhost:5171\/login\?returnTo=%2Finterpreters%2F/)
   await expect(page.getByText('Bem-vindo de volta')).toBeVisible()
 })
+
+test('site "Para Intérpretes" registration goes to interpreter-web', async ({ page }) => {
+  await page.goto(`${SITE}/for-interpreters`)
+  const register = page.locator('main a[href$="/register"]').first()
+  await expect(register).toHaveAttribute('href', 'http://localhost:5172/register')
+})

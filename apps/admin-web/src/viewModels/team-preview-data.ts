@@ -3,7 +3,7 @@ import { AdminPermissionLevel } from '@/type/enum'
 
 /**
  * Fictitious team shown until step H1 connects the team screen to the new
- * database (AD-014). Same people as legacy/src/core/mocks/teamMocks.ts.
+ * database (AD-014). Same people as the old SPA's src/core/mocks/teamMocks.ts (in git up to v0.5.0).
  */
 export const PREVIEW_USERS: AdminProfileUser[] = [
   { id: 'u1', name: 'Rafael Pilartes', email: 'rafael.pilartes@gracemind.com' },

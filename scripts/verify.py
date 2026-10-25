@@ -49,7 +49,7 @@ class Context:
 
 
 def code_files(root: Path) -> list[Path]:
-    """Source files under apps/ and packages/ (legacy/ is out of scope, AD-008)."""
+    """Source files under apps/ and packages/."""
     found: list[Path] = []
     for top in ("apps", "packages"):
         base = root / top
@@ -322,7 +322,6 @@ ALLOWED_DEPENDENCIES: dict[str, set[str]] = {
     "db-types": set(),
     "config": set(),
     "e2e": set(),
-    "legacy-spa": set(),
 }
 
 

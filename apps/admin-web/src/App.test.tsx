@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { AppProviders } from '@portal-dos-interpretes/features/app/AppProviders'
 import rootPackage from '../../../package.json'
 import { AdminAppRoutes, App } from './App'
+import { navigation } from './pages/dashboard/admin/AdminLayout'
 
 function renderAt(path: string) {
   return render(
@@ -36,6 +37,15 @@ describe('admin-web routes (new paths, architecture.md §3)', () => {
     renderAt('/login')
     expect(screen.getByText('Bem-vindo de volta')).toBeTruthy()
     expect(screen.queryByText('Registe-se aqui')).toBeNull()
+  })
+})
+
+describe('admin-web sidebar', () => {
+  const hrefs = navigation.flatMap((entry) => ('items' in entry ? entry.items.map((item) => item.href) : [entry.href]))
+
+  it.each(hrefs)('sidebar link %s resolves to a screen, not the 404', (href) => {
+    renderAt(href)
+    expect(screen.queryByText('Página não encontrada')).toBeNull()
   })
 })
 

@@ -145,3 +145,11 @@
 - **Escolha:** ficam como estão; cada passo H que liga o ecrã à base substitui o comportamento (H2 entrada, H5 pedidos, H9 avaliações).
 - **Como se desfaz:** nos passos H indicados.
 - **Marcas:** [RISCO] avisos de sucesso falsos à vista enquanto os ecrãs usam mocks.
+
+## AD-017 — `interpreter-web`: áreas sem ecrã, estado de verificação desconhecido, registo de intérpretes, fim do `legacy/`
+- **Passo:** D4
+- **Contexto:** (1) a barra lateral do intérprete já ligava a sete áreas que o router antigo não tinha (biblioteca, comunidade, fórum, formação, mentorias, benefícios, suporte); na SPA antiga caíam no redireccionamento para `/home`. (2) `VerificationRequestDetailsModal` só conhecia os estados `pending`/`approved`/`rejected` e rebentava com os outros estados do próprio tipo (`active`, `expired`, `suspended`), o mesmo defeito do `StatusBadge` do inventário (item 7). (3) O "Registar" da página "Para Intérpretes" do site levava ao registo do solicitante. (4) O D4 apaga a SPA antiga (`foundation.md` §D, item 6), que vivia em `legacy/` (AD-008).
+- **Escolha:** (1) as sete áreas têm rota nos caminhos de `architecture.md` §3 com o `ModulePlaceholder` e o texto "Esta área ainda não está disponível. Chega num dos próximos passos do Portal." (sem fingir conteúdo); cada passo H da comunidade substitui o seu. (2) estado desconhecido mostra-se com o estilo neutro e o nome do estado, em vez de rebentar. (3) vai para `interpreter-web/register` (`appUrl('interpreter', '/register')`). (4) `legacy/` e `scripts/migrate/` apagados; ficam no git até à tag `v0.5.0`.
+- **Porquê:** nenhum link leva a um 404 nem a um ecrã partido; nenhuma área finge estar pronta.
+- **Como se desfaz:** (1)–(3) nos passos H; (4) `git checkout v0.5.0 -- legacy`.
+- **Marcas:** —

@@ -11,7 +11,7 @@ import {
   Settings,
 } from "lucide-react";
 
-const navigation: (NavItem | NavGroup)[] = [
+export const navigation: (NavItem | NavGroup)[] = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Nova Solicitação", href: "/requests/new", icon: Plus },
   {

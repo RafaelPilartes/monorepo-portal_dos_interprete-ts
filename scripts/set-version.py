@@ -16,7 +16,7 @@ def main() -> int:
         print("usage: set-version.py X.Y.Z", file=sys.stderr)
         return 2
     version = sys.argv[1]
-    manifests = [ROOT / "package.json", ROOT / "legacy" / "package.json"]
+    manifests = [ROOT / "package.json"]
     manifests += sorted(ROOT.glob("apps/*/package.json")) + sorted(ROOT.glob("packages/*/package.json")) + sorted(ROOT.glob("tests/*/package.json"))
     for manifest in manifests:
         if not manifest.is_file():

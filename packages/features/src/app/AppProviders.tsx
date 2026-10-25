@@ -7,7 +7,7 @@ import { TooltipProvider } from '@portal-dos-interpretes/ui/components/tooltip'
 
 const queryClient = new QueryClient()
 
-/** Theme, data cache, tooltips and toasts shared by every screen of every app (was legacy/src/App.tsx). */
+/** Theme, data cache, tooltips and toasts shared by every screen of every app (was the old SPA's src/App.tsx, in git up to v0.5.0). */
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>

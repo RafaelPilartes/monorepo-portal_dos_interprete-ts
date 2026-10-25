@@ -1,4 +1,4 @@
-import { registerUrl } from '@/lib/links'
+import { interpreterRegisterUrl } from '@/lib/links'
 import { Button } from '@portal-dos-interpretes/ui/components/button'
 import {
   HandHeart,
@@ -117,7 +117,7 @@ export default function ForInterpreters() {
                   className="bg-primary hover:bg-secondary/90"
                   asChild
                 >
-                  <a href={registerUrl()}>
+                  <a href={interpreterRegisterUrl()}>
                     Criar Perfil
                     <ArrowRight className="h-5 w-5" />
                   </a>
@@ -301,7 +301,7 @@ export default function ForInterpreters() {
             className="bg-secondary-foreground text-secondary hover:bg-secondary-foreground/90"
             asChild
           >
-            <a href={registerUrl()}>
+            <a href={interpreterRegisterUrl()}>
               Criar Perfil Profissional
               <ArrowRight className="h-5 w-5" />
             </a>

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { AppProviders } from '@portal-dos-interpretes/features/app/AppProviders'
 import rootPackage from '../../../package.json'
 import { App, RequesterAppRoutes } from './App'
+import { navigation } from './pages/dashboard/requester/RequesterLayout'
 
 function renderAt(path: string) {
   return render(
@@ -36,6 +37,15 @@ describe('requester-web routes (new paths, architecture.md §3)', () => {
   it('no longer answers on the old /dashboard/requester prefix', () => {
     renderAt('/dashboard/requester')
     expect(screen.getByText('Página não encontrada')).toBeTruthy()
+  })
+})
+
+describe('requester-web sidebar', () => {
+  const hrefs = navigation.flatMap((entry) => ('items' in entry ? entry.items.map((item) => item.href) : [entry.href]))
+
+  it.each(hrefs)('sidebar link %s resolves to a screen, not the 404', (href) => {
+    renderAt(href)
+    expect(screen.queryByText('Página não encontrada')).toBeNull()
   })
 })
 

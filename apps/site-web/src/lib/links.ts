@@ -3,6 +3,8 @@ import { appUrl } from '@portal-dos-interpretes/ui/lib/app-urls'
 
 /** Registration and login live in requester-web (architecture.md §3). */
 export const registerUrl = (): string => appUrl('requester', '/register')
+/** Interpreters register in their own app (architecture.md §3, interpreter-web). */
+export const interpreterRegisterUrl = (): string => appUrl('interpreter', '/register')
 export const loginUrl = (): string => appUrl('requester', '/login')
 
 /**
