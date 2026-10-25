@@ -128,3 +128,12 @@
 - **Como se desfaz:** H1 apaga os substitutos; os passos de comunidade (H16–H19) fixam as rotas finais.
 - **Notas da revisão do D2:** `AppProviders` (tema, cache de dados, dicas, avisos) vive em `packages/features` e não em `ui`, porque `ui` não pode depender do `@tanstack/react-query` (`architecture.md` §2). A página de login do `admin-web` esconde "Registe-se aqui" (`registerHref={null}`), porque a equipa não se regista. Ao tentar mudar a equipa aparecem dois avisos de erro (o do substituto e o da página), como na SPA antiga; nada mostra sucesso. Os avisos de sucesso sem efeito dos outros ecrãs do admin (por exemplo aprovar intérprete, suspender) vêm da SPA antiga e estão no inventário; desaparecem quando cada passo H liga o ecrã à base.
 - **Marcas:** —
+
+## AD-015 — No `requester-web`, as páginas de perfil do intérprete ficam dentro do layout do solicitante
+- **Passo:** D3
+- **Contexto:** na SPA antiga, `/interpreters/:slug` e as subpáginas viviam dentro do `PublicLayout` do site (cabeçalho público). Com D-05 saem do site; `architecture.md` §3 põe-nas no `requester-web` (e no `interpreter-web`), sem dizer com que moldura.
+- **Opções:** A) sem moldura nenhuma; B) dentro do `DashboardLayout` do solicitante, ao lado de `/interpreters` (a lista); C) copiar o cabeçalho público para o `requester-web`.
+- **Escolha:** B
+- **Porquê:** quem as vê já tem sessão; a barra lateral leva de volta à lista e ao resto da app; não há cópia do cabeçalho do site.
+- **Como se desfaz:** mudar as quatro rotas para fora do `<Route element={<RequesterLayout />}>`.
+- **Marcas:** —

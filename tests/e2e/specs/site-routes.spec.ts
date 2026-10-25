@@ -36,3 +36,17 @@ test('site interpreter card leads to the requester login with returnTo', async (
   const link = page.getByRole('link', { name: /Ver Perfil/ }).first()
   await expect(link).toHaveAttribute('href', /^http:\/\/localhost:5171\/login\?returnTo=%2Finterpreters%2F/)
 })
+
+test('site "Entrar" opens the requester login (D3 closes AD-013 for login and register)', async ({ page }) => {
+  await page.goto(`${SITE}/`)
+  await page.getByRole('link', { name: 'Entrar' }).first().click()
+  await expect(page).toHaveURL(/^http:\/\/localhost:5171\/login$/)
+  await expect(page.getByText('Bem-vindo de volta')).toBeVisible()
+})
+
+test('site "Ver Perfil" reaches the requester login with returnTo kept in the URL', async ({ page }) => {
+  await page.goto(`${SITE}/interpreters`)
+  await page.getByRole('link', { name: /Ver Perfil/ }).first().click()
+  await expect(page).toHaveURL(/^http:\/\/localhost:5171\/login\?returnTo=%2Finterpreters%2F/)
+  await expect(page.getByText('Bem-vindo de volta')).toBeVisible()
+})

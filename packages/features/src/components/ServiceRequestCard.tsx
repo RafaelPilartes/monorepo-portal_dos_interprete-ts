@@ -18,14 +18,14 @@ interface ServiceRequestCardProps {
   time: string;
   duration: string;
   modality: "presencial" | "online";
-  location?: string;
+  location?: string | undefined;
   status: ServiceStatus;
-  interpreterName?: string;
-  requesterName?: string;
+  interpreterName?: string | undefined;
+  requesterName?: string | undefined;
   detailsLink: string;
-  showActions?: boolean;
-  onAccept?: () => void;
-  onReject?: () => void;
+  showActions?: boolean | undefined;
+  onAccept?: (() => void) | undefined;
+  onReject?: (() => void) | undefined;
 }
 
 const statusConfig: Record<ServiceStatus, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
