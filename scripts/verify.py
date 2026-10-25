@@ -767,6 +767,14 @@ def check_bucket_limits(ctx: Context) -> list[Violation]:
         buckets[m.group(1)] = (int(size.group(1)) if size else None, set(re.findall(r'"([^"]+)"', types.group(1))) if types else set())
     lists = {m.group(1): set(re.findall(r"'([^']+)'", m.group(2))) for m in TYPE_LIST.finditer(rules)}
     violations = []
+    purposes_match = re.search(r"FILE_PURPOSES\s*=\s*\[([^\]]*)\]", rules)
+    purposes = re.findall(r"'([^']+)'", purposes_match.group(1)) if purposes_match else []
+    read = {m.group(1) for m in RULE_LINE.finditer(rules)}
+    if not purposes:
+        violations.append(Violation(FILE_RULES_PATH, 1, "FILE_PURPOSES is missing"))
+    for purpose in purposes:
+        if purpose not in read:
+            violations.append(Violation(FILE_RULES_PATH, 1, f"{purpose}: its rule is not written as `{purpose}: {{ bucket: '...', types: LIST, maxBytes: N * MB }}` on one line, so it cannot be checked"))
     for m in RULE_LINE.finditer(rules):
         purpose, bucket, list_name, megabytes = m.group(1), m.group(2), m.group(3), int(m.group(4))
         line = line_of(rules, m.start())
@@ -784,8 +792,13 @@ def check_bucket_limits(ctx: Context) -> list[Violation]:
 # --- check: api-error-shape (since G) -------------------------------------------------------------
 
 API_ERROR_OWNERS = {"apps/api/src/lib/sendApiError.ts", "apps/api/src/lib/dbErrors.ts"}
-# An object-literal key (after "{" or ","), not a parameter or property type annotation.
-ERROR_KEYS = re.compile(r"[{,]\s*(field|message)\s*:(?!\s*(?:string|number|boolean|unknown)\b)")
+# An object key named field or message in any form (plain, quoted, computed, shorthand), not a
+# parameter or property type annotation; and any reply that sends an `error` object by hand.
+ERROR_KEYS = re.compile(
+    r"[{,]\s*\[?\s*(['\"`]?)(field|message)\1\s*\]?\s*(?=[:,}])"
+    r"(?!\s*:\s*(?:string|number|boolean|unknown)\b(?!\s*\())"
+)
+HAND_SENT_ERROR = re.compile(r"\.send\(\s*\{\s*(['\"`]?)error\1\s*[:,}]")
 
 
 def check_api_error_shape(ctx: Context) -> list[Violation]:
@@ -796,9 +809,11 @@ def check_api_error_shape(ctx: Context) -> list[Violation]:
         rel = relative(ctx.root, path)
         if not rel.startswith("apps/api/src/") or rel in API_ERROR_OWNERS or ".test." in rel or "/testing/" in rel:
             continue
-        code, _ = mask_source(path.read_text())
-        for match in ERROR_KEYS.finditer(code):
-            violations.append(Violation(rel, line_of(code, match.start(1)), f"error {match.group(1)} written outside lib/sendApiError.ts and lib/dbErrors.ts"))
+        _, with_strings = mask_source(path.read_text())
+        for match in ERROR_KEYS.finditer(with_strings):
+            violations.append(Violation(rel, line_of(with_strings, match.start(2)), f"error {match.group(2)} written outside lib/sendApiError.ts and lib/dbErrors.ts"))
+        for match in HAND_SENT_ERROR.finditer(with_strings):
+            violations.append(Violation(rel, line_of(with_strings, match.start()), "an error body sent by hand; use sendApiError or throw ApiError"))
     return violations
 
 CHECKS: dict[str, Callable[[Context], list[Violation]]] = {

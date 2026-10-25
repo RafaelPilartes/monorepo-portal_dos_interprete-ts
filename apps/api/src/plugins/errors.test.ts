@@ -73,7 +73,7 @@ describe('codeForDatabaseError', () => {
   it('maps rule codes, permission, concurrency and nothing else', () => {
     expect(codeForDatabaseError({ code: 'P0001', message: 'TOPIC_LOCKED' })).toBe('TOPIC_LOCKED')
     expect(codeForDatabaseError({ code: 'P0001', message: 'not a catalog code' })).toBe('INTERNAL_ERROR')
-    expect(codeForDatabaseError({ code: '42501', message: 'permission denied' })).toBe('FORBIDDEN')
+    expect(codeForDatabaseError({ code: '42501', message: 'permission denied' })).toBe('INTERNAL_ERROR')
     expect(codeForDatabaseError({ code: '40001', message: 'could not serialize' })).toBe('STATE_CHANGED')
     expect(codeForDatabaseError({ code: '23505', message: 'duplicate', constraint: 'unknown_key' })).toBe('INTERNAL_ERROR')
   })

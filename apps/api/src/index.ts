@@ -24,7 +24,7 @@ const server = await buildServer({
   commit: resolveCommit(),
   logger: { level: env.LOG_LEVEL },
   migrationInBuild: resolveMigrationInBuild(env.MIGRATION_IN_BUILD),
-  trustProxyHops: env.TRUST_PROXY_HOPS,
+  trustProxyHops: env.TRUST_PROXY_HOPS ?? 0,
   appOrigins: env.APP_ORIGINS,
   db,
   verifyToken: createTokenVerifier({ supabaseUrl: env.SUPABASE_URL, jwtSecret: env.SUPABASE_JWT_SECRET }),
@@ -35,7 +35,7 @@ const stopWorker = env.EMAIL_WORKER_ENABLED
   ? startEmailWorker({
       db,
       log: server.log,
-      appUrl: env.APP_ORIGINS[0],
+      appUrls: { site: env.SITE_URL, requester: env.REQUESTER_URL, interpreter: env.INTERPRETER_URL, admin: env.ADMIN_URL },
       adapter: createSmtpAdapter({
         host: env.SMTP_HOST,
         port: env.SMTP_PORT,

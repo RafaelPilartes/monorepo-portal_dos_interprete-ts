@@ -62,7 +62,9 @@ BEGIN
   BEGIN PERFORM notify.claim_emails(1); EXCEPTION WHEN insufficient_privilege THEN v_refused := v_refused + 1; END;
   BEGIN PERFORM util.can_access_file(NULL, 'payment_proof', NULL, 'read'); EXCEPTION WHEN insufficient_privilege THEN v_refused := v_refused + 1; END;
   BEGIN PERFORM auth_helper.account_status(NULL); EXCEPTION WHEN insufficient_privilege THEN v_refused := v_refused + 1; END;
-  IF v_refused <> 3 THEN RAISE EXCEPTION 'FAIL - the session cannot run the API-only functions (% of 3)', v_refused; END IF;
+  BEGIN PERFORM notify.mark_email_sent(gen_random_uuid()); EXCEPTION WHEN insufficient_privilege THEN v_refused := v_refused + 1; END;
+  BEGIN PERFORM notify.mark_email_failed(gen_random_uuid(), 'x'); EXCEPTION WHEN insufficient_privilege THEN v_refused := v_refused + 1; END;
+  IF v_refused <> 5 THEN RAISE EXCEPTION 'FAIL - the session cannot run the API-only functions (% of 5)', v_refused; END IF;
   RAISE NOTICE 'ok - the session cannot run the email worker, file access or account status functions';
 END $$;
 RESET ROLE;

@@ -1,7 +1,7 @@
 import type { FastifyBaseLogger } from 'fastify'
 import type { Database } from '../lib/db.js'
 import type { EmailAdapter } from '../integrations/email/adapter.js'
-import { renderEmail, type EmailPayload } from '../integrations/email/templates.js'
+import { renderEmail, type AppUrls, type EmailPayload } from '../integrations/email/templates.js'
 
 // Email worker (api.md §15, R-NOT-03). SQL owns the state machine: notify.claim_emails reserves up
 // to 20 due rows with FOR UPDATE SKIP LOCKED (two workers never take the same row);
@@ -10,6 +10,9 @@ import { renderEmail, type EmailPayload } from '../integrations/email/templates.
 
 export const EMAIL_BATCH = 20
 export const EMAIL_INTERVAL_MS = 30_000
+/** A claim is a 15-minute lease (notify.claim_emails). Stop sending well before it ends, so a
+ * slow mail server never lets another worker re-claim and send the same email twice. */
+export const LEASE_SAFE_MS = 10 * 60_000
 
 interface ClaimedEmail {
   id: string
@@ -27,7 +30,9 @@ export async function runEmailBatch(deps: {
   db: Database
   adapter: EmailAdapter
   log: FastifyBaseLogger
-  appUrl?: string | undefined
+  appUrls?: AppUrls | undefined
+  /** Clock for the lease check; tests replace it. */
+  now?: () => number
 }): Promise<EmailRunResult> {
   const claimed = await deps.db.transaction(async (client) => {
     const result = await client.query<ClaimedEmail>(
@@ -37,19 +42,27 @@ export async function runEmailBatch(deps: {
     return result.rows
   })
   const outcome: EmailRunResult = { sent: 0, failed: 0 }
+  const claimedAt = (deps.now ?? Date.now)()
   for (const email of claimed) {
+    // Past the safe part of the lease, the rest stays `sending` and is re-claimed later.
+    if ((deps.now ?? Date.now)() - claimedAt > LEASE_SAFE_MS) break
     try {
-      const rendered = renderEmail(email.template, email.payload, deps.appUrl)
+      const rendered = renderEmail(email.template, email.payload, deps.appUrls)
       await deps.adapter.send({ to: email.to_email, ...rendered })
-      await deps.db.transaction((client) => client.query('SELECT notify.mark_email_sent($1)', [email.id]))
-      outcome.sent += 1
     } catch (error) {
       outcome.failed += 1
       deps.log.warn({ err: error, emailId: email.id }, 'email delivery failed')
       await deps.db
         .transaction((client) => client.query('SELECT notify.mark_email_failed($1, $2)', [email.id, String(error).slice(0, 500)]))
         .catch((markError: unknown) => deps.log.error({ err: markError, emailId: email.id }, 'could not record email failure'))
+      continue
     }
+    // Delivered: never record it as a failure. If recording the success fails, the lease ends and
+    // the email may go out once more; that is logged, never silent.
+    outcome.sent += 1
+    await deps.db
+      .transaction((client) => client.query('SELECT notify.mark_email_sent($1)', [email.id]))
+      .catch((markError: unknown) => deps.log.error({ err: markError, emailId: email.id }, 'email sent but not recorded as sent'))
   }
   return outcome
 }

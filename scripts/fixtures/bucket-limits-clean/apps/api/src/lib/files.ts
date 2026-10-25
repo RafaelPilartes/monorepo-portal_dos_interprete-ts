@@ -1,3 +1,4 @@
+export const FILE_PURPOSES = ['payment_proof', 'chat_attachment'] as const
 const PDF_JPG_PNG = ['application/pdf', 'image/jpeg', 'image/png'] as const
 const MB = 1024 * 1024
 

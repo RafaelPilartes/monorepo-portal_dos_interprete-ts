@@ -37,7 +37,8 @@ export function registerErrorHandling(server: FastifyInstance): void {
     if (error instanceof ZodError) return sendApiError(reply, 'VALIDATION_FAILED', undefined, validationDetails(error))
     if (isDatabaseError(error)) {
       const code = codeForDatabaseError(error)
-      if (code === 'INTERNAL_ERROR') request.log.error({ err: error }, 'database error')
+      // Rule refusals (P0001) are expected; every other database error is logged.
+      if (error.code !== 'P0001') request.log.error({ err: error, mappedTo: code }, 'database error')
       return sendApiError(reply, code)
     }
     const status = (error as FastifyError).statusCode

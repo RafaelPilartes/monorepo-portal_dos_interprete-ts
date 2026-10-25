@@ -2,6 +2,15 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.9.0 — 2026-10-25 — Passo G (API)
+
+- A API arranca só com a configuração completa e diz em português o que falta.
+- Sessão verificada pela chave do Auth, conta e nível de equipa vindos da base, rotas fechadas por omissão, auditoria com pedido e IP, limites de pedidos.
+- Fila de email: os avisos enfileirados chegam ao servidor de email local, com novas tentativas e sem envios duplicados.
+- Ficheiros privados por URL assinado, com quem pode decidido pela base.
+- `GET /health` diz se a base tem a migration que a API espera.
+- Relatório: `docs/plan/step-reports/G.md`.
+
 ## 0.8.0 — 2026-10-25 — Passo F (base de dados local)
 
 - Base local em Docker pela CLI do Supabase: `pnpm db:up`, `db:down`, `db:verify`, `db:reset`, `db:types`, `db:status`.

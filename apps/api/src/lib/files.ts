@@ -6,7 +6,7 @@ export const FILE_PURPOSES = ['payment_proof', 'verification_document', 'chat_at
 export type FilePurpose = (typeof FILE_PURPOSES)[number]
 
 const PDF_JPG_PNG = ['application/pdf', 'image/jpeg', 'image/png'] as const
-const MB = 1024 * 1024
+export const MB = 1024 * 1024
 
 export const FILE_RULES: Readonly<Record<FilePurpose, { bucket: string; types: readonly string[]; maxBytes: number }>> = {
   payment_proof: { bucket: 'payment-proofs', types: PDF_JPG_PNG, maxBytes: 10 * MB },
@@ -18,8 +18,7 @@ export const FILE_RULES: Readonly<Record<FilePurpose, { bucket: string; types: r
 /** Reasons shown inside FILE_INVALID ("Ficheiro inválido: {reason}."), in Portuguese. */
 export const FILE_INVALID_REASONS = {
   type: 'tem de ser PDF, JPG ou PNG',
-  size5: 'tem de ter até 5 MB',
-  size10: 'tem de ter até 10 MB',
+  size: (megabytes: number) => `tem de ter até ${megabytes} MB`,
   name: 'o nome do ficheiro não é válido',
 } as const
 

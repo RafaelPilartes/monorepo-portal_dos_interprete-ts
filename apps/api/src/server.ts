@@ -35,6 +35,8 @@ export async function buildServer(options: ServerOptions = {}): Promise<FastifyI
   })
   registerErrorHandling(server)
   await server.register(cors, { origin: options.appOrigins ?? false, credentials: true })
+  // Before any route, /health included: the plugin attaches its limit to routes as they register.
+  await registerRateLimit(server)
 
   registerHealthRoute(server, {
     commit: options.commit ?? 'unknown',
@@ -45,7 +47,6 @@ export async function buildServer(options: ServerOptions = {}): Promise<FastifyI
   if (options.db && options.verifyToken) {
     registerAuth(server, { db: options.db, verifyToken: options.verifyToken })
     registerAudit(server, { db: options.db })
-    await registerRateLimit(server)
     if (options.storage) registerFileRoutes(server, { db: options.db, storage: options.storage })
   }
   return server

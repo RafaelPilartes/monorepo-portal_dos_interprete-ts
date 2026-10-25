@@ -1,11 +1,11 @@
 # HANDOFF
-- Versão: v0.8.0 (F fechado em 2026-10-25)
-- Próximo passo: G — API (docs/plan/specs/foundation.md §G; plano em docs/plan/step-plans/G.md)
+- Versão: v0.9.0 (G fechado em 2026-10-25)
+- Próximo passo: H1 — equipa, configuração versionada, auditoria, login do admin (docs/plan/specs/staff-and-config.md; plano em docs/plan/step-plans/H1.md)
 - Remoto: https://github.com/RafaelPilartes/monorepo-portal_dos_interprete-ts (trabalho em `dev`; `main` não se toca)
-- Estado: 175 testes unitários verdes; e2e 99/99 (v0.7.0, sem mudanças de ecrã depois); verify.py 16/16 (self-test 16/16); migrations 1; db:verify passa de raiz em ~70 s com 22 asserções
+- Estado: 216 testes unitários verdes; 13 testes da API contra a base; db:verify com 26 asserções SQL; e2e 99/99 (v0.7.0); verify.py 18/18 (self-test 18/18); migrations 1
 - Em aberto neste momento: nada
-- Auto-decisões novas neste passo: AD-022 a AD-026
+- Auto-decisões novas neste passo: AD-027, AD-028
 - Bloqueios: bundle do histórico antigo (AD-001); push de tags (correr scripts/release-tags.sh, AD-002)
-- Por confirmar com a Academia: fixos angolanos (AD-020); limites dos buckets sem spec (AD-022); `reset-local.sh` deixa a base apagada ou de pé (AD-025)
-- O que o Rafael pode ver no ecrã: `pnpm install && pnpm db:up` → Supabase local em http://127.0.0.1:54321, email em http://127.0.0.1:54324; `pnpm db:verify` prova tudo de raiz; `pnpm dev` → apps em 5170–5173 (ainda com dados fictícios).
-- Ambiente: arrancar o `dockerd` à mão se `docker info` falhar; o primeiro `db:up` de uma sessão pode precisar de várias tentativas (limite do Docker Hub); `pnpm db:down` no fim
+- Por confirmar com a Academia: fixos angolanos (AD-020); limites dos buckets sem spec (AD-022); reset-local apaga ou deixa a base (AD-025); texto do email genérico dos avisos (AD-027)
+- O que o Rafael pode ver no ecrã: `pnpm db:up`, depois a API com as variáveis de .env.example (`pnpm --filter @portal-dos-interpretes/api dev`) → http://localhost:3000/health; email local em http://127.0.0.1:54324. As apps ainda com dados fictícios.
+- Ambiente: arrancar o `dockerd` à mão se `docker info` falhar; o primeiro `db:up` pode precisar de tentativas (Docker Hub); `pnpm db:down` no fim

@@ -17,5 +17,7 @@ export async function registerRateLimit(server: FastifyInstance): Promise<void> 
     // After the auth plugin's onRequest hook, so the account is known.
     hook: 'preHandler',
     keyGenerator: (request) => (request.account ? `account:${request.account.id}` : `ip:${request.ip}`),
+    // Requests refused by the auth plugin never reach this hook; they cost one local JWT check
+    // (AD-028).
   })
 }

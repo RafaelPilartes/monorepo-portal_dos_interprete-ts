@@ -10,7 +10,11 @@ export interface StorageClient {
   signDownload(bucket: string, objectPath: string, expiresInSeconds: number): Promise<string>
 }
 
-export class StorageError extends Error {}
+export class StorageError extends Error {
+  constructor(message: string, readonly status?: number) {
+    super(message)
+  }
+}
 
 function encodePath(objectPath: string): string {
   return objectPath.split('/').map(encodeURIComponent).join('/')
@@ -27,7 +31,7 @@ export function createStorageClient(options: { supabaseUrl: string; serviceRoleK
   async function post(path: string, body: unknown): Promise<Record<string, unknown>> {
     const response = await fetch(new URL(path, base), { method: 'POST', headers, body: JSON.stringify(body) })
     const text = await response.text()
-    if (!response.ok) throw new StorageError(`storage ${path} answered ${response.status}: ${text.slice(0, 300)}`)
+    if (!response.ok) throw new StorageError(`storage ${path} answered ${response.status}: ${text.slice(0, 300)}`, response.status)
     try {
       return JSON.parse(text) as Record<string, unknown>
     } catch {

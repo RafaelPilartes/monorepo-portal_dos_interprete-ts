@@ -13,7 +13,15 @@ export interface Database {
 }
 
 export function createDatabase(connectionString: string): Database {
-  const pool = new pg.Pool({ connectionString, max: 10, idleTimeoutMillis: 30_000 })
+  // Bounded waits: a flood or an unreachable database fails a request in seconds instead of
+  // hanging it, and no statement holds a connection forever.
+  const pool = new pg.Pool({
+    connectionString,
+    max: 10,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 5_000,
+    statement_timeout: 15_000,
+  })
   // An idle client that loses its connection must not crash the process; the next query reconnects.
   pool.on('error', () => undefined)
 

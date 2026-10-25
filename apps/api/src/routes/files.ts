@@ -2,9 +2,9 @@ import { randomUUID } from 'node:crypto'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { Database } from '../lib/db.js'
-import { FILE_INVALID_REASONS, FILE_PURPOSES, FILE_RULES, parseFilePath, safeFileName, type FilePurpose } from '../lib/files.js'
+import { FILE_INVALID_REASONS, FILE_PURPOSES, FILE_RULES, MB, parseFilePath, safeFileName, type FilePurpose } from '../lib/files.js'
 import { ApiError } from '../lib/sendApiError.js'
-import type { StorageClient } from '../integrations/storage.js'
+import { StorageError, type StorageClient } from '../integrations/storage.js'
 import { RATE_LIMITS } from '../plugins/rateLimit.js'
 
 // POST /uploads/sign and GET /files/url (api.md §6). Who may write or read is decided by SQL
@@ -42,7 +42,7 @@ export function registerFileRoutes(server: FastifyInstance, deps: { db: Database
     const rule = FILE_RULES[body.purpose]
     if (!rule.types.includes(body.content_type)) throw new ApiError('FILE_INVALID', { reason: FILE_INVALID_REASONS.type })
     if (body.size_bytes > rule.maxBytes) {
-      throw new ApiError('FILE_INVALID', { reason: rule.maxBytes > 5 * 1024 * 1024 ? FILE_INVALID_REASONS.size10 : FILE_INVALID_REASONS.size5 })
+      throw new ApiError('FILE_INVALID', { reason: FILE_INVALID_REASONS.size(rule.maxBytes / MB) })
     }
     const name = safeFileName(body.file_name)
     if (!name) throw new ApiError('FILE_INVALID', { reason: FILE_INVALID_REASONS.name })
@@ -67,7 +67,14 @@ export function registerFileRoutes(server: FastifyInstance, deps: { db: Database
     if (!parsed || !account || !(await canAccess(deps.db, account.id, parsed.purpose, parsed.subjectId, 'read'))) {
       throw new ApiError('FORBIDDEN')
     }
-    const signedUrl = await deps.storage.signDownload(FILE_RULES[parsed.purpose].bucket, path, DOWNLOAD_TTL_SECONDS)
+    let signedUrl: string
+    try {
+      signedUrl = await deps.storage.signDownload(FILE_RULES[parsed.purpose].bucket, path, DOWNLOAD_TTL_SECONDS)
+    } catch (error) {
+      // Storage answers 400/404 for a file that was never uploaded or was removed.
+      if (error instanceof StorageError && (error.status === 400 || error.status === 404)) throw new ApiError('NOT_FOUND')
+      throw error
+    }
     if (account.staffLevel && AUDITED_STAFF_READS.includes(parsed.purpose)) {
       await request.audit({ action: 'file.read', entityType: parsed.purpose, entityId: path })
     }

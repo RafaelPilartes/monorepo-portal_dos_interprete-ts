@@ -25,6 +25,10 @@ export function createSmtpAdapter(options: {
     host: options.host,
     port: options.port,
     secure: options.secure,
+    // Bounded, so one slow server cannot hold a batch past its lease (jobs/emailOutbox.ts).
+    connectionTimeout: 20_000,
+    greetingTimeout: 20_000,
+    socketTimeout: 30_000,
     ...(options.user && options.password ? { auth: { user: options.user, pass: options.password } } : {}),
   })
   return {

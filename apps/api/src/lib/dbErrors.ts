@@ -24,7 +24,9 @@ export function codeForDatabaseError(error: DatabaseErrorLike): ErrorCode {
   const message = (error.message ?? '').trim()
   if (error.code === 'P0001' && isErrorCode(message)) return message
   if (error.constraint && CONSTRAINT_CODES[error.constraint]) return CONSTRAINT_CODES[error.constraint] as ErrorCode
-  if (error.code === '42501') return 'FORBIDDEN'
+  // The API always runs as service_role: a permission error is a missing grant (a deploy bug),
+  // never the caller's permission, so it is an internal error and goes to the log.
+  if (error.code === '42501') return 'INTERNAL_ERROR'
   // Serialization failure and deadlock: someone else changed the same rows first.
   if (error.code === '40001' || error.code === '40P01') return 'STATE_CHANGED'
   return 'INTERNAL_ERROR'

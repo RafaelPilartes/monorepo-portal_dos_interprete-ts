@@ -19,7 +19,7 @@ export function registerHealthRoute(
   server: FastifyInstance,
   deps: { commit: string; migrationInBuild: string | null; db?: Database | undefined },
 ): void {
-  server.get('/health', { config: { access: 'public' } }, async (request, reply): Promise<HealthResponse> => {
+  server.get('/health', { config: { access: 'public', rateLimit: { max: 60, timeWindow: '1 minute' } } }, async (request, reply): Promise<HealthResponse> => {
     let inDatabase: string | null = null
     if (deps.db) {
       try {
