@@ -25,6 +25,7 @@ create_tag v0.4.0 ff501169798ac99dd860da041339543773bd9f5b "v0.4.0 - step D2, ad
 create_tag v0.5.0 ad16ab05f49bf8ebcd4eea5ee3c683bbd7c1785e "v0.5.0 - step D3, requester-web moved (2026-10-25)"
 create_tag v0.6.0 03035dc862e410abe4314b5da44d0ad49b73ceda "v0.6.0 - step D4, interpreter-web moved, old SPA deleted (2026-10-25)"
 create_tag v0.7.0 623ee1dc6bdf8307d957919daf9419d86111312e "v0.7.0 - step E, shared packages (2026-10-25)"
+create_tag v0.8.0 509075b9efd2de3bfa42313118ef6b744f6881b1 "v0.8.0 - step F, local database (2026-10-25)"
 # TAGS-END
 
 git push origin --tags
