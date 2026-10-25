@@ -21,6 +21,7 @@ create_tag() {
 create_tag v0.1.0 077134322982da714e6e5fd1e9c79d62974639e9 "v0.1.0 - steps A and B (2026-10-25)"
 create_tag v0.2.0 e847394cbd34fa032d3db9e01a5fec86655e1573 "v0.2.0 - step C, empty monorepo (2026-10-25)"
 create_tag v0.3.0 7c9988d3e4f44a11bcfd755332520b228dc40aaa "v0.3.0 - step D1, site-web moved (2026-10-25)"
+create_tag v0.4.0 ff501169798ac99dd860da041339543773bd9f5b "v0.4.0 - step D2, admin-web moved (2026-10-25)"
 # TAGS-END
 
 git push origin --tags
