@@ -118,6 +118,17 @@ Uma app por subpasso, por esta ordem: `site-web`, `admin-web`, `requester-web`, 
 
 **Feito quando:** `pnpm db:verify` passa de raiz; `reset-local.sh` reconstrói a base; parar o processo a meio com Ctrl+C deixa zero contentores do projecto (`docker ps -a --filter name=supabase`).
 
+### Melhorias da execução (passo F, 2026-10-25)
+
+- **Arranque em duas fases:** `supabase start --ignore-health-check`, as seis fases, e só depois a espera por todos os serviços saudáveis (o PostgREST precisa dos schemas que as migrations criam). Docker Hub com limite de pedidos: 5 tentativas com espera crescente.
+- **Sem cliente Postgres no anfitrião:** os scripts correm `psql` e `pg_dump` dentro do contentor da base.
+- **`db:verify` prova a sua própria comparação:** cria uma função de teste, confirma que a fotografia do catálogo muda, apaga-a, e só então compara a primeira aplicação com a reaplicação (inclui privilégios, políticas, tarefas `pg_cron` e buckets).
+- **`migrate.sh` valida antes de aplicar:** recusa se uma migration aplicada mudou ou desapareceu, e se qualquer migration por aplicar não abrir com `BEGIN;`/fechar com `COMMIT;` — antes de aplicar a primeira.
+- **Catálogo de avisos gerado:** `scripts/notify_kinds.py` gera o seed de `notify.kinds` de `notifications.md`; `verify.py` (`notify-kinds`) falha se divergirem.
+- **`verify.py` desde F:** `migration-transaction`, `table-rls`, `definer-search-path`, `fk-index`, `domain-patterns` (`R-CFG-05`), `notify-kinds` e `rule-clock` (`util.now()` nas funções de regras, `data-model.md` §12).
+- **Tipos formatados:** a saída da CLI passa pelo impressor do TypeScript, para o ficheiro commitado ser legível e as diferenças pequenas.
+- **Comandos novos:** `pnpm db:reset`, `db:types`, `db:status`, `db:test`.
+
 ## G — API
 
 **Objectivo:** a API pronta a receber rotas de funcionalidade.

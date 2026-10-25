@@ -13,13 +13,18 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "verify": "python3 scripts/verify.py",
-    "db:up": "node -e \"console.error('db:up arrives in step F (foundation.md \u00a7F)'); process.exit(1)\"",
-    "db:down": "node -e \"console.error('db:down arrives in step F (foundation.md \u00a7F)'); process.exit(1)\"",
-    "db:verify": "node -e \"console.error('db:verify arrives in step F (foundation.md \u00a7F)'); process.exit(1)\"",
+    "db:up": "bash packages/db/scripts/db-up.sh",
+    "db:down": "bash packages/db/scripts/db-down.sh",
+    "db:verify": "bash packages/db/scripts/verify.sh",
     "prepare": "git config core.hooksPath .githooks || echo 'warning: git hooks not activated (no git directory); run: git config core.hooksPath .githooks'",
-    "e2e": "pnpm --filter @portal-dos-interpretes/e2e e2e"
+    "e2e": "pnpm --filter @portal-dos-interpretes/e2e e2e",
+    "db:reset": "bash packages/db/scripts/reset-local.sh",
+    "db:types": "bash packages/db/scripts/gen-types.sh",
+    "db:status": "bash packages/db/scripts/migrate.sh --status && bash packages/db/scripts/migrate.sh --seed --status",
+    "db:test": "bash packages/db/scripts/run-tests.sh"
   },
   "devDependencies": {
+    "supabase": "2.122.0",
     "turbo": "^2.11.10",
     "typescript": "~5.9.3"
   }

@@ -1,0 +1,4 @@
+-- header
+BEGIN;
+CREATE SCHEMA a;
+COMMIT;

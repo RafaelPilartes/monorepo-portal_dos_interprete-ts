@@ -185,3 +185,26 @@
 - **Passo:** E
 - **Contexto e registo:** (1) o cliente Supabase vive em `packages/data/src/dao/supabase/client.ts` e não em `packages/data/src/config/` como desenha `architecture.md` §7, porque a regra 4 da mesma arquitectura só deixa falar com o Supabase dentro de `dao/` (verificado pelo ESLint e pelo `verify.py`). (2) `claude-code-rules.md` §9 diz que o catálogo de erros vive em `apps/api/src/lib/`; `architecture.md` §6 e `data-model.md` §0 dizem `@portal-dos-interpretes/core/errors`. Segue-se a arquitectura (um sítio só, partilhado pela API e pelas apps); `apps/api/src/lib/dbErrors.ts` (passo G) traduz da base para esses códigos. (3) As mensagens dos formulários vêm do catálogo (`catalogMessage`), para o formulário e a API dizerem o mesmo; os textos de ecrã comuns vivem em `packages/i18n`. (4) As mensagens com parâmetros (`{min}`, `{max}`, …) preenchem-se com `params` vindos da API, ou lendo-os de um texto que siga exactamente o modelo do catálogo; nunca aparecem chavetas no ecrã. (5) O `returnTo` ainda não é lido por ninguém; o H2 tem de o validar (só caminhos relativos ou as quatro origens das apps) para não abrir um redireccionamento para fora.
 - **Marcas:** [RISCO] visibilidade (item 5, redireccionamento aberto se mal feito no H2).
+
+## AD-022 — Limites dos buckets que as specs não fixam
+- **Passo:** F
+- **Contexto:** `architecture.md` §5 manda pôr os limites de cada bucket em `supabase/config.toml`. As specs fixam `payment-proofs` e `verification-docs` (PDF/JPG/PNG, 10 MB), `chat-attachments` (PDF/JPG/PNG, 5 MB), `feed-images` (JPG/PNG/WebP, 5 MB), `library` (PDF, 20 MB) e o tamanho da fotografia de perfil (2 MB, sem tipos). Nada dizem de `interpreter-media` e `site-content`.
+- **Opções:** A) sem limite; B) os mesmos limites das imagens do feed.
+- **Escolha:** B — `avatars` 2 MB e `interpreter-media`/`site-content` 5 MB, todos JPG/PNG/WebP. O limite global do Storage desce de 50 MB para 20 MB (o maior que as specs pedem).
+- **Porquê:** um bucket público sem limite aceita qualquer ficheiro; apertar agora e alargar depois não parte nada.
+- **Como se desfaz:** mudar os valores em `supabase/config.toml`. **Por confirmar** com a Academia.
+- **Marcas:** —
+
+## AD-023 — Os avisos guardam o código e os dados, não o texto
+- **Passo:** F
+- **Contexto:** `data-model.md` §10 dá a `notify.notifications` as colunas `title` e `body`; `notifications.md` (`R-NOT-01`) diz que os textos ficam em `packages/i18n` (portal) e nos modelos de email da API. As duas frases contradizem-se: com `title`/`body` na base, o texto teria de ser escrito em SQL, em português, longe do resto dos textos.
+- **Opções:** A) `title`/`body` escritos pelas funções SQL; B) a linha guarda `kind`, `payload jsonb` e `link`; o portal escreve o título e o corpo com `packages/i18n` a partir do código e dos dados.
+- **Escolha:** B (segue `R-NOT-01`, a regra; o modelo de dados é o "onde").
+- **Porquê:** um só sítio para os textos do ecrã (D-84) e nenhum português na base.
+- **Como se desfaz:** migration nova com `title`/`body` e preenchê-los em `notify.enqueue`.
+- **Marcas:** —
+
+## AD-024 — Notas da execução do passo F
+- **Passo:** F
+- **Registo:** (1) A migration `0001` cria a estrutura e só as duas funções de gatilho de que as tabelas precisam ao nascer (`util.set_updated_at`, `util.forbid_mutation`); as outras funções que a spec põe no esqueleto (`util.now`, `util.next_code`, `util.app_timezone`, `audit.record`, `notify.enqueue`, `notify.enqueue_email`, `auth_helper.*`) vivem em `packages/db/functions/`, a fase reaplicável de `architecture.md` §5, porque vão mudar (o `auth_helper.account_id()` muda no H1). (2) `auth_helper` tem por agora só `account_id()` (= `auth.uid()`) e `is_active()`; as verificações de perfil activo e termos aceites (`R-ACC-03`, `R-PRIV-02`) e os outros ajudantes precisam das tabelas do H1. (3) `audit.events.actor_account` não tem chave estrangeira: uma linha imutável não pode ser posta a `NULL` quando uma conta é apagada, e o rasto tem de sobreviver à conta. (4) O relógio dos testes é a definição de sessão `util.frozen_now`, que só um cliente SQL directo consegue fixar (o PostgREST não deixa os pedidos mudar definições). (5) O seed regista-se em `util.applied_migrations` com o prefixo `seed/`, e `migrate.sh --seed` recusa um seed aplicado que mudou, tal como as migrations. (6) `grants/00-reset.sql` revoga tudo (tabelas, colunas, sequências e funções) a `PUBLIC`, `anon`, `authenticated` e `service_role` nos schemas do projecto antes de cada aplicação, para os ficheiros de `grants/` serem a lista completa do que está concedido. (7) A CLI arranca com `--ignore-health-check`: o PostgREST só fica saudável depois de as migrations criarem os schemas expostos; os scripts esperam por todos os serviços saudáveis depois das fases. (8) `verify.sh` e `reset-local.sh` têm, além do `trap cleanup EXIT INT TERM` de `claude-code-rules.md` §5, um `trap` que termina o script depois da limpeza num Ctrl+C, para não continuar para o passo seguinte.
+- **Marcas:** —

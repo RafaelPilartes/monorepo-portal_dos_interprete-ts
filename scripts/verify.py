@@ -419,6 +419,247 @@ def check_no_duplicated_component(ctx: Context) -> list[Violation]:
     return violations
 
 
+# --- database checks (since F) ----------------------------------------------------------------
+
+DB_DIR = "packages/db"
+
+
+def sql_files(root: Path, subdir: str = "") -> list[Path]:
+    """SQL files under packages/db (or one of its phase directories), in name order."""
+    base = root / DB_DIR / subdir
+    if not base.is_dir():
+        return []
+    return sorted(p for p in base.rglob("*.sql") if not SKIP_DIRS.intersection(p.relative_to(root).parts))
+
+
+def mask_sql(text: str) -> str:
+    """Blank out comments and single-quoted strings, keeping offsets (dollar-quoted bodies stay: they are code)."""
+    out = list(text)
+    i, n = 0, len(text)
+    while i < n:
+        if text.startswith("--", i):
+            j = text.find("\n", i)
+            j = n if j == -1 else j
+        elif text.startswith("/*", i):
+            j = text.find("*/", i + 2)
+            j = n if j == -1 else j + 2
+        elif text[i] == "'":
+            j = i + 1
+            while j < n:
+                if text.startswith("''", j):
+                    j += 2
+                    continue
+                if text[j] == "'":
+                    j += 1
+                    break
+                j += 1
+        else:
+            i += 1
+            continue
+        for k in range(i, j):
+            if out[k] != "\n":
+                out[k] = " "
+        i = j
+    return "".join(out)
+
+
+def strip_sql_comments(text: str) -> str:
+    """Blank out comments only (string literals stay), keeping line numbers."""
+    without_blocks = re.sub(r"/\*[\s\S]*?\*/", lambda m: re.sub(r"[^\n]", " ", m.group()), text)
+    return re.sub(r"--[^\n]*", "", without_blocks)
+
+
+def check_migration_transaction(ctx: Context) -> list[Violation]:
+    """Every migration opens with BEGIN; and closes with COMMIT; (architecture.md §5)."""
+    violations = []
+    for path in sql_files(ctx.root, "migrations"):
+        lines = strip_sql_comments(path.read_text(encoding="utf-8")).splitlines()
+        statements = [(i, line.strip()) for i, line in enumerate(lines, 1) if line.strip()]
+        rel = relative(ctx.root, path)
+        if not statements or statements[0][1] != "BEGIN;":
+            violations.append(Violation(rel, statements[0][0] if statements else 1, "a migration must open with BEGIN;"))
+        if not statements or statements[-1][1] != "COMMIT;":
+            violations.append(Violation(rel, statements[-1][0] if statements else 1, "a migration must close with COMMIT;"))
+    return violations
+
+
+CREATE_TABLE = re.compile(r"\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([\w.\"]+)", re.I)
+ENABLE_RLS = re.compile(r"\bALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:ONLY\s+)?([\w.\"]+)\s+ENABLE\s+ROW\s+LEVEL\s+SECURITY", re.I)
+
+
+def check_table_rls(ctx: Context) -> list[Violation]:
+    """Every table is created schema-qualified and has ENABLE ROW LEVEL SECURITY (data-model.md §0)."""
+    files = [(path, mask_sql(path.read_text(encoding="utf-8"))) for path in sql_files(ctx.root)]
+    enabled = {m.group(1).lower() for _, text in files for m in ENABLE_RLS.finditer(text)}
+    violations = []
+    for path, text in files:
+        for match in CREATE_TABLE.finditer(text):
+            name = match.group(1).lower()
+            if "." not in name:
+                violations.append(Violation(relative(ctx.root, path), line_of(text, match.start()), f"table {name} must be schema-qualified"))
+            elif name not in enabled:
+                violations.append(Violation(relative(ctx.root, path), line_of(text, match.start()), f"{name} has no ENABLE ROW LEVEL SECURITY"))
+    return violations
+
+
+CREATE_FUNCTION = re.compile(r"\bCREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+([\w.\"]+)", re.I)
+DOLLAR_TAG = re.compile(r"\$(\w*)\$")
+
+
+def sql_functions(text: str) -> list[tuple[str, int, str, int, int]]:
+    """(name, offset, options, body_start, body_end) of each CREATE FUNCTION; options exclude the body."""
+    found = []
+    for match in CREATE_FUNCTION.finditer(text):
+        opening = DOLLAR_TAG.search(text, match.end())
+        if not opening:
+            continue
+        tag = opening.group(0)
+        closing = text.find(tag, opening.end())
+        if closing == -1:
+            continue
+        end = text.find(";", closing + len(tag))
+        end = len(text) if end == -1 else end
+        options = text[match.start():opening.start()] + " " + text[closing + len(tag):end]
+        found.append((match.group(1).lower(), match.start(), options, opening.end(), closing))
+    return found
+
+
+def check_definer_search_path(ctx: Context) -> list[Violation]:
+    """Every SECURITY DEFINER function pins SET search_path = '' (architecture.md §5)."""
+    violations = []
+    for path in sql_files(ctx.root):
+        text = strip_sql_comments(path.read_text(encoding="utf-8"))
+        for name, offset, options, _, _ in sql_functions(text):
+            definer = re.search(r"\bSECURITY\s+DEFINER\b", options, re.I)
+            if definer and not re.search(r"\bSET\s+search_path\s*(=|TO)\s*''", options, re.I):
+                violations.append(Violation(relative(ctx.root, path), line_of(text, offset), f"{name} is SECURITY DEFINER without SET search_path = ''"))
+    return violations
+
+
+def split_top_level(body: str) -> list[tuple[int, str]]:
+    """Split a CREATE TABLE body on top-level commas: (offset, element)."""
+    parts, depth, start = [], 0, 0
+    for i, ch in enumerate(body):
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+        elif ch == "," and depth == 0:
+            parts.append((start, body[start:i]))
+            start = i + 1
+    parts.append((start, body[start:]))
+    return parts
+
+
+def column_names(listing: str) -> list[str]:
+    return [item.strip().split()[0].strip('"').lower() for item in listing.split(",") if item.strip()]
+
+
+INDEX_ON = re.compile(r"\bCREATE\s+(?:UNIQUE\s+)?INDEX\b[^;]*?\bON\s+(?:ONLY\s+)?([\w.\"]+)\s*(?:USING\s+\w+\s*)?\(([^;]*?)\)\s*(?:INCLUDE|WHERE|WITH|TABLESPACE|;)", re.I)
+ALTER_FK = re.compile(r"\bALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:ONLY\s+)?([\w.\"]+)\s+ADD\s+(?:CONSTRAINT\s+\w+\s+)?FOREIGN\s+KEY\s*\(([^)]*)\)", re.I)
+
+
+def check_fk_index(ctx: Context) -> list[Violation]:
+    """Every foreign key has an index whose leading columns are the key's columns (data-model.md §0)."""
+    files = [(path, mask_sql(path.read_text(encoding="utf-8"))) for path in sql_files(ctx.root)]
+    indexed: dict[str, list[list[str]]] = {}
+    for _, text in files:
+        for match in INDEX_ON.finditer(text):
+            indexed.setdefault(match.group(1).lower(), []).append(column_names(match.group(2)))
+    keys: list[tuple[Path, int, str, list[str]]] = []
+    for path, text in files:
+        for match in CREATE_TABLE.finditer(text):
+            table = match.group(1).lower()
+            open_at = text.find("(", match.end())
+            depth, close_at = 0, open_at
+            for close_at in range(open_at, len(text)):
+                depth += {"(": 1, ")": -1}.get(text[close_at], 0)
+                if depth == 0:
+                    break
+            for offset, element in split_top_level(text[open_at + 1:close_at]):
+                stripped = element.strip()
+                head = stripped.split()[0].upper() if stripped else ""
+                position = open_at + 1 + offset + (len(element) - len(element.lstrip()))
+                inner = re.search(r"\(([^)]*)\)", stripped)
+                if head in {"PRIMARY", "UNIQUE"} and inner:
+                    indexed.setdefault(table, []).append(column_names(inner.group(1)))
+                elif re.match(r"(CONSTRAINT\s+\w+\s+)?FOREIGN\s+KEY", stripped, re.I) and inner:
+                    keys.append((path, line_of(text, position), table, column_names(inner.group(1))))
+                elif re.search(r"\bREFERENCES\b", stripped, re.I) and head not in {"CONSTRAINT", "CHECK"}:
+                    column = stripped.split()[0].strip('"').lower()
+                    if re.search(r"\b(PRIMARY\s+KEY|UNIQUE)\b", stripped, re.I):
+                        indexed.setdefault(table, []).append([column])
+                    keys.append((path, line_of(text, position), table, [column]))
+        for match in ALTER_FK.finditer(text):
+            keys.append((path, line_of(text, match.start()), match.group(1).lower(), column_names(match.group(2))))
+    violations = []
+    for path, line, table, columns in keys:
+        if not any(index[:len(columns)] == columns for index in indexed.get(table, [])):
+            violations.append(Violation(relative(ctx.root, path), line, f"foreign key {table} ({', '.join(columns)}) has no index starting with its columns"))
+    return violations
+
+
+SQL_DOMAIN = re.compile(r"\bCREATE\s+DOMAIN\s+util\.(\w+)\s+AS\s+text\s+CHECK\s*\(\s*VALUE\s+~\s+'((?:[^']|'')*)'\s*\)", re.I)
+CORE_PATTERN = re.compile(r"^export\s+const\s+(\w+)_PATTERN\s*=\s*/(.+)/\s*$", re.M)
+SHARED_PATTERNS = {"phone_e164": "PHONE_E164", "nif": "NIF", "iban_ao": "IBAN_AO"}
+
+
+def check_domain_patterns(ctx: Context) -> list[Violation]:
+    """util.phone_e164, util.nif and util.iban_ao use the same expressions as packages/core (R-CFG-05)."""
+    core_path = ctx.root / "packages" / "core" / "src" / "patterns.ts"
+    core_text = core_path.read_text(encoding="utf-8") if core_path.is_file() else ""
+    core = {m.group(1): m.group(2) for m in CORE_PATTERN.finditer(core_text)}
+    domains: dict[str, tuple[str, str, int]] = {}
+    for path in sql_files(ctx.root, "migrations"):
+        text = strip_sql_comments(path.read_text(encoding="utf-8"))
+        for m in SQL_DOMAIN.finditer(text):
+            domains[m.group(1).lower()] = (m.group(2).replace("''", "'"), relative(ctx.root, path), line_of(text, m.start()))
+    violations = []
+    for domain, constant in SHARED_PATTERNS.items():
+        if domain not in domains:
+            violations.append(Violation(f"{DB_DIR}/migrations", 1, f"util.{domain} is not created with CHECK (VALUE ~ '...') in any migration"))
+        elif constant not in core:
+            violations.append(Violation("packages/core/src/patterns.ts", 1, f"{constant}_PATTERN is missing"))
+        elif core[constant] != domains[domain][0]:
+            expression, rel, line = domains[domain]
+            violations.append(Violation(rel, line, f"util.{domain} '{expression}' differs from {constant}_PATTERN /{core[constant]}/"))
+    return violations
+
+
+def check_notify_kinds(ctx: Context) -> list[Violation]:
+    """notify.kinds is seeded from the catalog in docs/plan/specs/notifications.md (R-NOT-01)."""
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    import notify_kinds  # noqa: E402  (sibling script)
+
+    if not (ctx.root / notify_kinds.SPEC).is_file():
+        return [Violation(str(notify_kinds.SPEC), 1, "missing: the notification catalog has no source")]
+    try:
+        expected = notify_kinds.expected(ctx.root)
+    except ValueError as error:
+        return [Violation(str(notify_kinds.SPEC), 1, str(error))]
+    target = ctx.root / notify_kinds.TARGET
+    if target.is_file() and target.read_text(encoding="utf-8") == expected:
+        return []
+    return [Violation(str(notify_kinds.TARGET), 1, "differs from the catalog; run python3 scripts/notify_kinds.py --write")]
+
+
+RULE_SCHEMAS = ("booking.", "billing.", "verification.", "community.")
+BARE_NOW = re.compile(r"(?<![\w.])(now\s*\(\s*\)|current_timestamp\b|transaction_timestamp\s*\(|statement_timestamp\s*\(|clock_timestamp\s*\()", re.I)
+
+
+def check_rule_clock(ctx: Context) -> list[Violation]:
+    """Rule functions read the time from util.now(), never now() (data-model.md §12)."""
+    violations = []
+    for path in sql_files(ctx.root):
+        text = mask_sql(path.read_text(encoding="utf-8"))
+        for name, _, _, body_start, body_end in sql_functions(text):
+            if not name.startswith(RULE_SCHEMAS):
+                continue
+            for m in BARE_NOW.finditer(text, body_start, body_end):
+                violations.append(Violation(relative(ctx.root, path), line_of(text, m.start()), f"{name} reads the clock with {m.group(1).strip()}; use util.now()"))
+    return violations
+
+
 CHECKS: dict[str, Callable[[Context], list[Violation]]] = {
     "no-direct-data-access": check_no_direct_data_access,
     "no-cross-app-import": check_no_cross_app_import,
@@ -428,6 +669,13 @@ CHECKS: dict[str, Callable[[Context], list[Violation]]] = {
     "package-dependencies": check_package_dependencies,
     "error-catalog": check_error_catalog,
     "no-duplicated-component": check_no_duplicated_component,
+    "migration-transaction": check_migration_transaction,
+    "table-rls": check_table_rls,
+    "definer-search-path": check_definer_search_path,
+    "fk-index": check_fk_index,
+    "domain-patterns": check_domain_patterns,
+    "notify-kinds": check_notify_kinds,
+    "rule-clock": check_rule_clock,
 }
 
 
