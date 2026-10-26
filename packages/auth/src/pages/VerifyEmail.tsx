@@ -29,8 +29,9 @@ export default function VerifyEmail({ app = 'requester' }: { app?: PanelApp }) {
     if (session.status === 'suspended') navigate('/suspended', { replace: true })
     if (session.status !== 'authenticated') return
     const target = safeReturnTo(searchParams.get('returnTo'), '')
-    if (target && session.account.pendingDocuments.length === 0) {
-      navigate(target, { replace: true })
+    if (target) {
+      // The documents to accept come first, then back to where the person was going (R-PRIV-02).
+      navigate(session.account.pendingDocuments.length > 0 ? `/accept-terms?returnTo=${encodeURIComponent(target)}` : target, { replace: true })
       return
     }
     const destination = destinationFor(session.account, app)

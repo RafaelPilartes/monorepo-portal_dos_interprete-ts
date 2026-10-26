@@ -52,3 +52,55 @@ export function adminCredentials(): { email: string; password: string } {
 export const API_URL = 'http://localhost:3000'
 export const ADMIN_URL = process.env.ADMIN_URL ?? 'http://localhost:5173'
 export const ADMIN_STATE = path.join(repoRoot, 'tests/e2e/test-results/admin-state.json')
+
+export const REQUESTER_URL = process.env.REQUESTER_URL ?? 'http://localhost:5171'
+export const INTERPRETER_URL = process.env.INTERPRETER_URL ?? 'http://localhost:5172'
+/** The session of an account with both roles, shared by requester-web and interpreter-web (cookies of localhost). */
+export const PANEL_STATE = path.join(repoRoot, 'tests/e2e/test-results/panel-state.json')
+
+/** An account created confirmed through the local Auth admin API (test setup only). */
+export async function createConfirmedUser(fullName: string): Promise<{ id: string; email: string; password: string; accessToken: string }> {
+  const local = requireLocalSupabase()
+  const email = `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.ao`
+  const password = `Senha${Math.random().toString(36).slice(2, 10)}9`
+  const admin = { authorization: `Bearer ${local.SERVICE_ROLE_KEY}`, apikey: local.SERVICE_ROLE_KEY, 'content-type': 'application/json' }
+  const created = await fetch(`${local.API_URL}/auth/v1/admin/users`, {
+    method: 'POST', headers: admin, body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { full_name: fullName } }),
+  })
+  if (!created.ok) throw new Error(`create user: ${created.status}`)
+  const { id } = (await created.json()) as { id: string }
+  const session = await fetch(`${local.API_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST', headers: { apikey: local.ANON_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ email, password }),
+  })
+  if (!session.ok) throw new Error(`sign in: ${session.status}`)
+  const { access_token: accessToken } = (await session.json()) as { access_token: string }
+  return { id, email, password, accessToken }
+}
+
+/** Calls the API as an account (test setup: the same routes the screens call). */
+export async function apiAs<T>(accessToken: string, method: string, pathName: string, body?: unknown): Promise<T> {
+  const response = await fetch(`${API_URL}${pathName}`, {
+    method,
+    headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  })
+  const payload = (await response.json().catch(() => ({}))) as T
+  if (!response.ok) throw new Error(`${method} ${pathName}: ${response.status} ${JSON.stringify(payload)}`)
+  return payload
+}
+
+/** The newest email Mailpit received for an address, with its text body. */
+export async function latestEmail(to: string, subjectPattern?: RegExp): Promise<{ subject: string; text: string }> {
+  const local = requireLocalSupabase()
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const search = await fetch(`${local.MAILPIT_URL}/api/v1/search?query=${encodeURIComponent(`to:"${to}"`)}`)
+    const { messages } = (await search.json()) as { messages: { ID: string; Subject: string }[] }
+    const found = messages.find((message) => !subjectPattern || subjectPattern.test(message.Subject))
+    if (found) {
+      const message = (await (await fetch(`${local.MAILPIT_URL}/api/v1/message/${found.ID}`)).json()) as { Subject: string; Text: string; HTML: string }
+      return { subject: message.Subject, text: `${message.Text}\n${message.HTML}` }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500))
+  }
+  throw new Error(`no email for ${to}`)
+}

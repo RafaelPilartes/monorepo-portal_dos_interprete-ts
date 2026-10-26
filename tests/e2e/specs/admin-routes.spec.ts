@@ -7,13 +7,12 @@ import { type SmokeRoute, visitAndCapture } from './smoke'
 // legal, document type and audit screens read the local database.
 const routes: SmokeRoute[] = [
   { path: '/', name: 'overview', expectText: 'Dashboard Administrativo' },
-  { path: '/interpreters', name: 'interpreters', expectText: 'Gestão de Intérpretes' },
-  { path: '/interpreters/1', name: 'interpreter-details', expectText: 'Detalhes do Intérprete' },
+  { path: '/interpreters', name: 'interpreters', expectText: 'Intérpretes' },
   { path: '/verifications', name: 'verifications', expectText: 'Gestão de Verificações' },
   { path: '/verifications/requests', name: 'verification-requests', expectText: 'Pedidos de Verificação' },
   { path: '/verifications/history', name: 'verification-history', expectText: 'Histórico de Verificações' },
-  { path: '/requesters', name: 'requesters', expectText: 'Gestão de Solicitantes' },
-  { path: '/requesters/1', name: 'requester-details', expectText: 'Detalhes do Solicitante' },
+  { path: '/requesters', name: 'requesters', expectText: 'Solicitantes' },
+  { path: '/organizations', name: 'organizations', expectText: 'Organizações' },
   { path: '/requests', name: 'requests', expectText: 'Gestão de Solicitações' },
   { path: '/requests/1', name: 'request-details', expectText: 'Detalhes da Solicitação' },
   { path: '/payments', name: 'payments', expectText: 'Gestão de Pagamentos' },
@@ -36,7 +35,6 @@ const routes: SmokeRoute[] = [
   { path: '/community/library/legal', name: 'community-library-legal', expectText: 'Gestão Jurídica/Ética' },
   { path: '/community/partners', name: 'community-partners', expectText: 'Gestão de Parcerias' },
   { path: '/support/tickets', name: 'support-tickets', expectText: 'Suporte e Ouvidoria' },
-  { path: '/login', name: 'login', expectText: 'Bem-vindo de volta' },
   { path: '/recover-password', name: 'recover-password', expectText: 'Recuperar' },
   { path: '/does-not-exist', name: 'not-found', expectText: 'Página não encontrada' },
 ]

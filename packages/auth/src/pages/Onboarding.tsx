@@ -23,12 +23,15 @@ function useSubmit(onDone: () => void) {
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [errors, setErrors] = useState<Errors>({})
+  // Once created, the new role must not send the screen to "/" before it moves on itself.
+  const [done, setDone] = useState(false)
   const submit = async (path: string, body: Record<string, unknown>) => {
     setSaving(true)
     setFormError(null)
     setErrors({})
     try {
       await services.api.post(path, body)
+      setDone(true)
       await refresh()
       onDone()
     } catch (error) {
@@ -42,7 +45,7 @@ function useSubmit(onDone: () => void) {
       setSaving(false)
     }
   }
-  return { submit, saving, formError, errors }
+  return { submit, saving, formError, errors, done }
 }
 
 function Field({ id, label, optional, error, children }: { id: string; label: string; optional?: boolean; error?: string | undefined; children: ReactNode }) {
@@ -74,12 +77,12 @@ export function RequesterOnboarding() {
   const navigate = useNavigate()
   const signedIn = useSignedIn()
   const session = useSession()
-  const { submit, saving, formError, errors } = useSubmit(() => navigate('/', { replace: true }))
+  const { submit, saving, formError, errors, done } = useSubmit(() => navigate('/', { replace: true }))
   const [city, setCity] = useState('')
   const [address, setAddress] = useState('')
   const [nif, setNif] = useState('')
   if (!signedIn.ready) return <>{signedIn.gate}</>
-  if (session.status === 'authenticated' && session.account.roles.includes('requester')) return <Navigate to="/" replace />
+  if (!done && session.status === 'authenticated' && session.account.hasRequesterProfile) return <Navigate to="/" replace />
 
   const send = (event?: FormEvent) => {
     event?.preventDefault()
@@ -145,11 +148,11 @@ export function InterpreterOnboarding() {
   const navigate = useNavigate()
   const signedIn = useSignedIn()
   const session = useSession()
-  const { submit, saving, formError, errors } = useSubmit(() => navigate('/profile', { replace: true }))
+  const { submit, saving, formError, errors, done } = useSubmit(() => navigate('/profile', { replace: true }))
   const [city, setCity] = useState('')
   const [bio, setBio] = useState('')
   if (!signedIn.ready) return <>{signedIn.gate}</>
-  if (session.status === 'authenticated' && session.account.roles.includes('interpreter')) return <Navigate to="/" replace />
+  if (!done && session.status === 'authenticated' && session.account.roles.includes('interpreter')) return <Navigate to="/" replace />
   return (
     <AuthShell
       title="Criar o teu perfil de intérprete"

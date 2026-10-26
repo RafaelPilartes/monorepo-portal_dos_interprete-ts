@@ -22,7 +22,7 @@ export function AuthShell({ title, subtitle, children, footer }: {
           {footer && <div className="mt-8 text-sm text-muted-foreground">{footer}</div>}
         </div>
       </div>
-      <aside className="hidden flex-1 items-end bg-primary p-12 text-primary-foreground lg:flex">
+      <aside className="hidden h-screen flex-1 items-end self-start bg-primary p-12 text-primary-foreground lg:sticky lg:top-0 lg:flex">
         <figure className="max-w-md">
           <blockquote className="text-2xl font-medium leading-snug">
             “Comunicação inclusiva é um direito, não um privilégio.”

@@ -42,6 +42,9 @@ test.describe('signing in', () => {
     await page.getByLabel('Email', { exact: true }).fill(email)
     await page.getByLabel('Palavra-passe', { exact: true }).fill(password)
     await page.getByRole('button', { name: 'Entrar' }).click()
+    // From H2 a new account accepts the legal documents in force first (R-PRIV-02).
+    await page.getByLabel('Li e aceito estas versões.').check()
+    await page.getByRole('button', { name: 'Aceitar e continuar' }).click()
     await expect(page.getByText('Esta área é só para a equipa do Portal')).toBeVisible()
     await expect(page).toHaveURL(`${ADMIN_URL}/team`)
     await shot(page, '02-not-staff')

@@ -1,5 +1,5 @@
 import { defineConfig } from '@playwright/test'
-import { ADMIN_STATE, API_URL, localSupabase } from './local'
+import { ADMIN_STATE, API_URL, localSupabase, PANEL_STATE } from './local'
 
 // Browser screens checked against the local dev servers (MASTER-PLAN.md, gate 4).
 // Browsers: in the cloud VM they are pre-installed (PLAYWRIGHT_BROWSERS_PATH);
@@ -36,9 +36,12 @@ export default defineConfig({
   reporter: [['list']],
   use: { viewport: { width: 1280, height: 800 } },
   projects: [
-    { name: 'routes', testMatch: /-routes\.spec\.ts$/, testIgnore: /admin-routes/ },
+    { name: 'routes', testMatch: /site-routes\.spec\.ts$/ },
     { name: 'admin-login', testMatch: /admin\.setup\.ts$/ },
+    { name: 'panel-login', testMatch: /panel\.setup\.ts$/ },
     { name: 'admin', testMatch: /(admin-routes|h1-.*)\.spec\.ts$/, dependencies: ['admin-login'], use: { storageState: ADMIN_STATE } },
+    { name: 'panels', testMatch: /(requester|interpreter)-routes\.spec\.ts$/, dependencies: ['panel-login'], use: { storageState: PANEL_STATE } },
+    { name: 'h2', testMatch: /h2-.*\.spec\.ts$/, dependencies: ['admin-login'], use: { storageState: ADMIN_STATE } },
   ],
   webServer: [
     {
@@ -52,12 +55,14 @@ export default defineConfig({
       url: 'http://localhost:5171',
       reuseExistingServer: true,
       timeout: 120_000,
+      env: appEnv,
     },
     {
       command: 'pnpm --filter @portal-dos-interpretes/interpreter-web exec vite --port 5172 --strictPort',
       url: 'http://localhost:5172',
       reuseExistingServer: true,
       timeout: 120_000,
+      env: appEnv,
     },
     {
       command: 'pnpm --filter @portal-dos-interpretes/admin-web exec vite --port 5173 --strictPort',

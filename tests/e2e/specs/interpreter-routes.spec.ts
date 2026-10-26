@@ -34,8 +34,6 @@ const routes: SmokeRoute[] = [
   { path: '/benefits', name: 'benefits', expectText: 'Benefícios e Parcerias' },
   { path: '/support', name: 'support', expectText: 'Suporte e Ouvidoria' },
   { path: '/interpreters/maria-silva', name: 'colleague-profile', expectText: 'Sobre o Intérprete' },
-  { path: '/login', name: 'login', expectText: 'Bem-vindo de volta' },
-  { path: '/register', name: 'register', expectText: 'Criar Conta' },
   { path: '/does-not-exist', name: 'not-found', expectText: 'Página não encontrada' },
 ]
 
@@ -44,4 +42,19 @@ for (const route of routes) {
     await visitAndCapture(page, INTERPRETER, 'D4', route)
   })
 }
+
+// The entry pages, without a session (an open session would move on to the area).
+const entries: SmokeRoute[] = [
+  { path: '/login', name: 'login', expectText: 'Entrar' },
+  { path: '/register', name: 'register', expectText: 'Criar conta' },
+  { path: '/recover-password', name: 'recover-password', expectText: 'Recuperar a palavra-passe' },
+]
+test.describe('entry pages', () => {
+  test.use({ storageState: { cookies: [], origins: [] } })
+  for (const route of entries) {
+    test(`interpreter ${route.path} renders without errors`, async ({ page }) => {
+      await visitAndCapture(page, INTERPRETER, 'D4', route)
+    })
+  }
+})
 

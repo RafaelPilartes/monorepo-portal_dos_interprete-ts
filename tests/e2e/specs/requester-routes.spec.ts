@@ -19,9 +19,6 @@ const routes: SmokeRoute[] = [
   { path: '/interpreters/maria-silva/videos', name: 'interpreter-videos', expectText: 'Vídeos de Maria Silva' },
   { path: '/interpreters/maria-silva/articles', name: 'interpreter-articles', expectText: 'Artigos de Maria Silva' },
   { path: '/interpreters/maria-silva/articles/0', name: 'interpreter-article', expectText: 'Maria Silva' },
-  { path: '/login', name: 'login', expectText: 'Bem-vindo de volta' },
-  { path: '/register', name: 'register', expectText: 'Criar Conta' },
-  { path: '/recover-password', name: 'recover-password', expectText: 'Recuperar' },
   { path: '/does-not-exist', name: 'not-found', expectText: 'Página não encontrada' },
 ]
 
@@ -30,6 +27,21 @@ for (const route of routes) {
     await visitAndCapture(page, REQUESTER, 'D3', route)
   })
 }
+
+// The entry pages, without a session (an open session would move on to the area).
+const entries: SmokeRoute[] = [
+  { path: '/login', name: 'login', expectText: 'Entrar' },
+  { path: '/register', name: 'register', expectText: 'Criar conta' },
+  { path: '/recover-password', name: 'recover-password', expectText: 'Recuperar a palavra-passe' },
+]
+test.describe('entry pages', () => {
+  test.use({ storageState: { cookies: [], origins: [] } })
+  for (const route of entries) {
+    test(`requester ${route.path} renders without errors`, async ({ page }) => {
+      await visitAndCapture(page, REQUESTER, 'D3', route)
+    })
+  }
+})
 
 test('requester: a card on /interpreters opens the profile inside requester-web', async ({ page }) => {
   await page.goto(`${REQUESTER}/interpreters`)

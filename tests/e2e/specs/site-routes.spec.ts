@@ -41,14 +41,14 @@ test('site "Entrar" opens the requester login (D3 closes AD-013 for login and re
   await page.goto(`${SITE}/`)
   await page.getByRole('link', { name: 'Entrar' }).first().click()
   await expect(page).toHaveURL(/^http:\/\/localhost:5171\/login$/)
-  await expect(page.getByText('Bem-vindo de volta')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Entrar' })).toBeVisible()
 })
 
 test('site "Ver Perfil" reaches the requester login with returnTo kept in the URL', async ({ page }) => {
   await page.goto(`${SITE}/interpreters`)
   await page.getByRole('link', { name: /Ver Perfil/ }).first().click()
   await expect(page).toHaveURL(/^http:\/\/localhost:5171\/login\?returnTo=%2Finterpreters%2F/)
-  await expect(page.getByText('Bem-vindo de volta')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Entrar' })).toBeVisible()
 })
 
 test('site "Para Intérpretes" registration goes to interpreter-web', async ({ page }) => {
