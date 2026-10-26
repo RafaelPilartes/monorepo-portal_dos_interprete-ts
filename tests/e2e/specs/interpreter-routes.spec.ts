@@ -5,7 +5,7 @@ const INTERPRETER = process.env.INTERPRETER_URL ?? 'http://localhost:5172'
 
 // Interpreter routes of docs/inventory/05-route-map.md at their new paths (architecture.md §3; AD-005, AD-017).
 const routes: SmokeRoute[] = [
-  { path: '/', name: 'overview', expectText: 'Olá, Maria!' },
+  { path: '/', name: 'overview', expectText: 'Olá, Joana' },
   { path: '/requests', name: 'requests', expectText: 'Solicitações' },
   { path: '/open-requests', name: 'open-requests', expectText: 'Solicitações Abertas' },
   { path: '/requests/req-101', name: 'request-details', expectText: 'req-101' },

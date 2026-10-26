@@ -17,6 +17,13 @@ import {
   User,
   Star,
 } from "lucide-react";
+import { useOptionalSession, type SessionState } from '@portal-dos-interpretes/auth'
+
+/** "Olá, Joana": the first name of the session (the rest of this page is still sample data). */
+function greeting(session: SessionState | null): string {
+  const first = session?.status === 'authenticated' ? session.account.fullName.trim().split(/\s+/)[0] : ''
+  return first ? `Olá, ${first}` : 'Olá'
+}
 
 // Mock data
 const stats = {
@@ -94,10 +101,11 @@ const recentActivity = [
 ];
 
 export default function RequesterOverview() {
+  const session = useOptionalSession()
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Bem-vindo, João!"
+        title={greeting(session)}
         description="Acompanhe as suas solicitações de serviços de interpretação."
         action={
           <Button asChild>

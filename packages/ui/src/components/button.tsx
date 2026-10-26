@@ -19,11 +19,11 @@ const buttonVariants = cva(
         "hero-secondary": "bg-card text-foreground border-2 border-border shadow-md hover:shadow-lg hover:border-primary/30 active:scale-[0.98] text-base px-8 py-6",
       },
       size: {
-        default: "h-11 px-5 py-2 panel:h-9 panel:px-4",
-        sm: "h-9 rounded-md px-4 text-xs panel:h-8 panel:px-3",
-        lg: "h-12 rounded-lg px-8 text-base panel:h-10 panel:px-5 panel:text-sm",
+        default: "h-11 px-5 py-2",
+        sm: "h-9 rounded-md px-4 text-xs",
+        lg: "h-12 rounded-lg px-8 text-base",
         xl: "h-14 rounded-xl px-10 text-lg",
-        icon: "h-10 w-10 panel:h-9 panel:w-9",
+        icon: "h-10 w-10",
       },
     },
     defaultVariants: {
@@ -39,10 +39,22 @@ export interface ButtonProps
   asChild?: boolean;
 }
 
+/** The denser sizes of the dashboards (`panel:`, <html class="app-panel">). */
+const PANEL_SIZES: Record<NonNullable<ButtonProps["size"]>, string> = {
+  default: "panel:h-9 panel:px-4",
+  sm: "panel:h-8 panel:px-3",
+  lg: "panel:h-10 panel:px-5 panel:text-sm",
+  xl: "",
+  icon: "panel:h-9 panel:w-9",
+};
+
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
-    return <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />;
+    // A button that sets its own height keeps it: the panel size would win over it otherwise.
+    const ownHeight = /(^|\s)(h-|min-h-|py-)/.test(className ?? "");
+    const panelSize = ownHeight ? "" : PANEL_SIZES[size ?? "default"];
+    return <Comp className={cn(buttonVariants({ variant, size }), panelSize, className)} ref={ref} {...props} />;
   }
 );
 Button.displayName = "Button";

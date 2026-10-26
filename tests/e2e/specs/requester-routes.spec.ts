@@ -5,7 +5,7 @@ const REQUESTER = process.env.REQUESTER_URL ?? 'http://localhost:5171'
 
 // Requester routes of docs/inventory/05-route-map.md at their new paths (architecture.md §3).
 const routes: SmokeRoute[] = [
-  { path: '/', name: 'overview', expectText: 'Bem-vindo, João!' },
+  { path: '/', name: 'overview', expectText: 'Olá, Joana' },
   { path: '/requests', name: 'requests', expectText: 'Minhas Solicitações' },
   { path: '/requests/new', name: 'requests-new', expectText: 'Nova Solicitação' },
   { path: '/requests/REQ-001', name: 'request-details', expectText: 'REQ-001' },

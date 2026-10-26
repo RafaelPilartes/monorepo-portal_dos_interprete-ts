@@ -5,6 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@portal-dos-interprete
 import { Button } from "@portal-dos-interpretes/ui/components/button";
 import { FileText, Clock, CheckCircle, Star, DollarSign, TrendingUp, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useOptionalSession, type SessionState } from '@portal-dos-interpretes/auth'
+
+/** "Olá, Joana": the first name of the session (the rest of this page is still sample data). */
+function greeting(session: SessionState | null): string {
+  const first = session?.status === 'authenticated' ? session.account.fullName.trim().split(/\s+/)[0] : ''
+  return first ? `Olá, ${first}` : 'Olá'
+}
 
 const pendingRequests = [
   {
@@ -36,10 +43,11 @@ const upcomingServices = [
 ];
 
 export default function InterpreterOverview() {
+  const session = useOptionalSession()
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Olá, Maria!"
+        title={greeting(session)}
         description="Gerencie as suas solicitações e acompanhe os seus ganhos"
       />
 
