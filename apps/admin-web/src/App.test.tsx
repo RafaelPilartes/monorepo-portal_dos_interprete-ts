@@ -32,7 +32,7 @@ function renderAt(path: string, account: Account | null = SUPER_ADMIN, rows: Row
 describe('admin-web routes (new paths, architecture.md §3)', () => {
   it('sends a visitor without a session to /login', async () => {
     renderAt('/team', null)
-    expect(await screen.findByText('Bem-vindo de volta')).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeTruthy()
   })
 
   it('tells an account outside the team that the area is only for the team', async () => {
@@ -54,8 +54,8 @@ describe('admin-web routes (new paths, architecture.md §3)', () => {
 
   it('serves the login page from packages/auth, without a registration link', () => {
     renderAt('/login', null)
-    expect(screen.getByText('Bem-vindo de volta')).toBeTruthy()
-    expect(screen.queryByText('Registe-se aqui')).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Entrar' })).toBeTruthy()
+    expect(screen.queryByText('Criar conta')).toBeNull()
   })
 })
 

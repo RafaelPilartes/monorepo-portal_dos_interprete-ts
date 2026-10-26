@@ -10,6 +10,8 @@ import {
   Star,
   User,
   Settings,
+  Building2,
+  UsersRound,
 } from "lucide-react";
 
 export const navigation: (NavItem | NavGroup)[] = [
@@ -28,6 +30,13 @@ export const navigation: (NavItem | NavGroup)[] = [
     items: [
       { name: "Procurar", href: "/interpreters", icon: Users },
       { name: "Favoritos", href: "/favorites", icon: Heart },
+    ],
+  },
+  {
+    label: "Organização",
+    items: [
+      { name: "Dados", href: "/organization", icon: Building2 },
+      { name: "Membros", href: "/organization/members", icon: UsersRound },
     ],
   },
   { name: "Minhas Avaliações", href: "/reviews", icon: Star },

@@ -6,7 +6,8 @@
   "description": "Supabase client, shared session, route guards, entry pages.",
   "exports": {
     ".": "./src/index.ts",
-    "./pages/*": "./src/pages/*.tsx"
+    "./pages/*": "./src/pages/*.tsx",
+    "./testing/*": "./src/testing/*.ts"
   },
   "scripts": {
     "lint": "eslint .",

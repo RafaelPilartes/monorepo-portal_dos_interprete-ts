@@ -4,7 +4,7 @@
 GRANT SELECT ON identity.requester_profiles, identity.interpreter_profiles, identity.organizations,
   identity.organization_members, identity.consents,
   identity.public_profiles, identity.account_directory, identity.organization_directory,
-  identity.organization_member_directory, directory.listed_interpreters TO authenticated;
+  identity.organization_member_directory, identity.consent_history, directory.listed_interpreters TO authenticated;
 GRANT SELECT (id, organization_id, email, role, invited_by, expires_at, status, accepted_by, decided_at, created_at)
   ON identity.organization_invites TO authenticated;
 

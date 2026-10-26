@@ -1,6 +1,6 @@
 // Sidebar of admin-web; its own module so the layout file only exports components.
 import type { NavGroup, NavItem } from '@portal-dos-interpretes/ui/components/dashboard-layout'
-import { LayoutDashboard, Users, UserCheck, FileText, MessageSquare, Award, BarChart3, CreditCard, Briefcase, Settings, Shield, CalendarDays, Scale, History } from 'lucide-react';
+import { LayoutDashboard, Users, UserCheck, Building2, FileText, MessageSquare, Award, BarChart3, CreditCard, Briefcase, Settings, Shield, CalendarDays, Scale, History } from 'lucide-react';
 
 export const navigation: (NavItem | NavGroup)[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -17,7 +17,8 @@ export const navigation: (NavItem | NavGroup)[] = [
         name: 'Solicitantes',
         href: '/requesters',
         icon: UserCheck
-      }
+      },
+      { name: 'Organizações', href: '/organizations', icon: Building2 }
     ]
   },
   {

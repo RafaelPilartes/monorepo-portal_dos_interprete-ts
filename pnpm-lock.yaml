@@ -166,9 +166,18 @@ importers:
       '@portal-dos-interpretes/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@portal-dos-interpretes/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@portal-dos-interpretes/data':
+        specifier: workspace:*
+        version: link:../../packages/data
       '@portal-dos-interpretes/features':
         specifier: workspace:*
         version: link:../../packages/features
+      '@portal-dos-interpretes/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@portal-dos-interpretes/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -236,12 +245,27 @@ importers:
       '@portal-dos-interpretes/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@portal-dos-interpretes/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@portal-dos-interpretes/data':
+        specifier: workspace:*
+        version: link:../../packages/data
+      '@portal-dos-interpretes/db-types':
+        specifier: workspace:*
+        version: link:../../packages/db-types
       '@portal-dos-interpretes/features':
         specifier: workspace:*
         version: link:../../packages/features
+      '@portal-dos-interpretes/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@portal-dos-interpretes/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@tanstack/react-query':
+        specifier: ^5.83.0
+        version: 5.104.5(@types/react@18.3.31)(react@18.3.1)
       date-fns:
         specifier: ^3.6.0
         version: 3.6.0
@@ -578,6 +602,15 @@ importers:
 
   packages/features:
     dependencies:
+      '@portal-dos-interpretes/core':
+        specifier: workspace:*
+        version: link:../core
+      '@portal-dos-interpretes/data':
+        specifier: workspace:*
+        version: link:../data
+      '@portal-dos-interpretes/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       '@portal-dos-interpretes/ui':
         specifier: workspace:*
         version: link:../ui

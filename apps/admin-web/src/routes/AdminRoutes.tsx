@@ -1,13 +1,13 @@
-import AdminInterpreterDetails from '@/pages/dashboard/admin/AdminInterpreterDetails'
-import AdminInterpreters from '@/pages/dashboard/admin/AdminInterpreters'
+import AdminAccountDetails from '@/pages/accounts/AdminAccountDetails'
+import AdminAccounts from '@/pages/accounts/AdminAccounts'
+import AdminOrganizationDetails from '@/pages/accounts/AdminOrganizationDetails'
+import AdminOrganizations from '@/pages/accounts/AdminOrganizations'
 import AdminInterpreterVerifications from '@/pages/dashboard/admin/AdminInterpreterVerifications'
 import AdminLayout from '@/pages/dashboard/admin/AdminLayout'
 import AdminOverview from '@/pages/dashboard/admin/AdminOverview'
 import AdminPayments from '@/pages/dashboard/admin/AdminPayments'
 import AdminReports from '@/pages/dashboard/admin/AdminReports'
 import AdminRequestDetails from '@/pages/dashboard/admin/AdminRequestDetails'
-import AdminRequesterDetails from '@/pages/dashboard/admin/AdminRequesterDetails'
-import AdminRequesters from '@/pages/dashboard/admin/AdminRequesters'
 import AdminRequests from '@/pages/dashboard/admin/AdminRequests'
 import AdminServices from '@/pages/dashboard/admin/AdminServices'
 import AdminSettings from '@/pages/dashboard/admin/AdminSettings'
@@ -28,14 +28,16 @@ const AdminRoutes = () => {
   return (
     <Route path="/" element={<AdminLayout />}>
       <Route index element={<AdminOverview />} />
-      <Route path="interpreters" element={<AdminInterpreters />} />
-      <Route path="interpreters/:id" element={<AdminInterpreterDetails />} />
+      <Route path="interpreters" element={<AdminAccounts kind="interpreter" />} />
+      <Route path="interpreters/:id" element={<AdminAccountDetails kind="interpreter" />} />
       <Route
         path="verifications"
         element={<AdminInterpreterVerifications />}
       />
-      <Route path="requesters" element={<AdminRequesters />} />
-      <Route path="requesters/:id" element={<AdminRequesterDetails />} />
+      <Route path="requesters" element={<AdminAccounts kind="requester" />} />
+      <Route path="requesters/:id" element={<AdminAccountDetails kind="requester" />} />
+      <Route path="organizations" element={<AdminOrganizations />} />
+      <Route path="organizations/:id" element={<AdminOrganizationDetails />} />
       <Route path="requests" element={<AdminRequests />} />
       <Route path="requests/:id" element={<AdminRequestDetails />} />
       <Route path="content/testimonials" element={<AdminTestimonials />} />

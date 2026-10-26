@@ -1527,6 +1527,51 @@ export type Database = {
                 Relationships: [
                 ];
             };
+            "consent_history": {
+                Row: {
+                    "accepted_at": string;
+                    "account_id": string;
+                    "id": string;
+                    "kind": string;
+                    "version": number;
+                };
+                ComputedFields: never;
+                Relationships: [
+                    {
+                        foreignKeyName: "consents_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "account_directory";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "consents_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "consents_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
             "organization_directory": {
                 Row: {
                     "address": string | null;
@@ -1590,6 +1635,7 @@ export type Database = {
                     "full_name": string;
                     "joined_at": string;
                     "organization_id": string;
+                    "organization_name": string;
                     "removed_at": string | null;
                     "role": string;
                     "status": string;

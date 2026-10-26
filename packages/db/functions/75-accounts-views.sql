@@ -51,9 +51,16 @@ SELECT o.id, o.name, o.nif, o.sector, o.city, o.phone, o.website_url, o.address,
 -- organisation and the team. Removed members only for the team.
 CREATE OR REPLACE VIEW identity.organization_member_directory WITH (security_invoker = false) AS
 SELECT m.organization_id, m.account_id, p.full_name, u.email::text AS email, m.role, m.status,
-       m.joined_at, m.removed_at
+       m.joined_at, m.removed_at, o.name AS organization_name
   FROM identity.organization_members AS m
+  JOIN identity.organizations AS o ON o.id = m.organization_id
   JOIN identity.profiles AS p ON p.id = m.account_id
   JOIN auth.users AS u ON u.id = m.account_id
  WHERE auth_helper.is_staff()
     OR (m.status = 'active' AND m.organization_id IN (SELECT auth_helper.my_org_ids()));
+
+-- "Os meus consentimentos" and the team's account sheet: each acceptance with its document.
+CREATE OR REPLACE VIEW identity.consent_history WITH (security_invoker = true) AS
+SELECT c.id, c.account_id, c.accepted_at, d.kind, d.version
+  FROM identity.consents AS c
+  JOIN identity.legal_documents AS d ON d.id = c.legal_document_id;

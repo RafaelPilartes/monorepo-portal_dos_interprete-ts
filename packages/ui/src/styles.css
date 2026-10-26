@@ -183,6 +183,21 @@
   }
 }
 
+/* The three dashboard apps (<html class="app-panel">): tighter corners, themed selection and
+   tabular numbers in data. Components opt into the rest with the `panel:` variant. */
+@layer base {
+  .app-panel {
+    --radius: 0.5rem;
+  }
+  .app-panel ::selection {
+    background: hsl(var(--primary) / 0.18);
+  }
+  .app-panel table,
+  .app-panel .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
 @layer components {
   .container-narrow {
     @apply max-w-5xl mx-auto px-4 sm:px-6 lg:px-8;

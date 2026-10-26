@@ -28,10 +28,11 @@ export function StaffArea() {
   if (session.status === 'error') {
     return <p role="alert" className="p-8 text-center">{COMMON_TEXTS.sessionUnavailable}</p>
   }
-  if (session.status === 'anonymous') {
-    const returnTo = `${location.pathname}${location.search}`
-    return <Navigate to={`/login?returnTo=${encodeURIComponent(returnTo)}`} replace />
-  }
+  const returnTo = encodeURIComponent(`${location.pathname}${location.search}`)
+  if (session.status === 'anonymous') return <Navigate to={`/login?returnTo=${returnTo}`} replace />
+  if (session.status === 'suspended') return <Navigate to="/suspended" replace />
+  // R-PRIV-02: the team accepts the legal documents in force like everyone else.
+  if (session.account.pendingDocuments.length > 0) return <Navigate to={`/accept-terms?returnTo=${returnTo}`} replace />
   if (!session.account.staffLevel) return <NotStaff roles={session.account.roles} />
   return <Outlet />
 }

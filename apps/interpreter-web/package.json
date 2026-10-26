@@ -13,7 +13,10 @@
   },
   "dependencies": {
     "@portal-dos-interpretes/auth": "workspace:*",
+    "@portal-dos-interpretes/core": "workspace:*",
+    "@portal-dos-interpretes/data": "workspace:*",
     "@portal-dos-interpretes/features": "workspace:*",
+    "@portal-dos-interpretes/i18n": "workspace:*",
     "@portal-dos-interpretes/ui": "workspace:*",
     "date-fns": "^3.6.0",
     "lucide-react": "^0.462.0",

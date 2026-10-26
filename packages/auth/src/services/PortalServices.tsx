@@ -1,7 +1,7 @@
 import { createContext, useContext, type ReactNode } from 'react'
 import { ApiClient, AuthDAO, createSupabaseClient, DataError, SessionDAO, type IAuthRepository, type ISessionRepository } from '@portal-dos-interpretes/data'
 import { createCookieStorage } from '../session/cookieStorage'
-import type { Account, Role, SessionSource, StaffLevel } from '../session/SessionContext'
+import type { Account, AccountOrganization, PendingDocument, Role, SessionLoad, SessionSource, StaffLevel } from '../session/SessionContext'
 
 // What every app needs to talk to the platform: the Supabase client (reads by RLS), sign-in and
 // session, and the API client (writes). Built once per app from its environment.
@@ -24,10 +24,31 @@ export interface PortalServicesOptions {
   cookieDomain?: string | undefined
 }
 
-interface MeResponse {
+/** GET /me (api.md §4). */
+export interface MeResponse {
   account: { id: string; email: string | null; full_name: string; status: string }
   roles: Role[]
   staff_level: StaffLevel | null
+  organizations?: AccountOrganization[]
+  has_requester_profile?: boolean
+  last_active_role?: 'requester' | 'interpreter' | null
+  intended_role?: 'requester' | 'interpreter' | 'organization' | null
+  pending_documents?: PendingDocument[]
+}
+
+export function accountFromMe(me: MeResponse): Account {
+  return {
+    id: me.account.id,
+    email: me.account.email,
+    fullName: me.account.full_name,
+    roles: me.roles,
+    staffLevel: me.staff_level,
+    organizations: me.organizations ?? [],
+    hasRequesterProfile: me.has_requester_profile ?? false,
+    lastActiveRole: me.last_active_role ?? null,
+    intendedRole: me.intended_role ?? null,
+    pendingDocuments: me.pending_documents ?? [],
+  }
 }
 
 export function createPortalServices(options: PortalServicesOptions): PortalServices {
@@ -40,17 +61,18 @@ export function createPortalServices(options: PortalServicesOptions): PortalServ
   })
 
   const source: SessionSource = {
-    async load(): Promise<Account | null> {
+    async load(): Promise<SessionLoad> {
       const current = await session.current()
-      if (!current) return null
+      if (!current) return 'anonymous'
       try {
-        const me = await api.get<MeResponse>('/me')
-        return { id: me.account.id, email: me.account.email, fullName: me.account.full_name, roles: me.roles, staffLevel: me.staff_level }
+        return accountFromMe(await api.get<MeResponse>('/me'))
       } catch (error) {
-        // A token the API no longer accepts, or a suspended account, is no session here.
-        if (error instanceof DataError && (error.code === 'UNAUTHENTICATED' || error.code === 'ACCOUNT_SUSPENDED')) {
+        // R-ACC-03: a suspended account keeps its session only to be told so ("Conta suspensa").
+        if (error instanceof DataError && error.code === 'ACCOUNT_SUSPENDED') return 'suspended'
+        // A token the API no longer accepts is no session here.
+        if (error instanceof DataError && error.code === 'UNAUTHENTICATED') {
           await session.signOut().catch(() => undefined)
-          return null
+          return 'anonymous'
         }
         throw error
       }

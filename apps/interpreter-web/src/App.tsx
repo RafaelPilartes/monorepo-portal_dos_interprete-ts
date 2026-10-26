@@ -1,7 +1,13 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { PanelLayout, PortalServicesProvider, RequireRole, SessionProvider, type PortalServices } from '@portal-dos-interpretes/auth'
+import AcceptTerms from '@portal-dos-interpretes/auth/pages/AcceptTerms'
 import Login from '@portal-dos-interpretes/auth/pages/Login'
+import { InterpreterOnboarding } from '@portal-dos-interpretes/auth/pages/Onboarding'
 import RecoverPassword from '@portal-dos-interpretes/auth/pages/RecoverPassword'
 import Register from '@portal-dos-interpretes/auth/pages/Register'
+import ResetPassword from '@portal-dos-interpretes/auth/pages/ResetPassword'
+import Suspended from '@portal-dos-interpretes/auth/pages/Suspended'
+import VerifyEmail from '@portal-dos-interpretes/auth/pages/VerifyEmail'
 import { AppProviders } from '@portal-dos-interpretes/features/app/AppProviders'
 import ArticlePage from '@portal-dos-interpretes/features/pages/ArticlePage'
 import InterpreterArticles from '@portal-dos-interpretes/features/pages/InterpreterArticles'
@@ -10,10 +16,10 @@ import InterpreterVideos from '@portal-dos-interpretes/features/pages/Interprete
 import { AppFooter } from '@portal-dos-interpretes/ui'
 import ModulePlaceholder from '@portal-dos-interpretes/ui/components/module-placeholder'
 import NotFound from '@portal-dos-interpretes/ui/components/not-found'
+import { navigation } from '@/navigation'
 import InterpreterAvailability from '@/pages/dashboard/interpreter/InterpreterAvailability'
 import InterpreterDocuments from '@/pages/dashboard/interpreter/InterpreterDocuments'
 import InterpreterEarnings from '@/pages/dashboard/interpreter/InterpreterEarnings'
-import InterpreterLayout from '@/pages/dashboard/interpreter/InterpreterLayout'
 import InterpreterOpenRequests from '@/pages/dashboard/interpreter/InterpreterOpenRequests'
 import InterpreterOverview from '@/pages/dashboard/interpreter/InterpreterOverview'
 import InterpreterProfilePage from '@/pages/dashboard/interpreter/InterpreterProfile'
@@ -46,6 +52,15 @@ const placeholders: { path: string; title: string; description: string }[] = [
   { path: 'support', title: 'Suporte e Ouvidoria', description: LATER },
 ]
 
+/** The interpreter area: a session with the interpreter role (R-ACC-02), in the panel layout. */
+function InterpreterArea() {
+  return (
+    <RequireRole role="interpreter">
+      <PanelLayout navigation={navigation} app="interpreter" profileHref="/profile" settingsHref="/settings" />
+    </RequireRole>
+  )
+}
+
 /**
  * Interpreter routes at their new paths (architecture.md §3, interpreter-web): the
  * interpreter area, colleagues' profiles from packages/features and the entry pages.
@@ -53,7 +68,7 @@ const placeholders: { path: string; title: string; description: string }[] = [
 export function InterpreterAppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<InterpreterLayout />}>
+      <Route path="/" element={<InterpreterArea />}>
         <Route index element={<InterpreterOverview />} />
         <Route path="requests" element={<InterpreterRequests />} />
         <Route path="open-requests" element={<InterpreterOpenRequests />} />
@@ -86,20 +101,29 @@ export function InterpreterAppRoutes() {
         <Route path="interpreters/:slug/articles" element={<InterpreterArticles />} />
         <Route path="interpreters/:slug/articles/:articleSlug" element={<ArticlePage />} />
       </Route>
-      <Route path="/login" element={<Login />} />
+      <Route path="/login" element={<Login app="interpreter" />} />
       <Route path="/register" element={<Register defaultAccountType="interpreter" />} />
       <Route path="/recover-password" element={<RecoverPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/verify-email" element={<VerifyEmail app="interpreter" />} />
+      <Route path="/accept-terms" element={<AcceptTerms />} />
+      <Route path="/suspended" element={<Suspended />} />
+      <Route path="/onboarding" element={<InterpreterOnboarding />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }
 
-export function App() {
+export function App({ services }: { services: PortalServices }) {
   return (
     <AppProviders>
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <InterpreterAppRoutes />
-      </BrowserRouter>
+      <PortalServicesProvider services={services}>
+        <SessionProvider source={services.source}>
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <InterpreterAppRoutes />
+          </BrowserRouter>
+        </SessionProvider>
+      </PortalServicesProvider>
       <AppFooter version={__APP_VERSION__} commit={__APP_COMMIT__} />
     </AppProviders>
   )

@@ -1,4 +1,4 @@
-import { errorMessage } from './errorText'
+import { errorMessage } from '../lib/errorText'
 import { COMMON_TEXTS } from '@portal-dos-interpretes/i18n'
 import { Button } from '@portal-dos-interpretes/ui/components/button'
 import { Skeleton } from '@portal-dos-interpretes/ui/components/skeleton'

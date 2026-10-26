@@ -13,6 +13,7 @@ interface StatsCardProps {
   className?: string;
 }
 
+/** A figure with its label: the number leads; the icon only names the kind, beside the label. */
 export function StatsCard({
   title,
   value,
@@ -22,35 +23,19 @@ export function StatsCard({
   className,
 }: StatsCardProps) {
   return (
-    <div
-      className={cn(
-        "rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md",
-        className
+    <div className={cn("rounded-lg border border-border bg-card px-5 py-4", className)}>
+      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+        <span className="truncate">{title}</span>
+      </p>
+      <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">{value}</p>
+      {description && <p className="mt-1 text-xs text-muted-foreground">{description}</p>}
+      {trend && (
+        <p className={cn("mt-1 text-xs font-medium", trend.isPositive ? "text-success" : "text-destructive")}>
+          {trend.isPositive ? "+" : "-"}
+          {Math.abs(trend.value)}% vs mês anterior
+        </p>
       )}
-    >
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-3xl font-bold tracking-tight">{value}</p>
-          {description && (
-            <p className="text-xs text-muted-foreground">{description}</p>
-          )}
-          {trend && (
-            <p
-              className={cn(
-                "text-xs font-medium",
-                trend.isPositive ? "text-green-600" : "text-red-600"
-              )}
-            >
-              {trend.isPositive ? "+" : "-"}
-              {Math.abs(trend.value)}% vs mês anterior
-            </p>
-          )}
-        </div>
-        <div className="rounded-lg bg-primary/10 p-3">
-          <Icon className="h-6 w-6 text-primary" />
-        </div>
-      </div>
     </div>
   );
 }

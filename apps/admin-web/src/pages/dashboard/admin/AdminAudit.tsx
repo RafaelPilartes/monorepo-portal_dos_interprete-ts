@@ -11,7 +11,7 @@ import { PaginationBar } from '@portal-dos-interpretes/ui/components/pagination-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@portal-dos-interpretes/ui/components/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@portal-dos-interpretes/ui/components/table'
 import { History } from 'lucide-react'
-import { QueryError, TableSkeleton } from '@/components/QueryStates'
+import { QueryError, TableSkeleton } from '@portal-dos-interpretes/features/components/QueryStates'
 import type { AuditRow } from '@/data/repositories'
 import { AUDIT_PAGE_SIZE, useAuditEvents, useStaffList, type AuditFilters } from '@/viewModels/staff-config.viewmodel'
 

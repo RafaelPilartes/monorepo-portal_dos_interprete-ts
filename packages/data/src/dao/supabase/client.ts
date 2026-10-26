@@ -13,6 +13,8 @@ export function createSupabaseClient({ url, anonKey, storage }: SupabaseClientOp
     throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY')
   }
   return createClient(url, anonKey, {
-    auth: { persistSession: true, autoRefreshToken: true, ...(storage ? { storage } : {}) },
+    // Implicit flow: the confirmation email is requested by the API (POST /auth/register), so a
+    // PKCE verifier would not be in this browser; the link brings the session in the URL hash.
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit', ...(storage ? { storage } : {}) },
   })
 }

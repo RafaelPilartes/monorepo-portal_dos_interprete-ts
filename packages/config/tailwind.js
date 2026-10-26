@@ -1,6 +1,7 @@
 // Tailwind preset shared by the four apps. Theme tokens come from the
 // current SPA so moved screens keep their look (foundation.md §D).
 import animate from 'tailwindcss-animate'
+import plugin from 'tailwindcss/plugin'
 
 /** @param {string} name */
 const token = (name) => `hsl(var(--${name}))`
@@ -64,5 +65,10 @@ export default {
       },
     },
   },
-  plugins: [animate],
+  plugins: [
+    animate,
+    // `panel:` — the denser, quieter look of the three dashboard apps, which put `app-panel` on
+    // <html>. The public site does not, so shared components keep its look there.
+    plugin(({ addVariant }) => addVariant('panel', '.app-panel &')),
+  ],
 }

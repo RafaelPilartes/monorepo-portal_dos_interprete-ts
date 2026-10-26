@@ -1,128 +1,58 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { appUrl } from '@portal-dos-interpretes/ui/lib/app-urls'
+import { errorFor } from '@portal-dos-interpretes/core/errors'
+import { DataError } from '@portal-dos-interpretes/data'
+import { AUTH_TEXTS } from '@portal-dos-interpretes/i18n'
 import { Button } from '@portal-dos-interpretes/ui/components/button'
 import { Input } from '@portal-dos-interpretes/ui/components/input'
 import { Label } from '@portal-dos-interpretes/ui/components/label'
-import { HandHeart, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { AuthShell, FormAlert } from '../components/AuthShell'
+import { usePortalServices } from '../services/PortalServices'
 
+/** /recover-password: the answer is the same whether or not the account exists. */
 export default function RecoverPassword() {
+  const services = usePortalServices()
+  const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const submit = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!services) return
     setIsLoading(true)
-
-    // Simulate password recovery - will be replaced with actual auth
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    setIsLoading(false)
-    setSubmitted(true)
-    toast.success('Email enviado com sucesso!')
+    setFormError(null)
+    try {
+      await services.auth.requestPasswordReset(email, new URL('/reset-password', window.location.origin).toString())
+      setSent(true)
+    } catch (error) {
+      console.error('[auth] password reset request failed', error)
+      setFormError(error instanceof DataError ? error.message : errorFor('INTERNAL_ERROR').message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-8 bg-gradient-to-br from-accent via-background to-background">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <a
-          href={appUrl('site')}
-          className="flex items-center gap-2 mb-8 justify-center"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <HandHeart className="h-5 w-5" />
+    <AuthShell
+      title={AUTH_TEXTS.recoverTitle}
+      subtitle={sent ? undefined : AUTH_TEXTS.recoverSubtitle}
+      footer={<Link to="/login" className="font-medium text-primary hover:underline">Voltar à entrada</Link>}
+    >
+      {sent ? (
+        <FormAlert tone="success">{AUTH_TEXTS.recoverSent}</FormAlert>
+      ) : (
+        <form onSubmit={submit} className="space-y-5">
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
           </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-bold leading-none text-foreground">
-              Portal dos
-            </span>
-            <span className="text-xs font-medium text-muted-foreground">
-              Portal dos Intérpretes
-            </span>
-          </div>
-        </a>
-
-        <div className="bg-card rounded-2xl p-8 shadow-lg">
-          {submitted ? (
-            <div className="text-center">
-              <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-success/10 text-success mb-6">
-                <CheckCircle2 className="h-8 w-8" />
-              </div>
-              <h1 className="text-2xl font-bold text-foreground mb-2">
-                Email Enviado
-              </h1>
-              <p className="text-muted-foreground mb-6">
-                Verifique a sua caixa de entrada. Enviámos instruções para
-                redefinir a sua palavra-passe.
-              </p>
-              <p className="text-sm text-muted-foreground mb-6">
-                Não recebeu o email?{' '}
-                <button
-                  onClick={() => setSubmitted(false)}
-                  className="text-primary hover:underline"
-                >
-                  Reenviar
-                </button>
-              </p>
-              <Button variant="outline" asChild className="w-full">
-                <Link to="/login">
-                  <ArrowLeft className="h-4 w-4" />
-                  Voltar ao login
-                </Link>
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="text-center mb-8">
-                <h1 className="text-2xl font-bold text-foreground mb-2">
-                  Recuperar Palavra-passe
-                </h1>
-                <p className="text-muted-foreground">
-                  Insira o seu email e enviaremos instruções para redefinir a
-                  sua palavra-passe.
-                </p>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full"
-                  size="lg"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'A enviar...' : 'Enviar Instruções'}
-                </Button>
-              </form>
-
-              <div className="mt-6 text-center">
-                <Link
-                  to="/login"
-                  className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Voltar ao login
-                </Link>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+          {formError && <FormAlert>{formError}</FormAlert>}
+          <Button type="submit" className="w-full" disabled={isLoading || !services}>
+            {isLoading ? 'A enviar…' : 'Enviar o link'}
+          </Button>
+        </form>
+      )}
+    </AuthShell>
   )
 }

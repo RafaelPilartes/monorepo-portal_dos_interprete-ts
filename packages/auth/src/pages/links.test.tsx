@@ -4,9 +4,11 @@ import { describe, expect, it } from 'vitest'
 import Login from './Login'
 import RecoverPassword from './RecoverPassword'
 import Register from './Register'
+import { PortalServicesProvider } from '../services/PortalServices'
+import { fakeServices } from '../testing/fakeServices'
 
 function renderPage(page: React.ReactElement) {
-  return render(<MemoryRouter>{page}</MemoryRouter>)
+  return render(<PortalServicesProvider services={fakeServices(null)}><MemoryRouter>{page}</MemoryRouter></PortalServicesProvider>)
 }
 
 describe('entry pages links (AD-012)', () => {
@@ -20,7 +22,7 @@ describe('entry pages links (AD-012)', () => {
 
   it('login: the registration link can be hidden (admin-web)', () => {
     renderPage(<Login registerHref={null} />)
-    expect(screen.queryByText('Registe-se aqui')).toBeNull()
+    expect(screen.queryByText('Criar conta')).toBeNull()
   })
 
   it('register: "login" stays in the app', () => {

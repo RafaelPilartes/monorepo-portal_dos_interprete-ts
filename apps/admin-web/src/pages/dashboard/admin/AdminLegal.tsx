@@ -8,8 +8,8 @@ import { ConfirmationModal } from '@portal-dos-interpretes/ui/components/confirm
 import { PageHeader } from '@portal-dos-interpretes/ui/components/page-header'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@portal-dos-interpretes/ui/components/tabs'
 import { Textarea } from '@portal-dos-interpretes/ui/components/textarea'
-import { errorMessage } from '@/components/errorText'
-import { QueryError, TableSkeleton } from '@/components/QueryStates'
+import { errorMessage } from '@portal-dos-interpretes/features/lib/errorText'
+import { QueryError, TableSkeleton } from '@portal-dos-interpretes/features/components/QueryStates'
 import type { LegalDocumentRow } from '@/data/repositories'
 import { useLegalDocuments, useLegalMutations } from '@/viewModels/staff-config.viewmodel'
 

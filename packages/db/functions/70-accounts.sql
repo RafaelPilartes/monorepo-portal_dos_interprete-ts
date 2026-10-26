@@ -86,6 +86,7 @@ AS $$
         FROM identity.organization_members AS m
         JOIN identity.organizations AS o ON o.id = m.organization_id
        WHERE m.account_id = p.id AND m.status = 'active' AND o.status <> 'anonymized'), '[]'::jsonb),
+    'has_requester_profile', EXISTS (SELECT 1 FROM identity.requester_profiles AS r WHERE r.account_id = p.id),
     'last_active_role', p.last_active_role,
     -- What the person chose at sign-up; only decides where onboarding leads (R-ACC-01).
     'intended_role', CASE WHEN u.raw_user_meta_data ->> 'intended_role' IN ('requester', 'interpreter', 'organization')
