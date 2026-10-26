@@ -28,6 +28,7 @@ create_tag v0.7.0 623ee1dc6bdf8307d957919daf9419d86111312e "v0.7.0 - step E, sha
 create_tag v0.8.0 509075b9efd2de3bfa42313118ef6b744f6881b1 "v0.8.0 - step F, local database (2026-10-25)"
 create_tag v0.9.0 c81d193c9f23aad8ccb3678944dbe6b2922efa2b "v0.9.0 - step G, API (2026-10-25)"
 create_tag v0.10.0 e98efb6ccfbcdcaa43d171194d5ce933137f15e9 "v0.10.0 - step H1, staff, configuration and audit (2026-10-25)"
+create_tag v0.11.0 5b87efa8d428337192b5d6a2e627e42e82d00371 "v0.11.0 - step H2 (accounts and organisations)"
 # TAGS-END
 
 git push origin --tags
