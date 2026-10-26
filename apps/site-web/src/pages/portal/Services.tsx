@@ -6,88 +6,18 @@ import { VideoSection } from '@/components/VideoSection'
 import { ServiceDetailsModal } from '@/components/ServiceDetailsModal'
 import { ArrowRight, CheckCircle2 } from 'lucide-react'
 
-// Import service images
-import educationImg from '@portal-dos-interpretes/ui/assets/services/education.jpg'
-import healthImg from '@portal-dos-interpretes/ui/assets/services/health.jpg'
-import legalImg from '@portal-dos-interpretes/ui/assets/services/legal.jpg'
-import eventsImg from '@portal-dos-interpretes/ui/assets/services/events.jpg'
-import religiousImg from '@portal-dos-interpretes/ui/assets/services/religious.jpg'
 import onlineImg from '@portal-dos-interpretes/ui/assets/services/online.jpg'
 import presencialImg from '@portal-dos-interpretes/ui/assets/services/presencial.jpg'
+import { formatAoa } from '@portal-dos-interpretes/i18n'
+import { Skeleton } from '@portal-dos-interpretes/ui/components/skeleton'
+import { SERVICE_EXAMPLES, SERVICE_IMAGES } from '@/components/serviceContent'
+import { useActiveServices, type PublicService } from '@/data/catalog'
 
-const services = [
-  {
-    image: educationImg,
-    name: 'Educação',
-    description:
-      'Interpretação em escolas, universidades, formações e conferências académicas.',
-    examples: [
-      'Aulas e palestras',
-      'Defesas de tese',
-      'Reuniões de pais',
-      'Formação profissional'
-    ]
-  },
-  {
-    image: healthImg,
-    name: 'Saúde',
-    description:
-      'Acompanhamento em consultas médicas, hospitais e centros de saúde.',
-    examples: [
-      'Consultas médicas',
-      'Internamentos',
-      'Urgências',
-      'Apoio psicológico'
-    ]
-  },
-  {
-    image: legalImg,
-    name: 'Jurídico',
-    description: 'Interpretação em tribunais, esquadras, notários e advogados.',
-    examples: [
-      'Audiências em tribunal',
-      'Depoimentos',
-      'Consultas legais',
-      'Assinatura de documentos'
-    ]
-  },
-  {
-    image: eventsImg,
-    name: 'Eventos',
-    description:
-      'Cobertura de eventos públicos, conferências, espectáculos e cerimónias.',
-    examples: [
-      'Conferências',
-      'Espectáculos culturais',
-      'Eventos corporativos',
-      'Cerimónias'
-    ]
-  },
-  {
-    image: religiousImg,
-    name: 'Religioso',
-    description:
-      'Interpretação em missas, cultos, casamentos e eventos religiosos.',
-    examples: [
-      'Cultos e missas',
-      'Casamentos',
-      'Funerais',
-      'Retiros espirituais'
-    ]
-  },
-  {
-    image: onlineImg,
-    name: 'Online',
-    description:
-      'Interpretação remota para videoconferências, aulas online e webinars.',
-    examples: [
-      'Videoconferências',
-      'Aulas online',
-      'Webinars',
-      'Entrevistas remotas'
-    ]
-  }
-]
+/** "a partir de 15 000 Kz por hora" or "25 000 Kz" (catalogs.md, site-web /services). */
+function priceLine(service: PublicService): string {
+  const amount = formatAoa(Number(service.platform_price_aoa))
+  return service.pricing_mode === 'hourly' ? `a partir de ${amount} por hora` : amount
+}
 
 const modalities = [
   {
@@ -131,56 +61,7 @@ export default function Services() {
             </p>
           </AnimatedSection>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {services.map((service, index) => (
-              <AnimatedSection
-                key={service.name}
-                animation="fade-up"
-                delay={index * 100}
-              >
-                <ServiceDetailsModal service={service}>
-                  <div className="group rounded-2xl bg-card overflow-hidden shadow-md card-hover h-full border border-border/50 cursor-pointer">
-                    {/* Service Image */}
-                    <div className="relative h-48 overflow-hidden">
-                      <img
-                        src={service.image}
-                        alt={service.name}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      <h3 className="absolute bottom-4 left-4 text-xl font-semibold text-white">
-                        {service.name}
-                      </h3>
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-6">
-                      <p className="text-muted-foreground mb-4">
-                        {service.description}
-                      </p>
-                      <ul className="space-y-2">
-                        {service.examples.slice(0, 3).map(example => (
-                          <li
-                            key={example}
-                            className="flex items-center gap-2 text-sm text-muted-foreground"
-                          >
-                            <CheckCircle2 className="h-4 w-4 text-secondary flex-shrink-0" />
-                            <span>{example}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <div className="mt-4 pt-4 border-t border-border">
-                        <span className="text-sm text-primary font-medium group-hover:underline">
-                          Ver detalhes →
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </ServiceDetailsModal>
-              </AnimatedSection>
-            ))}
-          </div>
+          <ServicesGrid />
         </div>
       </section>
 
@@ -271,6 +152,72 @@ export default function Services() {
           </AnimatedSection>
         </div>
       </section>
+    </div>
+  )
+}
+
+function ServicesGrid() {
+  const services = useActiveServices()
+  if (services.isPending) {
+    return (
+      <div role="status" aria-label="A carregar os serviços" className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {[0, 1, 2].map((index) => <Skeleton key={index} className="h-80 rounded-2xl" />)}
+      </div>
+    )
+  }
+  if (services.isError) {
+    return (
+      <div role="alert" className="mx-auto max-w-lg rounded-xl border border-border bg-muted/40 p-6 text-center">
+        <p className="text-muted-foreground">Não foi possível carregar os serviços neste momento. Tenta outra vez dentro de momentos.</p>
+        <Button variant="outline" className="mt-4" onClick={() => void services.refetch()}>Tentar outra vez</Button>
+      </div>
+    )
+  }
+  if (services.data.length === 0) {
+    return <p className="text-center text-muted-foreground">Os serviços disponíveis aparecem aqui em breve.</p>
+  }
+  return (
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {services.data.map((service, index) => {
+        const image = service.icon ? SERVICE_IMAGES[service.icon] : undefined
+        const examples = SERVICE_EXAMPLES[service.slug] ?? []
+        const price = priceLine(service)
+        return (
+          <AnimatedSection key={service.id} animation="fade-up" delay={index * 100}>
+            <ServiceDetailsModal service={{ slug: service.slug, image, name: service.title, description: service.description, price, examples }}>
+              <div className="group rounded-2xl bg-card overflow-hidden shadow-md card-hover h-full border border-border/50 cursor-pointer">
+                <div className="relative h-48 overflow-hidden bg-primary/10">
+                  {image && (
+                    <img
+                      src={image}
+                      alt={service.title}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      loading="lazy"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  <h3 className="absolute bottom-4 left-4 text-xl font-semibold text-white">{service.title}</h3>
+                </div>
+                <div className="p-6">
+                  <p className="text-muted-foreground mb-2">{service.description}</p>
+                  <p className="mb-4 text-sm font-medium text-foreground">{price}</p>
+                  <ul className="space-y-2">
+                    {examples.slice(0, 3).map((example) => (
+                      <li key={example} className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <CheckCircle2 className="h-4 w-4 text-secondary flex-shrink-0" />
+                        <span>{example}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <span className="text-sm text-primary font-medium group-hover:underline">Ver detalhes →</span>
+                  </div>
+                </div>
+              </div>
+            </ServiceDetailsModal>
+          </AnimatedSection>
+        )
+      })}
     </div>
   )
 }

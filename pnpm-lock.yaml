@@ -327,9 +327,18 @@ importers:
 
   apps/site-web:
     dependencies:
+      '@portal-dos-interpretes/data':
+        specifier: workspace:*
+        version: link:../../packages/data
+      '@portal-dos-interpretes/db-types':
+        specifier: workspace:*
+        version: link:../../packages/db-types
       '@portal-dos-interpretes/features':
         specifier: workspace:*
         version: link:../../packages/features
+      '@portal-dos-interpretes/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@portal-dos-interpretes/ui':
         specifier: workspace:*
         version: link:../../packages/ui

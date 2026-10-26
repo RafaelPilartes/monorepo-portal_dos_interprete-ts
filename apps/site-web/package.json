@@ -12,7 +12,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@portal-dos-interpretes/data": "workspace:*",
+    "@portal-dos-interpretes/db-types": "workspace:*",
     "@portal-dos-interpretes/features": "workspace:*",
+    "@portal-dos-interpretes/i18n": "workspace:*",
     "@portal-dos-interpretes/ui": "workspace:*",
     "@tanstack/react-query": "^5.83.0",
     "lucide-react": "^0.462.0",

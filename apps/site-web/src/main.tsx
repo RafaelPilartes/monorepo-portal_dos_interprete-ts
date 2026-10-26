@@ -2,12 +2,13 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import '@portal-dos-interpretes/ui/styles.css'
 import { App } from './App'
+import { createSiteData } from './data/catalog'
 
 const rootElement = document.getElementById('root')
 if (!rootElement) throw new Error('Missing #root element')
 
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <App data={createSiteData()} />
   </StrictMode>,
 )

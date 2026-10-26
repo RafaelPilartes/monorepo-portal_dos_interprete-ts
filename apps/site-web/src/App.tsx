@@ -12,6 +12,7 @@ import Impact from '@/pages/portal/Impact'
 import Interpreters from '@/pages/portal/Interpreters'
 import Services from '@/pages/portal/Services'
 import Tutorials from '@/pages/portal/Tutorials'
+import { SiteDataProvider, type SiteData } from '@/data/catalog'
 
 /** Public site routes (architecture.md §3, site-web). */
 export function SiteRoutes() {
@@ -34,12 +35,14 @@ export function SiteRoutes() {
   )
 }
 
-export function App() {
+export function App({ data = null }: { data?: SiteData | null } = {}) {
   return (
     <AppProviders>
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <SiteRoutes />
-      </BrowserRouter>
+      <SiteDataProvider data={data}>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <SiteRoutes />
+        </BrowserRouter>
+      </SiteDataProvider>
       <AppFooter version={__APP_VERSION__} commit={__APP_COMMIT__} />
     </AppProviders>
   )

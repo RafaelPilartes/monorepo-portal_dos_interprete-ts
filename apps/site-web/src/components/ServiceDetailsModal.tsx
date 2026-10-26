@@ -7,15 +7,20 @@ import { ArrowRight, CheckCircle2, MapPin, Video, Clock } from 'lucide-react';
 
 interface ServiceDetailsModalProps {
   service: {
-    image: string;
+    /** The catalog slug (catalog.services.slug): the key of the extended details below. */
+    slug: string;
+    image?: string | undefined;
     name: string;
     description: string;
-    examples: string[];
+    /** "a partir de 15 000 Kz por hora" (from the database). */
+    price: string;
+    examples: readonly string[];
   };
   children: React.ReactNode;
 }
 
-// Extended service details
+// Extended service details by catalog slug (site content); a service without them shows the
+// description from the database.
 const serviceDetails: Record<string, {
   fullDescription: string;
   benefits: string[];
@@ -23,7 +28,7 @@ const serviceDetails: Record<string, {
   duration: string;
   videoUrl?: string;
 }> = {
-  'Educação': {
+  educacao: {
     fullDescription: 'Oferecemos serviços de interpretação especializados para o sector educacional, desde o ensino primário até ao ensino superior. Os nossos intérpretes são formados especificamente para contextos académicos, garantindo que alunos surdos tenham acesso pleno à educação.',
     benefits: [
       'Intérpretes com formação pedagógica',
@@ -38,7 +43,7 @@ const serviceDetails: Record<string, {
     duration: 'Por hora, dia ou semestre',
     videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4'
   },
-  'Saúde': {
+  saude: {
     fullDescription: 'Garantimos que pacientes surdos tenham acesso completo aos serviços de saúde. Os nossos intérpretes especializados em saúde conhecem a terminologia médica e são treinados para situações sensíveis e de emergência.',
     benefits: [
       'Intérpretes com formação em terminologia médica',
@@ -53,7 +58,7 @@ const serviceDetails: Record<string, {
     duration: 'Por consulta ou hora',
     videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4'
   },
-  'Jurídico': {
+  juridico: {
     fullDescription: 'Asseguramos o acesso à justiça para pessoas surdas através de interpretação profissional em todos os contextos legais. Os nossos intérpretes jurídicos são certificados e conhecem os procedimentos legais angolanos.',
     benefits: [
       'Certificação em interpretação jurídica',
@@ -68,7 +73,7 @@ const serviceDetails: Record<string, {
     duration: 'Por hora ou sessão',
     videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4'
   },
-  'Eventos': {
+  eventos: {
     fullDescription: 'Tornamos eventos acessíveis a todos os participantes através de interpretação profissional. Cobrimos desde pequenas reuniões até grandes conferências internacionais, garantindo qualidade e profissionalismo.',
     benefits: [
       'Experiência em grandes eventos',
@@ -83,7 +88,7 @@ const serviceDetails: Record<string, {
     duration: 'Por evento',
     videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4'
   },
-  'Religioso': {
+  religioso: {
     fullDescription: 'Facilitamos a participação plena de pessoas surdas em serviços religiosos e cerimónias. Os nossos intérpretes compreendem a importância espiritual destes momentos e interpretam com sensibilidade e respeito.',
     benefits: [
       'Interpretação respeitosa e sensível',
@@ -97,7 +102,7 @@ const serviceDetails: Record<string, {
     duration: 'Por serviço ou cerimónia',
     videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4'
   },
-  'Online': {
+  online: {
     fullDescription: 'Oferecemos serviços de interpretação remota de alta qualidade para videoconferências, webinars e aulas online. Utilizamos as melhores plataformas e tecnologias para garantir uma comunicação fluida.',
     benefits: [
       'Sem necessidade de deslocação',
@@ -115,8 +120,7 @@ const serviceDetails: Record<string, {
 
 export function ServiceDetailsModal({ service, children }: ServiceDetailsModalProps) {
   const [open, setOpen] = useState(false);
-  // 'Educação' is a literal key of serviceDetails, so the fallback always exists.
-  const details = (serviceDetails[service.name] || serviceDetails['Educação'])!;
+  const details = serviceDetails[service.slug];
 
   // Extract YouTube video ID
   const getYouTubeEmbedUrl = (url: string) => {
@@ -140,9 +144,12 @@ export function ServiceDetailsModal({ service, children }: ServiceDetailsModalPr
           </DialogTitle>
         </DialogHeader>
 
+        <p className="text-sm font-medium text-foreground">{service.price}</p>
+
         {/* Service Image or Video */}
+        {(details?.videoUrl || service.image) && (
         <div className="relative aspect-video rounded-xl overflow-hidden bg-muted">
-          {details.videoUrl ? (
+          {details?.videoUrl ? (
             <iframe
               src={getYouTubeEmbedUrl(details.videoUrl)}
               title={`Vídeo sobre ${service.name}`}
@@ -159,13 +166,15 @@ export function ServiceDetailsModal({ service, children }: ServiceDetailsModalPr
             />
           )}
         </div>
+        )}
 
         {/* Full Description */}
         <div className="space-y-4">
           <p className="text-muted-foreground leading-relaxed">
-            {details.fullDescription}
+            {details?.fullDescription ?? service.description}
           </p>
 
+          {details && (<>
           {/* Benefits */}
           <div>
             <h4 className="font-semibold text-foreground mb-3">Benefícios</h4>
@@ -204,8 +213,10 @@ export function ServiceDetailsModal({ service, children }: ServiceDetailsModalPr
             <Clock className="h-4 w-4" />
             <span>Duração: {details.duration}</span>
           </div>
+          </>)}
 
           {/* Examples */}
+          {service.examples.length > 0 && (
           <div>
             <h4 className="font-semibold text-foreground mb-3">Exemplos de Serviços</h4>
             <div className="flex flex-wrap gap-2">
@@ -216,6 +227,7 @@ export function ServiceDetailsModal({ service, children }: ServiceDetailsModalPr
               ))}
             </div>
           </div>
+          )}
 
           {/* CTA */}
           <div className="pt-4 border-t border-border">

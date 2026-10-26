@@ -15,6 +15,9 @@ export type AccountRow = Tables<{ schema: 'identity' }, 'account_directory'>
 export type OrganizationRow = Tables<{ schema: 'identity' }, 'organization_directory'>
 export type MemberRow = Tables<{ schema: 'identity' }, 'organization_member_directory'>
 export type ConsentRow = Tables<{ schema: 'identity' }, 'consent_history'>
+export type LanguageRow = Tables<{ schema: 'catalog' }, 'language_admin'>
+export type SpecialtyRow = Tables<{ schema: 'catalog' }, 'specialty_admin'>
+export type ServiceRow = Tables<{ schema: 'catalog' }, 'service_admin'>
 
 export type AccountKind = 'requester' | 'interpreter'
 export interface DirectoryQuery {
@@ -71,6 +74,9 @@ export function useRepositories() {
       organizations: new OrganizationDirectoryDAO(client, 'identity', 'organization_directory'),
       members: new ReadOnlyDAO<MemberRow>(client, 'identity', 'organization_member_directory', [], 'account_id'),
       consents: new ReadOnlyDAO<ConsentRow>(client, 'identity', 'consent_history'),
+      languages: new ReadOnlyDAO<LanguageRow>(client, 'catalog', 'language_admin'),
+      specialties: new ReadOnlyDAO<SpecialtyRow>(client, 'catalog', 'specialty_admin'),
+      services: new ReadOnlyDAO<ServiceRow>(client, 'catalog', 'service_admin'),
     }),
     [client],
   )

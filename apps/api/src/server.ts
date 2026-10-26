@@ -10,6 +10,7 @@ import { registerAuth } from './plugins/auth.js'
 import { registerErrorHandling } from './plugins/errors.js'
 import { registerRateLimit } from './plugins/rateLimit.js'
 import { registerAccountRoutes } from './routes/accounts.js'
+import { registerCatalogRoutes } from './routes/admin/catalogs.js'
 import { registerStaffConfigRoutes } from './routes/admin/staffConfig.js'
 import { registerFileRoutes } from './routes/files.js'
 import { registerMeRoute } from './routes/me.js'
@@ -65,6 +66,7 @@ export async function buildServer(options: ServerOptions = {}): Promise<FastifyI
     registerAudit(server, { db: options.db })
     if (options.storage) registerFileRoutes(server, { db: options.db, storage: options.storage })
     registerStaffConfigRoutes(server, { db: options.db })
+    registerCatalogRoutes(server, { db: options.db })
     registerMeRoute(server, { db: options.db })
     registerOrganizationRoutes(server, { db: options.db })
     if (options.authServer && options.appUrls) {

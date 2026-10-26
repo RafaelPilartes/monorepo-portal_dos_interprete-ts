@@ -104,3 +104,17 @@ export async function latestEmail(to: string, subjectPattern?: RegExp): Promise<
   }
   throw new Error(`no email for ${to}`)
 }
+
+export const SITE_URL = process.env.SITE_URL ?? 'http://localhost:5170'
+
+/**
+ * Test setup only: one SQL statement on the local database, as its owner (psql inside the database
+ * container, like packages/db/scripts). For the states no screen creates yet (an item in use before
+ * H4 lets interpreters offer services).
+ */
+export function sqlLocal(sql: string): string {
+  const config = readFileSync(path.join(repoRoot, 'supabase/config.toml'), 'utf8')
+  const projectId = /^project_id = "(.+)"$/m.exec(config)?.[1]
+  if (!projectId) throw new Error('no project_id in supabase/config.toml')
+  return execFileSync('docker', ['exec', '-i', `supabase_db_${projectId}`, 'psql', '-X', '-q', '-At', '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-c', sql], { encoding: 'utf8' }).trim()
+}

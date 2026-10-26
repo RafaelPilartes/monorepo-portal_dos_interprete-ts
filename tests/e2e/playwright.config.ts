@@ -39,7 +39,7 @@ export default defineConfig({
     { name: 'routes', testMatch: /site-routes\.spec\.ts$/ },
     { name: 'admin-login', testMatch: /admin\.setup\.ts$/ },
     { name: 'panel-login', testMatch: /panel\.setup\.ts$/ },
-    { name: 'admin', testMatch: /(admin-routes|h1-.*)\.spec\.ts$/, dependencies: ['admin-login'], use: { storageState: ADMIN_STATE } },
+    { name: 'admin', testMatch: /(admin-routes|h1-.*|h3-.*)\.spec\.ts$/, dependencies: ['admin-login'], use: { storageState: ADMIN_STATE } },
     { name: 'panels', testMatch: /(requester|interpreter)-routes\.spec\.ts$/, dependencies: ['panel-login'], use: { storageState: PANEL_STATE } },
     { name: 'h2', testMatch: /h2-.*\.spec\.ts$/, dependencies: ['admin-login'], use: { storageState: ADMIN_STATE } },
   ],
@@ -49,6 +49,7 @@ export default defineConfig({
       url: 'http://localhost:5170',
       reuseExistingServer: true,
       timeout: 120_000,
+      env: appEnv,
     },
     {
       command: 'pnpm --filter @portal-dos-interpretes/requester-web exec vite --port 5171 --strictPort',

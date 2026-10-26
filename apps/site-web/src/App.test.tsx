@@ -4,18 +4,25 @@ import { describe, expect, it } from 'vitest'
 import rootPackage from '../../../package.json'
 import { AppProviders } from '@portal-dos-interpretes/features/app/AppProviders'
 import { App, SiteRoutes } from './App'
+import { SiteDataProvider, type PublicService, type SiteData } from './data/catalog'
 
 function LocationProbe() {
   return <output data-testid="location">{useLocation().pathname}</output>
 }
 
-function renderAt(path: string) {
+function fakeData(services: PublicService[]): SiteData {
+  return { services: { list: async () => ({ data: services, pagination: { limit: null, offset: 0, count: services.length } }), getById: async () => null, getOneByField: async () => null, listenById: () => () => undefined } as unknown as SiteData['services'] }
+}
+
+function renderAt(path: string, data: SiteData | null = null) {
   return render(
     <AppProviders>
-      <MemoryRouter initialEntries={[path]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <SiteRoutes />
-        <LocationProbe />
-      </MemoryRouter>
+      <SiteDataProvider data={data}>
+        <MemoryRouter initialEntries={[path]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <SiteRoutes />
+          <LocationProbe />
+        </MemoryRouter>
+      </SiteDataProvider>
     </AppProviders>,
   )
 }
@@ -48,5 +55,23 @@ describe('site-web App', () => {
   it('shows the monorepo version in the footer', () => {
     render(<App />)
     expect(screen.getByTestId('app-footer').textContent).toContain(`v${rootPackage.version}`)
+  })
+})
+
+describe('site-web /services (catalogs.md, criterion 4)', () => {
+  it('shows the active services from the database, with the table price', async () => {
+    renderAt('/services', fakeData([
+      { id: 's1', slug: 'saude', title: 'Saúde', description: 'Consultas e hospitais.', pricing_mode: 'hourly', platform_price_aoa: 15000, icon: 'health', sort: 1 },
+      { id: 's2', slug: 'novo-servico', title: 'Serviço novo', description: 'Sem conteúdo do site.', pricing_mode: 'fixed', platform_price_aoa: 25000, icon: null, sort: 2 },
+    ]))
+    expect(await screen.findByText('Saúde')).toBeTruthy()
+    expect(screen.getByText('a partir de 15 000 Kz por hora')).toBeTruthy()
+    expect(screen.getByText('25 000 Kz')).toBeTruthy()
+    expect(screen.getByText('Consultas médicas')).toBeTruthy()
+  })
+
+  it('says when there are no services, and when they cannot be read', async () => {
+    renderAt('/services', fakeData([]))
+    expect(await screen.findByText('Os serviços disponíveis aparecem aqui em breve.')).toBeTruthy()
   })
 })

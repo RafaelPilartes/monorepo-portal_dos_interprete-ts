@@ -165,13 +165,287 @@ export type Database = {
     };
     "catalog": {
         Tables: {
-            [_ in never]: never;
+            "languages": {
+                Row: {
+                    "active": boolean;
+                    "code": string;
+                    "created_at": string;
+                    "id": string;
+                    "is_sign_language": boolean;
+                    "name": string;
+                    "sort": number;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "active"?: boolean;
+                    "code": string;
+                    "created_at"?: string;
+                    "id"?: string;
+                    "is_sign_language"?: boolean;
+                    "name": string;
+                    "sort"?: number;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "active"?: boolean;
+                    "code"?: string;
+                    "created_at"?: string;
+                    "id"?: string;
+                    "is_sign_language"?: boolean;
+                    "name"?: string;
+                    "sort"?: number;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                ];
+            };
+            "services": {
+                Row: {
+                    "active": boolean;
+                    "created_at": string;
+                    "description": string;
+                    "icon": string | null;
+                    "id": string;
+                    "platform_price_aoa": number;
+                    "pricing_mode": string;
+                    "slug": string;
+                    "sort": number;
+                    "title": string;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "active"?: boolean;
+                    "created_at"?: string;
+                    "description"?: string;
+                    "icon"?: string | null;
+                    "id"?: string;
+                    "platform_price_aoa": number;
+                    "pricing_mode": string;
+                    "slug": string;
+                    "sort"?: number;
+                    "title": string;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "active"?: boolean;
+                    "created_at"?: string;
+                    "description"?: string;
+                    "icon"?: string | null;
+                    "id"?: string;
+                    "platform_price_aoa"?: number;
+                    "pricing_mode"?: string;
+                    "slug"?: string;
+                    "sort"?: number;
+                    "title"?: string;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                ];
+            };
+            "specialties": {
+                Row: {
+                    "active": boolean;
+                    "created_at": string;
+                    "description": string;
+                    "id": string;
+                    "name": string;
+                    "slug": string;
+                    "sort": number;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "active"?: boolean;
+                    "created_at"?: string;
+                    "description"?: string;
+                    "id"?: string;
+                    "name": string;
+                    "slug": string;
+                    "sort"?: number;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "active"?: boolean;
+                    "created_at"?: string;
+                    "description"?: string;
+                    "id"?: string;
+                    "name"?: string;
+                    "slug"?: string;
+                    "sort"?: number;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                ];
+            };
         };
         Views: {
-            [_ in never]: never;
+            "item_usage": {
+                Row: {
+                    "id": string | null;
+                    "kind": string | null;
+                    "used": number | null;
+                };
+                ComputedFields: never;
+                Relationships: [
+                ];
+            };
+            "language_admin": {
+                Row: {
+                    "active": boolean;
+                    "code": string;
+                    "created_at": string;
+                    "id": string;
+                    "is_sign_language": boolean;
+                    "name": string;
+                    "sort": number;
+                    "updated_at": string;
+                    "used_in": number | null;
+                };
+                ComputedFields: never;
+                Relationships: [
+                ];
+            };
+            "service_admin": {
+                Row: {
+                    "active": boolean;
+                    "created_at": string;
+                    "description": string;
+                    "icon": string | null;
+                    "id": string;
+                    "platform_price_aoa": number;
+                    "pricing_mode": string;
+                    "slug": string;
+                    "sort": number;
+                    "title": string;
+                    "updated_at": string;
+                    "used_in": number | null;
+                };
+                ComputedFields: never;
+                Relationships: [
+                ];
+            };
+            "specialty_admin": {
+                Row: {
+                    "active": boolean;
+                    "created_at": string;
+                    "description": string;
+                    "id": string;
+                    "name": string;
+                    "slug": string;
+                    "sort": number;
+                    "updated_at": string;
+                    "used_in": number | null;
+                };
+                ComputedFields: never;
+                Relationships: [
+                ];
+            };
         };
         Functions: {
-            [_ in never]: never;
+            "delete_item": {
+                Args: {
+                    "p_actor": string;
+                    "p_id": string;
+                    "p_kind": string;
+                };
+                Returns: undefined;
+            };
+            "save_language": {
+                Args: {
+                    "p_active": boolean;
+                    "p_actor": string;
+                    "p_code": string;
+                    "p_id": string;
+                    "p_is_sign_language": boolean;
+                    "p_name": string;
+                    "p_sort": number;
+                };
+                Returns: {
+                    "active": boolean;
+                    "code": string;
+                    "created_at": string;
+                    "id": string;
+                    "is_sign_language": boolean;
+                    "name": string;
+                    "sort": number;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "languages";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "save_service": {
+                Args: {
+                    "p_active": boolean;
+                    "p_actor": string;
+                    "p_description": string;
+                    "p_icon": string;
+                    "p_id": string;
+                    "p_platform_price_aoa": number;
+                    "p_pricing_mode": string;
+                    "p_slug": string;
+                    "p_sort": number;
+                    "p_title": string;
+                };
+                Returns: {
+                    "active": boolean;
+                    "created_at": string;
+                    "description": string;
+                    "icon": string | null;
+                    "id": string;
+                    "platform_price_aoa": number;
+                    "pricing_mode": string;
+                    "slug": string;
+                    "sort": number;
+                    "title": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "services";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "save_specialty": {
+                Args: {
+                    "p_active": boolean;
+                    "p_actor": string;
+                    "p_description": string;
+                    "p_id": string;
+                    "p_name": string;
+                    "p_slug": string;
+                    "p_sort": number;
+                };
+                Returns: {
+                    "active": boolean;
+                    "created_at": string;
+                    "description": string;
+                    "id": string;
+                    "name": string;
+                    "slug": string;
+                    "sort": number;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "specialties";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "usage_count": {
+                Args: {
+                    "p_id": string;
+                    "p_kind": string;
+                };
+                Returns: number;
+            };
         };
         Enums: {
             [_ in never]: never;
@@ -687,7 +961,117 @@ export type Database = {
     };
     "directory": {
         Tables: {
-            [_ in never]: never;
+            "interpreter_languages": {
+                Row: {
+                    "created_at": string;
+                    "interpreter_id": string;
+                    "language_id": string;
+                    "level": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "created_at"?: string;
+                    "interpreter_id": string;
+                    "language_id": string;
+                    "level": string;
+                };
+                Update: {
+                    "created_at"?: string;
+                    "interpreter_id"?: string;
+                    "language_id"?: string;
+                    "level"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "interpreter_languages_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "listed_interpreters";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    }
+                ];
+            };
+            "interpreter_services": {
+                Row: {
+                    "active": boolean;
+                    "created_at": string;
+                    "description": string | null;
+                    "id": string;
+                    "interpreter_id": string;
+                    "price_aoa": number;
+                    "service_id": string;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "active"?: boolean;
+                    "created_at"?: string;
+                    "description"?: string | null;
+                    "id"?: string;
+                    "interpreter_id": string;
+                    "price_aoa": number;
+                    "service_id": string;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "active"?: boolean;
+                    "created_at"?: string;
+                    "description"?: string | null;
+                    "id"?: string;
+                    "interpreter_id"?: string;
+                    "price_aoa"?: number;
+                    "service_id"?: string;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "interpreter_services_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "listed_interpreters";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    }
+                ];
+            };
+            "interpreter_specialties": {
+                Row: {
+                    "created_at": string;
+                    "interpreter_id": string;
+                    "specialty_id": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "created_at"?: string;
+                    "interpreter_id": string;
+                    "specialty_id": string;
+                };
+                Update: {
+                    "created_at"?: string;
+                    "interpreter_id"?: string;
+                    "specialty_id"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "interpreter_specialties_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "listed_interpreters";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    }
+                ];
+            };
         };
         Views: {
             "listed_interpreters": {

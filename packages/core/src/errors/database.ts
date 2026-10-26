@@ -26,11 +26,15 @@ export const CONSTRAINT_CODES: Readonly<Record<string, ErrorCode>> = {
 /** Unique constraints whose duplicate is a form error: the field and what the person reads. */
 export const UNIQUE_FIELDS: Readonly<Record<string, { field: string; message: string }>> = {
   verification_document_types_code_key: { field: 'code', message: 'Já existe um tipo de documento com este código.' },
+  languages_code_key: { field: 'code', message: 'Já existe uma língua com este código.' },
+  specialties_slug_key: { field: 'slug', message: 'Já existe uma especialidade com este identificador.' },
+  services_slug_key: { field: 'slug', message: 'Já existe um serviço com este identificador.' },
 }
 
 /** What the person reads for a value a SQL function refused, by the reason in its HINT. */
 export const FIELD_REASONS: Readonly<Record<string, string>> = {
   already_member: 'Esta pessoa já é membro da organização.',
+  locked: 'O modo de preço não muda depois de usado. Cria um serviço novo e desactiva este.',
   required: 'Preenche este campo.',
   invalid: 'Valor inválido.',
 }
@@ -40,6 +44,11 @@ export const DOMAIN_CODES: Readonly<Record<string, ErrorCode>> = {
   iban_ao_check: 'INVALID_IBAN',
   nif_check: 'INVALID_NIF',
   phone_e164_check: 'INVALID_PHONE',
+}
+
+/** Shared domains without a code of their own: the field they belong to and what the person reads. */
+export const DOMAIN_FIELDS: Readonly<Record<string, { field: string; message: string }>> = {
+  slug_check: { field: 'slug', message: 'Usa só letras minúsculas, números e hífenes (ex.: interpretacao-medica).' },
 }
 
 const FIELD_HINT = /^([a-z_]+):([a-z_]+)$/
@@ -70,6 +79,8 @@ export function answerForValueError(error: DatabaseErrorInput, fieldMessage: str
   }
   if (error.code === '23514') {
     if (DOMAIN_CODES[constraint]) return { code: DOMAIN_CODES[constraint] as ErrorCode }
+    const domainField = DOMAIN_FIELDS[constraint]
+    if (domainField) return { code: 'VALIDATION_FAILED', details: { [domainField.field]: domainField.message } }
     if (table && constraint.startsWith(`${table}_`) && COLUMN_CHECK.test(constraint)) {
       return { code: 'VALIDATION_FAILED', details: { [constraint.slice(table.length + 1, -'_check'.length)]: fieldMessage } }
     }

@@ -4,6 +4,14 @@ import pg from 'pg'
 // to service_role, so the API holds exactly what packages/db/grants/ gives service_role and never
 // the privileges of the connection's owner (architecture.md §5).
 
+// bigint (int8) columns are kwanzas and counts (data-model.md §0): numbers in the API's JSON, as
+// PostgREST gives them to the apps. A value past 2^53 cannot be one of them and is an error.
+pg.types.setTypeParser(pg.types.builtins.INT8, (value: string) => {
+  const number = Number(value)
+  if (!Number.isSafeInteger(number)) throw new Error(`int8 value out of the safe range: ${value}`)
+  return number
+})
+
 export type Queryable = Pick<pg.PoolClient, 'query'>
 
 /** Who is asking, for the audit trail: audit.record reads these from the transaction. */

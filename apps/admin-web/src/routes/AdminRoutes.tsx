@@ -1,3 +1,4 @@
+import AdminCatalog from '@/pages/catalog/AdminCatalog'
 import AdminAccountDetails from '@/pages/accounts/AdminAccountDetails'
 import AdminAccounts from '@/pages/accounts/AdminAccounts'
 import AdminOrganizationDetails from '@/pages/accounts/AdminOrganizationDetails'
@@ -9,7 +10,6 @@ import AdminPayments from '@/pages/dashboard/admin/AdminPayments'
 import AdminReports from '@/pages/dashboard/admin/AdminReports'
 import AdminRequestDetails from '@/pages/dashboard/admin/AdminRequestDetails'
 import AdminRequests from '@/pages/dashboard/admin/AdminRequests'
-import AdminServices from '@/pages/dashboard/admin/AdminServices'
 import AdminSettings from '@/pages/dashboard/admin/AdminSettings'
 import AdminTeam from '@/pages/dashboard/admin/AdminTeam'
 import AdminAudit from '@/pages/dashboard/admin/AdminAudit'
@@ -44,7 +44,10 @@ const AdminRoutes = () => {
       <Route path="content/success-cases" element={<AdminSuccessCases />} />
       <Route path="reports" element={<AdminReports />} />
       <Route path="payments" element={<AdminPayments />} />
-      <Route path="catalog/services" element={<AdminServices />} />
+      {/* Catalogs (catalogs.md): moderator and super_admin (R-STF-01). */}
+      <Route path="catalog/languages" element={<RequireStaffLevel levels={['moderator']}><AdminCatalog kind="languages" /></RequireStaffLevel>} />
+      <Route path="catalog/specialties" element={<RequireStaffLevel levels={['moderator']}><AdminCatalog kind="specialties" /></RequireStaffLevel>} />
+      <Route path="catalog/services" element={<RequireStaffLevel levels={['moderator']}><AdminCatalog kind="services" /></RequireStaffLevel>} />
       {/* R-STF-01: configuration, legal documents and the team are super_admin's; document types
           also the moderator's (super_admin passes every check). */}
       <Route path="settings/config" element={<RequireStaffLevel levels={['super_admin']}><AdminSettings /></RequireStaffLevel>} />
