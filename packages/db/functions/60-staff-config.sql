@@ -328,8 +328,13 @@ BEGIN
   -- A new version (not the first) is announced to every active account (R-PRIV-02, terms_updated).
   IF EXISTS (SELECT 1 FROM identity.legal_documents AS d
               WHERE d.kind = v_row.kind AND d.published_at IS NOT NULL AND d.id <> v_row.id) THEN
+    -- The link opens the app the person uses: the last active role, else the team's, else requester-web.
     PERFORM notify.enqueue('terms_updated', p.id,
-              jsonb_build_object('kind', v_row.kind, 'version', v_row.version, 'link', '/accept-terms', 'app', 'requester'))
+              jsonb_build_object('kind', v_row.kind, 'version', v_row.version, 'link', '/accept-terms',
+                'app', coalesce(p.last_active_role,
+                                CASE WHEN auth_helper.staff_level_of(p.id) IS NOT NULL THEN 'admin' END,
+                                CASE WHEN auth_helper.is_interpreter_account(p.id) THEN 'interpreter' END,
+                                'requester')))
        FROM identity.profiles AS p WHERE p.status = 'active';
   END IF;
   RETURN v_row;

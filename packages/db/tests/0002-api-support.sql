@@ -2,6 +2,10 @@
 -- and the email worker's state machine. Rolled back by scripts/run-tests.sh.
 
 INSERT INTO auth.users (id, email) VALUES ('00000000-0000-4000-8000-0000000000e1', 'eva@example.ao');
+-- They accept the legal documents in force, if any are published (R-PRIV-02, from H2).
+INSERT INTO identity.consents (account_id, legal_document_id)
+SELECT p.id, d.id FROM identity.profiles AS p CROSS JOIN LATERAL auth_helper.pending_legal_documents(p.id) AS d
+ WHERE p.id IN ('00000000-0000-4000-8000-0000000000e1');
 
 DO $$
 BEGIN

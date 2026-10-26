@@ -1,6 +1,8 @@
 import { ERROR_CATALOG, type ErrorCode } from './catalog'
 
 export { ERROR_CATALOG, type ErrorCode } from './catalog'
+export { answerForValueError, CONSTRAINT_CODES, DOMAIN_CODES, FIELD_REASONS, UNIQUE_FIELDS } from './database'
+export type { DatabaseErrorAnswer, DatabaseErrorInput } from './database'
 
 /** The body every API error has (api.md §2). `params` fills placeholders such as {min}. */
 export interface ApiErrorBody {

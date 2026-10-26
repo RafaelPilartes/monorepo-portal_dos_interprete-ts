@@ -837,6 +837,34 @@ def check_no_function_star(ctx: Context) -> list[Violation]:
             violations.append(Violation(relative(ctx.root, path), line_of(text, match.start()), "(f(...)).* runs f once per column; use SELECT * FROM f(...)"))
     return violations
 
+
+# --- check: db-error-map (since H2) --------------------------------------------------------------
+
+# The translation of refused values (domain and constraint names → catalog codes and fields) lives
+# in one file, used by the API and by packages/data (review of H2: it was in two places and the
+# direct writes showed INTERNAL_ERROR for an invalid phone).
+DB_ERROR_MAP_OWNER = "packages/core/src/errors/database.ts"
+# A quoted constraint name, or an unquoted "<name>_check:" object key.
+CONSTRAINT_NAME = re.compile(r"""['"`]([a-z0-9_]+_(?:check|key|pkey|fkey))['"`]|\b([a-z0-9_]+_check)\s*:""")
+GENERATED_TYPES = "packages/db-types/src/"
+
+
+def check_db_error_map(ctx: Context) -> list[Violation]:
+    """No TypeScript outside packages/core/src/errors/database.ts names a database constraint
+    (a "<name>_check" or "<name>_key" string) to translate it."""
+    violations = []
+    for path in code_files(ctx.root):
+        rel = relative(ctx.root, path)
+        if rel == DB_ERROR_MAP_OWNER or rel.startswith(GENERATED_TYPES) or ".test." in rel or not rel.endswith((".ts", ".tsx")):
+            continue
+        _, with_strings = mask_source(path.read_text())
+        for match in CONSTRAINT_NAME.finditer(with_strings):
+            name = match.group(1) or match.group(2)
+            start = match.start(1) if match.group(1) else match.start(2)
+            violations.append(Violation(rel, line_of(with_strings, start), f"constraint {name} translated outside {DB_ERROR_MAP_OWNER}"))
+    return violations
+
+
 CHECKS: dict[str, Callable[[Context], list[Violation]]] = {
     "no-direct-data-access": check_no_direct_data_access,
     "no-cross-app-import": check_no_cross_app_import,
@@ -857,6 +885,7 @@ CHECKS: dict[str, Callable[[Context], list[Violation]]] = {
     "bucket-limits": check_bucket_limits,
     "api-error-shape": check_api_error_shape,
     "no-function-star": check_no_function_star,
+    "db-error-map": check_db_error_map,
 }
 
 

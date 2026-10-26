@@ -71,7 +71,7 @@ export function RequesterAppRoutes() {
       <Route path="/recover-password" element={<RecoverPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/verify-email" element={<VerifyEmail app="requester" />} />
-      <Route path="/accept-terms" element={<AcceptTerms />} />
+      <Route path="/accept-terms" element={<AcceptTerms app="requester" />} />
       <Route path="/suspended" element={<Suspended />} />
       <Route path="/invite/:token" element={<AcceptInvite />} />
       <Route path="/onboarding" element={<RequesterOnboarding />} />

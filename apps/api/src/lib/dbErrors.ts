@@ -1,20 +1,21 @@
-import { isErrorCode, type ErrorCode } from '@portal-dos-interpretes/core/errors'
+import {
+  answerForValueError,
+  CONSTRAINT_CODES,
+  isErrorCode,
+  type DatabaseErrorAnswer,
+  type ErrorCode,
+} from '@portal-dos-interpretes/core/errors'
 
-// Database error → catalog code, in one place (api.md §2). A SQL function refuses by a rule with
-// RAISE ... ERRCODE 'P0001', MESSAGE '<CODE>'; constraint violations are mapped by constraint name
-// as each feature adds them. Anything else is INTERNAL_ERROR and its real text goes to the log.
+// Database error → catalog code for the API (api.md §2). The value errors (domains, column
+// checks, unique keys, field hints) are translated in @portal-dos-interpretes/core/errors, the same
+// place the direct writes of packages/data use; here only what is the API's own: rule codes,
+// permissions (a deploy bug for service_role) and concurrency.
 
 export interface DatabaseErrorLike {
   code?: string
   message?: string
   constraint?: string
-  /** "<field>:<reason>" when a SQL function refuses one form value (RAISE ... HINT). */
   hint?: string
-}
-
-/** Constraint name → catalog code; feature steps add their unique and check constraints here. */
-export const CONSTRAINT_CODES: Readonly<Record<string, ErrorCode>> = {
-  organizations_nif_key: 'NIF_IN_USE',
 }
 
 const SQLSTATE = /^[0-9A-Z]{5}$/
@@ -24,48 +25,11 @@ export function isDatabaseError(error: unknown): error is DatabaseErrorLike & { 
     && SQLSTATE.test((error as DatabaseErrorLike).code ?? '') && 'severity' in error
 }
 
+export type { DatabaseErrorAnswer }
+
 /** A database error as the API answers it: the code and, for a bad value, the field. */
-export interface DatabaseErrorAnswer {
-  code: ErrorCode
-  details?: Record<string, string>
-}
-
-// "<table>_<column>_check": Postgres's name for a column CHECK; the column is the form field.
-const COLUMN_CHECK = /^[a-z_]+?_((?:[a-z0-9]+_)*[a-z0-9]+)_check$/
-/** Unique constraints whose duplicate is a form error: the field and what the person reads. */
-export const UNIQUE_FIELDS: Readonly<Record<string, { field: string; message: string }>> = {
-  verification_document_types_code_key: { field: 'code', message: 'Já existe um tipo de documento com este código.' },
-}
-
-/** What the person reads for a value a SQL function refused, by the reason in its HINT. */
-export const FIELD_REASONS: Readonly<Record<string, string>> = {
-  already_member: 'Esta pessoa já é membro da organização.',
-  required: 'Preenche este campo.',
-  invalid: 'Valor inválido.',
-}
-const FIELD_HINT = /^([a-z_]+):([a-z_]+)$/
-
-const DOMAIN_CODES: Readonly<Record<string, ErrorCode>> = {
-  iban_ao_check: 'INVALID_IBAN',
-  nif_check: 'INVALID_NIF',
-  phone_e164_check: 'INVALID_PHONE',
-}
-
-/** Like codeForDatabaseError, and for a value the database refuses, the field it belongs to. */
 export function answerForDatabaseError(error: DatabaseErrorLike & { column?: string; table?: string }, fieldMessage: string): DatabaseErrorAnswer {
-  const constraint = error.constraint ?? ''
-  const hint = error.code === 'P0001' && error.message === 'VALIDATION_FAILED' ? FIELD_HINT.exec(error.hint ?? '') : null
-  if (hint?.[1] && hint[2]) return { code: 'VALIDATION_FAILED', details: { [hint[1]]: FIELD_REASONS[hint[2]] ?? fieldMessage } }
-  const unique = error.code === '23505' ? UNIQUE_FIELDS[constraint] : undefined
-  if (unique) return { code: 'VALIDATION_FAILED', details: { [unique.field]: unique.message } }
-  if (error.code === '23514' && DOMAIN_CODES[constraint]) return { code: DOMAIN_CODES[constraint] as ErrorCode }
-  if (error.code === '23514' && error.table && constraint.startsWith(`${error.table}_`) && COLUMN_CHECK.test(constraint)) {
-    const field = constraint.slice(error.table.length + 1, -'_check'.length)
-    return { code: 'VALIDATION_FAILED', details: { [field]: fieldMessage } }
-  }
-  // A value of the wrong type for its column (e.g. text where a number goes).
-  if (error.code === '22P02' || error.code === '22003') return { code: 'VALIDATION_FAILED' }
-  return { code: codeForDatabaseError(error) }
+  return answerForValueError(error, fieldMessage) ?? { code: codeForDatabaseError(error) }
 }
 
 export function codeForDatabaseError(error: DatabaseErrorLike): ErrorCode {

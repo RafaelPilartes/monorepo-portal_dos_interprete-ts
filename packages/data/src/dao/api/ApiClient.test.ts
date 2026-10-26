@@ -91,3 +91,18 @@ describe('ApiClient (review of step E)', () => {
     await expect(client(vi.fn(async () => new Response(null, { status: 204 }))).delete('/x')).resolves.toBeUndefined()
   })
 })
+
+describe('ApiClient (review of step H2)', () => {
+  it('tells onError of every failure, so the session can react to a suspension mid-session', async () => {
+    const onError = vi.fn()
+    const api = new ApiClient({
+      baseUrl: 'http://api.test',
+      getAccessToken: async () => 'jwt',
+      fetchImpl: vi.fn(async () => json(403, { error: { code: 'ACCOUNT_SUSPENDED' } })),
+      onError,
+    })
+    await expect(api.post('/organizations', {})).rejects.toBeInstanceOf(DataError)
+    expect(onError).toHaveBeenCalledTimes(1)
+    expect((onError.mock.calls[0]?.[0] as DataError).code).toBe('ACCOUNT_SUSPENDED')
+  })
+})

@@ -8,14 +8,16 @@ import { Checkbox } from '@portal-dos-interpretes/ui/components/checkbox'
 import { Label } from '@portal-dos-interpretes/ui/components/label'
 import { AuthShell, FormAlert } from '../components/AuthShell'
 import { LegalDocumentDialog, useLegalDocumentsInForce, type LegalDocument } from '../components/legalDocuments'
+import { destinationFor, type PanelApp } from '../services/destination'
 import { safeReturnTo } from '../services/returnTo'
+import { appUrl } from '@portal-dos-interpretes/ui/lib/app-urls'
 import { useRequiredPortalServices } from '../services/PortalServices'
 import { useRefreshSession, useSession } from '../session/SessionContext'
 
 const NAMES = { terms: AUTH_TEXTS.termsLink, privacy: AUTH_TEXTS.privacyLink }
 
 /** /accept-terms (R-PRIV-02): the versions in force the account has not accepted yet. */
-export default function AcceptTerms() {
+export default function AcceptTerms({ app = 'requester' }: { app?: PanelApp }) {
   const services = useRequiredPortalServices()
   const session = useSession()
   const refresh = useRefreshSession()
@@ -43,7 +45,14 @@ export default function AcceptTerms() {
     try {
       await services.api.post('/me/accept-terms', { legal_document_ids: pending.map((document) => document.id) })
       await refresh()
-      navigate(next, { replace: true })
+      if (searchParams.get('returnTo')) {
+        navigate(next, { replace: true })
+        return
+      }
+      // Without a returnTo, the app of the person's role (R-ACC-04): a notice may land in another app.
+      const destination = destinationFor({ ...session.account, pendingDocuments: [] }, app)
+      if (destination.kind === 'here') navigate(destination.path, { replace: true })
+      else window.location.assign(appUrl(destination.app, destination.path))
     } catch (error) {
       console.error('[auth] accepting the terms failed', error)
       setFormError(error instanceof DataError ? error.message : errorFor('INTERNAL_ERROR').message)

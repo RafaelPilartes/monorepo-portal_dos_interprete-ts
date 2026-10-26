@@ -19,7 +19,7 @@ export function AdminAppRoutes() {
       <Route path="/login" element={<Login registerHref={null} app="admin" />} />
       <Route path="/recover-password" element={<RecoverPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/accept-terms" element={<AcceptTerms />} />
+      <Route path="/accept-terms" element={<AcceptTerms app="admin" />} />
       <Route path="/suspended" element={<Suspended />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

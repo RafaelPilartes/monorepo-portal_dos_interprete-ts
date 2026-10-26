@@ -1,9 +1,10 @@
-import { isErrorCode } from '@portal-dos-interpretes/core/errors'
+import { answerForValueError, catalogMessage, isErrorCode } from '@portal-dos-interpretes/core/errors'
 import { DataError } from './DataError'
 
 export interface PostgrestLikeError {
   code?: string | undefined
   message: string
+  hint?: string | null | undefined
 }
 
 /**
@@ -15,6 +16,10 @@ export function translatePostgrestError(error: PostgrestLikeError, where: string
   if (error.code === 'P0001' && isErrorCode(error.message.trim())) {
     return new DataError(error.message.trim(), { cause: error })
   }
+  // A refused value (a domain, a column check, a unique key): the code and the field, translated
+  // in the same place as the API's (@portal-dos-interpretes/core/errors).
+  const value = answerForValueError({ code: error.code, message: error.message, hint: error.hint ?? undefined }, catalogMessage('VALIDATION_FAILED'))
+  if (value) return new DataError(value.code, { details: value.details, cause: error })
   if (error.code === '42501') {
     return new DataError('FORBIDDEN', { cause: error })
   }

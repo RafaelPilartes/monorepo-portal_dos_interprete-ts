@@ -55,9 +55,17 @@ export function createPortalServices(options: PortalServicesOptions): PortalServ
   const storage = createCookieStorage({ domain: options.cookieDomain })
   const client = createSupabaseClient({ url: options.supabaseUrl, anonKey: options.supabaseAnonKey, storage })
   const session = new SessionDAO(client)
+  // Who wants to know that the account changed under the session (suspended, new terms): the
+  // session provider, which reads GET /me again and the guards move the person (R-ACC-03, R-PRIV-02).
+  const accountChanged = new Set<() => void>()
   const api = new ApiClient({
     baseUrl: options.apiUrl,
     getAccessToken: async () => (await session.current())?.accessToken ?? null,
+    onError: (error, { path }) => {
+      // GET /me is the session read itself: re-reading on its own failure would loop.
+      if (path === '/me') return
+      if (error.code === 'ACCOUNT_SUSPENDED' || error.code === 'TERMS_ACCEPTANCE_REQUIRED') accountChanged.forEach((listener) => listener())
+    },
   })
 
   const source: SessionSource = {
@@ -77,7 +85,20 @@ export function createPortalServices(options: PortalServicesOptions): PortalServ
         throw error
       }
     },
-    subscribe: (onChange) => session.onChange(() => onChange()),
+    subscribe: (onChange) => {
+      const stopSession = session.onChange(() => onChange())
+      accountChanged.add(onChange)
+      // Reads by RLS come back empty for a suspended account; coming back to the tab re-checks.
+      const onVisible = () => {
+        if (document.visibilityState === 'visible') onChange()
+      }
+      document.addEventListener('visibilitychange', onVisible)
+      return () => {
+        stopSession()
+        accountChanged.delete(onChange)
+        document.removeEventListener('visibilitychange', onVisible)
+      }
+    },
   }
 
   return { client, auth: new AuthDAO(client), session, api, source }

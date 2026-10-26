@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 import { AUTH_TEXTS } from '@portal-dos-interpretes/i18n'
 import { DashboardLayout, type NavGroup, type NavItem } from '@portal-dos-interpretes/ui/components/dashboard-layout'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@portal-dos-interpretes/ui/components/select'
@@ -11,33 +11,62 @@ import { useSession, type Account } from '../session/SessionContext'
 // account with both roles (R-ACC-04) and, in requester-web, the context of the requests
 // ("A pedir como: Particular / {Organização}", accounts-and-organizations.md, Cabeçalho).
 
-const CONTEXT_KEY = 'portal.requestContext'
+// One store for the header picker and the pages (useSyncExternalStore), kept per account in the
+// browser; another tab's change arrives by the storage event.
+const contextKey = (accountId: string) => `portal.requestContext.${accountId}`
+const contextListeners = new Set<() => void>()
+const memory = new Map<string, string | null>()
+
+function readContext(accountId: string): string | null {
+  if (memory.has(accountId)) return memory.get(accountId) ?? null
+  try {
+    return window.localStorage.getItem(contextKey(accountId))
+  } catch {
+    return null
+  }
+}
+
+function writeContext(accountId: string, value: string | null): void {
+  memory.set(accountId, value)
+  try {
+    if (value) window.localStorage.setItem(contextKey(accountId), value)
+    else window.localStorage.removeItem(contextKey(accountId))
+  } catch {
+    // Storage refused (private mode): the choice lasts for this page only.
+  }
+  contextListeners.forEach((listener) => listener())
+}
+
+function subscribeContext(listener: () => void): () => void {
+  contextListeners.add(listener)
+  const onStorage = (event: StorageEvent) => {
+    if (event.key?.startsWith('portal.requestContext.')) {
+      memory.clear()
+      listener()
+    }
+  }
+  window.addEventListener('storage', onStorage)
+  return () => {
+    contextListeners.delete(listener)
+    window.removeEventListener('storage', onStorage)
+  }
+}
 
 /**
- * The organisation the person asks in the name of, or null for "Particular" (kept per browser).
- * Without an individual requester profile, "Particular" is not a choice: the first organisation.
+ * The organisation the person asks in the name of, or null for "Particular". Without an
+ * individual requester profile, "Particular" is not a choice: the first organisation.
  */
 export function useRequestContext(account: Account | null): [string | null, (value: string | null) => void] {
-  const [value, setValue] = useState<string | null>(() => {
-    try {
-      return window.localStorage.getItem(CONTEXT_KEY)
-    } catch {
-      return null
-    }
-  })
+  const accountId = account?.id ?? ''
+  const stored = useSyncExternalStore(subscribeContext, () => (accountId ? readContext(accountId) : null), () => null)
   const organizations = account?.organizations.filter((org) => org.status !== 'anonymized') ?? []
   // A context that is no longer valid (left the organisation) falls back.
-  const valid = value && organizations.some((org) => org.id === value) ? value : null
+  const valid = stored && organizations.some((org) => org.id === stored) ? stored : null
   const effective = valid ?? (account && !account.hasRequesterProfile ? organizations[0]?.id ?? null : null)
-  useEffect(() => {
-    try {
-      if (effective) window.localStorage.setItem(CONTEXT_KEY, effective)
-      else window.localStorage.removeItem(CONTEXT_KEY)
-    } catch {
-      // Storage refused (private mode): the choice lasts for this page only.
-    }
-  }, [effective])
-  return [effective, setValue]
+  const set = useCallback((value: string | null) => {
+    if (accountId) writeContext(accountId, value)
+  }, [accountId])
+  return [effective, set]
 }
 
 function RoleSwitch({ account, app }: { account: Account; app: 'requester' | 'interpreter' }) {

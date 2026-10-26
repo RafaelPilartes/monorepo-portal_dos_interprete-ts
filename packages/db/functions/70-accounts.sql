@@ -12,24 +12,17 @@ CREATE OR REPLACE FUNCTION identity.roles_of(p_account uuid) RETURNS text[]
   SET search_path = ''
 AS $$
   SELECT array_remove(ARRAY[
-    CASE WHEN EXISTS (SELECT 1 FROM identity.requester_profiles AS r WHERE r.account_id = p_account)
-           OR EXISTS (SELECT 1 FROM identity.organization_members AS m
-                       WHERE m.account_id = p_account AND m.status = 'active')
-         THEN 'requester' END,
-    CASE WHEN EXISTS (SELECT 1 FROM identity.interpreter_profiles AS i WHERE i.account_id = p_account)
-         THEN 'interpreter' END,
+    CASE WHEN auth_helper.is_requester_account(p_account) THEN 'requester' END,
+    CASE WHEN auth_helper.is_interpreter_account(p_account) THEN 'interpreter' END,
     CASE WHEN auth_helper.staff_level_of(p_account) IS NOT NULL THEN 'staff' END
   ], NULL)
 $$;
 
--- The active role of an account in an organisation, or NULL.
+-- The active role of an account in an organisation, or NULL (one rule: auth_helper.org_role_of).
 CREATE OR REPLACE FUNCTION identity.member_role(p_org uuid, p_account uuid) RETURNS text
   LANGUAGE sql STABLE SECURITY DEFINER
   SET search_path = ''
-AS $$
-  SELECT m.role FROM identity.organization_members AS m
-   WHERE m.organization_id = p_org AND m.account_id = p_account AND m.status = 'active'
-$$;
+AS $$ SELECT auth_helper.org_role_of(p_org, p_account) $$;
 
 -- Refuses unless the actor is an active member with one of the roles (R-ORG-05). Returns the role.
 CREATE OR REPLACE FUNCTION identity.assert_org_role(p_org uuid, p_actor uuid, p_roles text[]) RETURNS text
@@ -51,9 +44,10 @@ CREATE OR REPLACE FUNCTION identity.slugify(p_text text) RETURNS text
   LANGUAGE sql IMMUTABLE
   SET search_path = ''
 AS $$
-  SELECT coalesce(nullif(left(trim(BOTH '-' FROM regexp_replace(
+  -- Cut first, trim after: a cut that lands on a separator must not leave a trailing "-".
+  SELECT coalesce(nullif(trim(BOTH '-' FROM left(trim(BOTH '-' FROM regexp_replace(
            translate(lower(coalesce(p_text, '')), 'áàâãäéèêëíìîïóòôõöúùûüçñ', 'aaaaaeeeeiiiiooooouuuucn'),
-           '[^a-z0-9]+', '-', 'g')), 60), ''), 'interprete')
+           '[^a-z0-9]+', '-', 'g')), 60)), ''), 'interprete')
 $$;
 
 -- "joana.silva@empresa.ao" → "jo***@empresa.ao": an invite page shown to the wrong session must not
@@ -102,6 +96,16 @@ $$;
 
 -- Consent (R-PRIV-01, R-PRIV-02) -----------------------------------------------------------------
 
+-- Every id is a published legal document.
+CREATE OR REPLACE FUNCTION identity.all_published(p_document_ids uuid[]) RETURNS boolean
+  LANGUAGE sql STABLE SECURITY DEFINER
+  SET search_path = ''
+AS $$
+  SELECT NOT EXISTS (SELECT 1 FROM unnest(coalesce(p_document_ids, '{}')) AS ids(id)
+                      WHERE NOT EXISTS (SELECT 1 FROM identity.legal_documents AS d
+                                         WHERE d.id = ids.id AND d.published_at IS NOT NULL))
+$$;
+
 -- The documents a person accepts must be published, and cover every kind that has a published
 -- version (the terms and the privacy policy shown at sign-up, R-PRIV-01).
 CREATE OR REPLACE FUNCTION identity.assert_acceptable_documents(p_document_ids uuid[]) RETURNS void
@@ -109,9 +113,7 @@ CREATE OR REPLACE FUNCTION identity.assert_acceptable_documents(p_document_ids u
   SET search_path = ''
 AS $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM unnest(coalesce(p_document_ids, '{}')) AS ids(id)
-              WHERE NOT EXISTS (SELECT 1 FROM identity.legal_documents AS d
-                                 WHERE d.id = ids.id AND d.published_at IS NOT NULL))
+  IF NOT identity.all_published(p_document_ids)
      OR EXISTS (SELECT 1 FROM identity.legal_documents AS d
                  WHERE d.published_at IS NOT NULL
                    AND NOT EXISTS (SELECT 1 FROM identity.legal_documents AS chosen
@@ -135,10 +137,7 @@ RETURNS integer
   SET search_path = ''
 AS $$
 BEGIN
-  IF cardinality(coalesce(p_document_ids, '{}')) = 0
-     OR EXISTS (SELECT 1 FROM unnest(p_document_ids) AS ids(id)
-                 WHERE NOT EXISTS (SELECT 1 FROM identity.legal_documents AS d
-                                    WHERE d.id = ids.id AND d.published_at IS NOT NULL)) THEN
+  IF cardinality(coalesce(p_document_ids, '{}')) = 0 OR NOT identity.all_published(p_document_ids) THEN
     RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'VALIDATION_FAILED', HINT = 'legal_document_ids:invalid';
   END IF;
   INSERT INTO identity.consents (account_id, legal_document_id, accepted_at, ip, user_agent)
@@ -612,7 +611,9 @@ BEGIN
                       WHERE m.organization_id = o.id AND m.account_id <> p_account AND m.status = 'active');
   UPDATE identity.organization_members SET status = 'removed', removed_at = util.now()
    WHERE account_id = p_account AND status = 'active';
-  DELETE FROM identity.organization_invites WHERE lower(email::text) = v_email OR invited_by = p_account;
+  -- The invites sent to this person go; the ones the person sent to others stay valid, unsigned.
+  DELETE FROM identity.organization_invites WHERE lower(email::text) = v_email;
+  UPDATE identity.organization_invites SET invited_by = NULL WHERE invited_by = p_account;
 
   UPDATE identity.requester_profiles SET nif = NULL, address = NULL, city = NULL WHERE account_id = p_account;
   UPDATE identity.interpreter_profiles

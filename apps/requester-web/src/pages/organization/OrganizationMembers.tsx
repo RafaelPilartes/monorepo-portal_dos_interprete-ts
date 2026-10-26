@@ -230,7 +230,12 @@ export default function OrganizationMembers() {
             )}
           </CardContent>
         </Card>
-        {isAdmin && <Invites organizationId={organizationId} />}
+        {isAdmin && current.status === 'active' && <Invites organizationId={organizationId} />}
+        {isAdmin && current.status === 'suspended' && (
+          <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
+            A organização está suspensa pela equipa do Portal: enquanto estiver suspensa não convida novos membros.
+          </p>
+        )}
       </div>
       {dialog && (
         <ConfirmationModal

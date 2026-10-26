@@ -48,7 +48,9 @@ export function registerAccountRoutes(
     const inUse = await callSql<{ in_use: boolean }>(deps.db, request, 'SELECT identity.email_in_use($1) AS in_use', [body.email])
     if (inUse.in_use) throw new ApiError('EMAIL_IN_USE')
 
-    const redirect = new URL('/verify-email', appOf(body.intended_role))
+    // An invite is accepted in requester-web (R-ORG-02), whatever the role chosen at sign-up.
+    const confirmIn = body.return_to?.startsWith('/invite/') ? deps.appUrls.requester : appOf(body.intended_role)
+    const redirect = new URL('/verify-email', confirmIn)
     if (body.return_to) redirect.searchParams.set('returnTo', body.return_to)
     const result = await deps.authServer.signUp({
       email: body.email,
@@ -63,11 +65,16 @@ export function registerAccountRoutes(
       throw new ApiError('VALIDATION_FAILED', undefined, { email: 'Indica um email válido.' })
     }
     if (body.legal_document_ids.length > 0) {
-      // If this fails the account exists without consent: the terms screen asks for it at the
-      // first sign-in (R-PRIV-02), so nothing is lost and nothing is used without it.
-      await callSql(deps.db, request, 'SELECT identity.record_consents($1, $2::uuid[], $3, $4)', [
-        result.accountId, body.legal_document_ids, request.ip, request.headers['user-agent'] ?? null,
-      ])
+      // The account exists already (and the email went): a failure here is logged, not answered
+      // as a failed registration. The terms screen asks for the consent at the first sign-in
+      // (R-PRIV-02), so nothing is used without it.
+      try {
+        await callSql(deps.db, request, 'SELECT identity.record_consents($1, $2::uuid[], $3, $4)', [
+          result.accountId, body.legal_document_ids, request.ip, request.headers['user-agent'] ?? null,
+        ])
+      } catch (error) {
+        request.log.error({ err: error, accountId: result.accountId }, 'consent not recorded at sign-up')
+      }
     }
     return reply.status(201).send({ account_id: result.accountId, email_confirmation_sent: true })
   })

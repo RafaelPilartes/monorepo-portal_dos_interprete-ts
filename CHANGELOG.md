@@ -2,6 +2,16 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.11.0 — 2026-10-26 — Passo H2 (contas, papéis, organizações e consentimento)
+
+- Registo real com aceitação dos termos e da política em vigor, confirmação por email, recuperação da palavra-passe.
+- O papel cria-se no onboarding (particular, empresa ou intérprete); quem tem os dois troca de app sem voltar a entrar.
+- Organizações com membros, convites por email, um só dono, transferir a posse, sair e remover.
+- A equipa lista solicitantes, intérpretes e organizações, e suspende ou reactiva com motivo; quem está suspenso vê "Conta suspensa".
+- Uma nova versão dos documentos legais tem de ser aceite antes de continuar, em todas as apps.
+- Os três painéis ficaram mais densos e sóbrios (barra lateral, cabeçalho com troca de papel, controlos e emblemas); o site não mudou.
+- Relatório: `docs/plan/step-reports/H2.md`.
+
 ## 0.10.0 — 2026-10-25 — Passo H1 (equipa, configuração e auditoria)
 
 - A área da equipa (`admin-web`) tem login real; quem não é da equipa vê que a área é só para a equipa.

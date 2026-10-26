@@ -72,6 +72,11 @@ BEGIN
   v_interp := identity.become_interpreter('00000000-0000-4000-8000-0000000000b2', NULL, NULL);
   IF v_interp.slug <> 'ivo-goncalves-interprete-2' THEN RAISE EXCEPTION 'FAIL - a taken slug gets -2 (got %)', v_interp.slug; END IF;
   UPDATE identity.profiles SET full_name = 'Beto Membro' WHERE id = '00000000-0000-4000-8000-0000000000b2';
+  -- A cut at 60 characters that lands on a separator leaves no trailing "-" (util.slug).
+  IF identity.slugify(repeat('a', 59) || ' bcd') <> repeat('a', 59)
+     OR identity.slugify('  ¿?  ') <> 'interprete' THEN
+    RAISE EXCEPTION 'FAIL - a slug never ends in "-" and is never empty (got %)', identity.slugify(repeat('a', 59) || ' bcd');
+  END IF;
   IF identity.roles_of('00000000-0000-4000-8000-0000000000b2') <> ARRAY['requester', 'interpreter']
      OR identity.roles_of('00000000-0000-4000-8000-0000000000b5') <> ARRAY['staff'] THEN
     RAISE EXCEPTION 'FAIL - roles are resolved from the profiles and the team';
@@ -320,7 +325,7 @@ DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM identity.profiles) OR EXISTS (SELECT 1 FROM identity.interpreter_profiles)
      OR EXISTS (SELECT 1 FROM identity.consents) OR EXISTS (SELECT 1 FROM identity.public_profiles)
-     OR EXISTS (SELECT 1 FROM notify.notifications) THEN
+     OR EXISTS (SELECT 1 FROM notify.notifications) OR EXISTS (SELECT 1 FROM directory.listed_interpreters) THEN
     RAISE EXCEPTION 'FAIL - a suspended account reads zero rows';
   END IF;
   UPDATE identity.profiles SET full_name = 'Outro nome';
@@ -411,7 +416,13 @@ BEGIN
    WHERE account_id = '00000000-0000-4000-8000-0000000000b4';
   v_solo := identity.create_organization('00000000-0000-4000-8000-0000000000b4', 'Ivo Lda', '5417000077', NULL, 'Rua do Ivo', NULL, NULL, NULL);
   PERFORM identity.create_invite('00000000-0000-4000-8000-0000000000b3', v_org, 'ivo@exemplo.ao', 'member');
+  -- Ivo invited someone to his own organisation: that invite survives him, unsigned.
+  PERFORM identity.create_invite('00000000-0000-4000-8000-0000000000b4', v_solo.id, 'convidado@exemplo.ao', 'member');
   PERFORM identity.anonymize_account('00000000-0000-4000-8000-0000000000b4');
+  IF NOT EXISTS (SELECT 1 FROM identity.organization_invites WHERE email = 'convidado@exemplo.ao' AND invited_by IS NULL)
+     OR auth_helper.account_status('00000000-0000-4000-8000-0000000000b4') <> 'suspended' THEN
+    RAISE EXCEPTION 'FAIL - invites sent to others survive, unsigned; an anonymized account is refused as suspended (R-ACC-03)';
+  END IF;
 
   IF EXISTS (SELECT 1 FROM identity.profiles WHERE full_name LIKE '%Ivo%' OR phone = '+244923111222')
      OR EXISTS (SELECT 1 FROM identity.interpreter_profiles WHERE account_id = '00000000-0000-4000-8000-0000000000b4'

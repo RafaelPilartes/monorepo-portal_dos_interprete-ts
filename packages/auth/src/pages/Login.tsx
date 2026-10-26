@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { errorFor } from '@portal-dos-interpretes/core/errors'
 import { DataError } from '@portal-dos-interpretes/data'
-import { AUTH_TEXTS } from '@portal-dos-interpretes/i18n'
+import { AUTH_TEXTS, COMMON_TEXTS } from '@portal-dos-interpretes/i18n'
 import { appUrl } from '@portal-dos-interpretes/ui/lib/app-urls'
 import { Button } from '@portal-dos-interpretes/ui/components/button'
 import { Input } from '@portal-dos-interpretes/ui/components/input'
@@ -127,6 +127,7 @@ export default function Login({ registerHref = '/register', app = 'requester' }:
           </div>
         </div>
 
+        {session?.status === 'error' && !formError && <FormAlert>{COMMON_TEXTS.sessionUnavailable}</FormAlert>}
         {formError && (
           <FormAlert>
             {formError}

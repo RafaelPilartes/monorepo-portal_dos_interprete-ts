@@ -6,6 +6,8 @@ export interface ApiClientOptions {
   /** Returns the session JWT, or null without a session (architecture.md §6: the account comes from the JWT). */
   getAccessToken: () => Promise<string | null>
   fetchImpl?: typeof fetch | undefined
+  /** Told of every failure (packages/auth re-reads the session on ACCOUNT_SUSPENDED and TERMS_ACCEPTANCE_REQUIRED). */
+  onError?: ((error: DataError, request: { method: string; path: string }) => void) | undefined
 }
 
 interface ErrorEnvelope {
@@ -103,6 +105,8 @@ export class ApiClient {
       params = paramsFromMessage(code, envelope.error.message) ?? undefined
     }
     const details = isStringRecord(envelope.error?.details) ? envelope.error.details : undefined
-    throw new DataError(code, { params, details, cause: payload })
+    const error = new DataError(code, { params, details, cause: payload })
+    this.options.onError?.(error, { method, path })
+    throw error
   }
 }

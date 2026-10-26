@@ -237,6 +237,10 @@ RESET ROLE;
 INSERT INTO auth.users (id, email) VALUES
   ('00000000-0000-4000-8000-00000000000a', 'ana@example.ao'),
   ('00000000-0000-4000-8000-00000000000b', 'bruno@example.ao');
+-- They accept the legal documents in force, if any are published (R-PRIV-02, from H2).
+INSERT INTO identity.consents (account_id, legal_document_id)
+SELECT p.id, d.id FROM identity.profiles AS p CROSS JOIN LATERAL auth_helper.pending_legal_documents(p.id) AS d
+ WHERE p.id IN ('00000000-0000-4000-8000-00000000000a', '00000000-0000-4000-8000-00000000000b');
 
 DO $$
 DECLARE v_refused int := 0;

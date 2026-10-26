@@ -1845,6 +1845,12 @@ export type Database = {
                     isSetofReturn: false;
                 };
             };
+            "all_published": {
+                Args: {
+                    "p_document_ids": (string)[];
+                };
+                Returns: boolean;
+            };
             "anonymize_account": {
                 Args: {
                     "p_account": string;

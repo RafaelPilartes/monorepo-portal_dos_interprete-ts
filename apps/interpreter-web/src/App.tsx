@@ -106,7 +106,7 @@ export function InterpreterAppRoutes() {
       <Route path="/recover-password" element={<RecoverPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/verify-email" element={<VerifyEmail app="interpreter" />} />
-      <Route path="/accept-terms" element={<AcceptTerms />} />
+      <Route path="/accept-terms" element={<AcceptTerms app="interpreter" />} />
       <Route path="/suspended" element={<Suspended />} />
       <Route path="/onboarding" element={<InterpreterOnboarding />} />
       <Route path="*" element={<NotFound />} />

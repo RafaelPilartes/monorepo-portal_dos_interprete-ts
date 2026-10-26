@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { AUTH_TEXTS } from '@portal-dos-interpretes/i18n'
+import { AUTH_TEXTS, COMMON_TEXTS } from '@portal-dos-interpretes/i18n'
 import { appUrl } from '@portal-dos-interpretes/ui/lib/app-urls'
 import { AuthShell, FormAlert } from '../components/AuthShell'
 import { destinationFor, type PanelApp } from '../services/destination'
@@ -39,6 +39,9 @@ export default function VerifyEmail({ app = 'requester' }: { app?: PanelApp }) {
     else window.location.assign(appUrl(destination.app, destination.path))
   }, [session, navigate, searchParams, app])
 
+  if (session.status === 'error') {
+    return <AuthShell title={AUTH_TEXTS.checkInbox}><FormAlert>{COMMON_TEXTS.sessionUnavailable}</FormAlert></AuthShell>
+  }
   const failed = linkError || (waitedTooLong && session.status === 'anonymous')
   return (
     <AuthShell

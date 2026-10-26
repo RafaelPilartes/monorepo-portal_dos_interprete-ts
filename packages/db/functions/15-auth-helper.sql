@@ -56,7 +56,7 @@ AS $$
 $$;
 
 -- What the API's auth plugin asks about a caller (api.md §1). EXECUTE for service_role only.
--- 'unknown' for an account without a profile or anonymized (the token no longer opens anything);
+-- 'unknown' for an account without a profile; 'suspended' also for an anonymized one (R-ACC-03);
 -- 'terms_required' for an active account with legal documents to accept (R-PRIV-02).
 CREATE OR REPLACE FUNCTION auth_helper.account_status(p_account uuid) RETURNS text
   LANGUAGE sql STABLE SECURITY DEFINER
@@ -66,7 +66,9 @@ AS $$
     (SELECT CASE p.status
               WHEN 'active' THEN CASE WHEN EXISTS (SELECT 1 FROM auth_helper.pending_legal_documents(p.id))
                                       THEN 'terms_required' ELSE 'active' END
+              -- R-ACC-03: a suspended or anonymized account gets ACCOUNT_SUSPENDED.
               WHEN 'suspended' THEN 'suspended'
+              WHEN 'anonymized' THEN 'suspended'
               ELSE 'unknown' END
        FROM identity.profiles AS p WHERE p.id = p_account),
     'unknown')
@@ -82,33 +84,46 @@ AS $$
    WHERE s.account_id = p_account AND s.active
 $$;
 
--- Roles (R-ACC-02) ----------------------------------------------------------------------------------
+-- Roles (R-ACC-02). One rule each, by account; the caller variants for the policies delegate.
 
-CREATE OR REPLACE FUNCTION auth_helper.is_interpreter() RETURNS boolean
+CREATE OR REPLACE FUNCTION auth_helper.is_interpreter_account(p_account uuid) RETURNS boolean
   LANGUAGE sql STABLE SECURITY DEFINER
   SET search_path = ''
-AS $$
-  SELECT EXISTS (SELECT 1 FROM identity.interpreter_profiles AS i WHERE i.account_id = auth_helper.account_id())
-$$;
+AS $$ SELECT EXISTS (SELECT 1 FROM identity.interpreter_profiles AS i WHERE i.account_id = p_account) $$;
 
 -- A requester: an individual requester profile, or active membership of an organisation.
-CREATE OR REPLACE FUNCTION auth_helper.is_requester() RETURNS boolean
+CREATE OR REPLACE FUNCTION auth_helper.is_requester_account(p_account uuid) RETURNS boolean
   LANGUAGE sql STABLE SECURITY DEFINER
   SET search_path = ''
 AS $$
-  SELECT EXISTS (SELECT 1 FROM identity.requester_profiles AS r WHERE r.account_id = auth_helper.account_id())
+  SELECT EXISTS (SELECT 1 FROM identity.requester_profiles AS r WHERE r.account_id = p_account)
       OR EXISTS (SELECT 1 FROM identity.organization_members AS m
-                  WHERE m.account_id = auth_helper.account_id() AND m.status = 'active')
+                  WHERE m.account_id = p_account AND m.status = 'active')
 $$;
 
--- The caller's active role in an organisation, or NULL (R-ORG-05).
-CREATE OR REPLACE FUNCTION auth_helper.org_role(p_org uuid) RETURNS text
+-- The active role of an account in an organisation, or NULL (R-ORG-05).
+CREATE OR REPLACE FUNCTION auth_helper.org_role_of(p_org uuid, p_account uuid) RETURNS text
   LANGUAGE sql STABLE SECURITY DEFINER
   SET search_path = ''
 AS $$
   SELECT m.role FROM identity.organization_members AS m
-   WHERE m.organization_id = p_org AND m.account_id = auth_helper.account_id() AND m.status = 'active'
+   WHERE m.organization_id = p_org AND m.account_id = p_account AND m.status = 'active'
 $$;
+
+CREATE OR REPLACE FUNCTION auth_helper.is_interpreter() RETURNS boolean
+  LANGUAGE sql STABLE SECURITY DEFINER
+  SET search_path = ''
+AS $$ SELECT coalesce(auth_helper.is_interpreter_account(auth_helper.account_id()), false) $$;
+
+CREATE OR REPLACE FUNCTION auth_helper.is_requester() RETURNS boolean
+  LANGUAGE sql STABLE SECURITY DEFINER
+  SET search_path = ''
+AS $$ SELECT coalesce(auth_helper.is_requester_account(auth_helper.account_id()), false) $$;
+
+CREATE OR REPLACE FUNCTION auth_helper.org_role(p_org uuid) RETURNS text
+  LANGUAGE sql STABLE SECURITY DEFINER
+  SET search_path = ''
+AS $$ SELECT auth_helper.org_role_of(p_org, auth_helper.account_id()) $$;
 
 -- The organisations where the caller is an active member.
 CREATE OR REPLACE FUNCTION auth_helper.my_org_ids() RETURNS SETOF uuid
