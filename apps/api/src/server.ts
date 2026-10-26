@@ -1,5 +1,7 @@
 import cors from '@fastify/cors'
 import Fastify, { type FastifyInstance } from 'fastify'
+import type { AuthServer } from './integrations/auth.js'
+import type { AppUrls } from './integrations/email/templates.js'
 import type { StorageClient } from './integrations/storage.js'
 import type { Database } from './lib/db.js'
 import type { TokenVerifier } from './lib/tokens.js'
@@ -7,10 +9,12 @@ import { registerAudit } from './plugins/audit.js'
 import { registerAuth } from './plugins/auth.js'
 import { registerErrorHandling } from './plugins/errors.js'
 import { registerRateLimit } from './plugins/rateLimit.js'
+import { registerAccountRoutes } from './routes/accounts.js'
 import { registerStaffConfigRoutes } from './routes/admin/staffConfig.js'
 import { registerFileRoutes } from './routes/files.js'
 import { registerMeRoute } from './routes/me.js'
 import { registerHealthRoute } from './routes/health.js'
+import { registerOrganizationRoutes } from './routes/organizations.js'
 
 export interface ServerOptions {
   /** Short git commit of the build; "unknown" when not provided. */
@@ -23,6 +27,10 @@ export interface ServerOptions {
   db?: Database
   verifyToken?: TokenVerifier
   storage?: StorageClient
+  /** Account creation (POST /auth/register); without it the route is not served. */
+  authServer?: AuthServer
+  /** The four web apps: where a confirmation link and an active role lead. */
+  appUrls?: AppUrls
 }
 
 /** Builds the API. Without a database only /health is served (and reports itself degraded). */
@@ -58,6 +66,10 @@ export async function buildServer(options: ServerOptions = {}): Promise<FastifyI
     if (options.storage) registerFileRoutes(server, { db: options.db, storage: options.storage })
     registerStaffConfigRoutes(server, { db: options.db })
     registerMeRoute(server, { db: options.db })
+    registerOrganizationRoutes(server, { db: options.db })
+    if (options.authServer && options.appUrls) {
+      registerAccountRoutes(server, { db: options.db, authServer: options.authServer, appUrls: options.appUrls })
+    }
   }
   return server
 }

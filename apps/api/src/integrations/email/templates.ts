@@ -21,7 +21,27 @@ type Template = (payload: EmailPayload) => RenderedEmail
 
 const SIGNATURE = '\n\n—\nPortal dos Intérpretes · Academia Grace Mind'
 
-const TEMPLATES: Partial<Record<string, Template>> = {}
+const text = (value: unknown): string => (typeof value === 'string' ? value : '')
+const ROLE_NAMES: Record<string, string> = { admin: 'administrador', member: 'membro' }
+const DOCUMENT_NAMES: Record<string, string> = { terms: 'dos Termos e Condições', privacy: 'da Política de Privacidade' }
+
+const TEMPLATES: Partial<Record<string, Template>> = {
+  // R-ORG-02: the link carries the invite token (payload.link, requester-web /invite/:token).
+  org_invite: (payload) => ({
+    subject: `Convite para ${text(payload.organization_name)} no Portal dos Intérpretes`,
+    text: `Olá,\n\n${text(payload.invited_by_name) || 'Um responsável'} convidou-te para fazeres parte de ${text(payload.organization_name)} no Portal dos Intérpretes, como ${ROLE_NAMES[text(payload.role)] ?? 'membro'}.\n\nPara aceitar, abre o link abaixo e entra (ou cria a conta) com este email. O convite expira dentro de alguns dias.`,
+  }),
+  // R-ACC-05
+  account_suspended: (payload) => ({
+    subject: 'A tua conta no Portal dos Intérpretes foi suspensa',
+    text: `Olá,\n\nA tua conta no Portal dos Intérpretes foi suspensa pela equipa da plataforma.${text(payload.reason) ? `\n\nMotivo: ${text(payload.reason)}` : ''}\n\nSe achas que é um engano, responde a este email ou contacta o suporte da Academia Grace Mind.`,
+  }),
+  // R-PRIV-02
+  terms_updated: (payload) => ({
+    subject: 'Actualizámos os documentos legais do Portal dos Intérpretes',
+    text: `Olá,\n\nPublicámos uma nova versão ${DOCUMENT_NAMES[text(payload.kind)] ?? 'dos documentos legais'}. Da próxima vez que entrares no portal, vais ver o texto novo e aceitá-lo para continuar.`,
+  }),
+}
 
 // Same rule as the SQL domain util.relative_link: one leading slash, never "//host" or "/\\host".
 const RELATIVE_LINK = /^\/([^/\\]|$)/

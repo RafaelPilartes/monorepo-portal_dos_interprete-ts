@@ -1,7 +1,7 @@
-import type { FastifyInstance, FastifyRequest } from 'fastify'
+import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import type { Database, RequestContext } from '../../lib/db.js'
-import { ApiError } from '../../lib/sendApiError.js'
+import type { Database } from '../../lib/db.js'
+import { actor, callSql } from '../../lib/routes.js'
 import { requireStaff, STAFF_LEVELS } from '../../plugins/staff.js'
 
 // Team, configuration versions, legal documents and verification document types (api.md §11,
@@ -34,22 +34,7 @@ const bodies = {
 const idParam = z.object({ id: uuid })
 const accountParam = z.object({ accountId: uuid })
 
-function context(request: FastifyRequest): RequestContext {
-  return { requestId: request.id, ip: request.ip }
-}
-
-function actor(request: FastifyRequest): string {
-  if (!request.account) throw new ApiError('UNAUTHENTICATED')
-  return request.account.id
-}
-
-/** Runs one SQL function as the caller, in a transaction that carries the request for the audit. */
-async function call<T>(db: Database, request: FastifyRequest, sql: string, params: unknown[]): Promise<T> {
-  return db.transaction(async (client) => {
-    const result = await client.query(sql, params)
-    return result.rows[0] as T
-  }, context(request))
-}
+const call = callSql
 
 export function registerStaffConfigRoutes(server: FastifyInstance, deps: { db: Database }): void {
   const superOnly = { preHandler: requireStaff('super_admin') }

@@ -303,7 +303,7 @@ BEGIN
 END;
 $$;
 
--- Publishing makes the version the one every account must accept (R-PRIV-02, from H2 on).
+-- Publishing makes the version the one every account must accept (R-PRIV-02).
 CREATE OR REPLACE FUNCTION identity.publish_legal_document(p_actor uuid, p_id uuid)
 RETURNS identity.legal_documents
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
@@ -325,6 +325,13 @@ BEGIN
    WHERE id = p_id RETURNING * INTO v_row;
   PERFORM audit.record(p_actor, 'super_admin', 'legal.published', 'legal_document', p_id::text,
     NULL, jsonb_build_object('kind', v_row.kind, 'version', v_row.version));
+  -- A new version (not the first) is announced to every active account (R-PRIV-02, terms_updated).
+  IF EXISTS (SELECT 1 FROM identity.legal_documents AS d
+              WHERE d.kind = v_row.kind AND d.published_at IS NOT NULL AND d.id <> v_row.id) THEN
+    PERFORM notify.enqueue('terms_updated', p.id,
+              jsonb_build_object('kind', v_row.kind, 'version', v_row.version, 'link', '/accept-terms', 'app', 'requester'))
+       FROM identity.profiles AS p WHERE p.status = 'active';
+  END IF;
   RETURN v_row;
 END;
 $$;
@@ -374,20 +381,4 @@ BEGIN
   IF v_before.id IS NULL THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'NOT_FOUND'; END IF;
   PERFORM audit.record(p_actor, v_level, 'document_type.deleted', 'document_type', p_id::text, to_jsonb(v_before), NULL);
 END;
-$$;
-
--- GET /me (api.md §4), the part step H1 needs: the account, its staff level and the roles known so
--- far ('staff'). H2 adds requester/interpreter roles, organisations, last_active_role and pending
--- legal documents (R-ACC-02, R-PRIV-02).
-CREATE OR REPLACE FUNCTION identity.me(p_account uuid) RETURNS jsonb
-  LANGUAGE sql STABLE SECURITY DEFINER
-  SET search_path = ''
-AS $$
-  SELECT jsonb_build_object(
-    'account', jsonb_build_object('id', p.id, 'email', u.email, 'full_name', p.full_name, 'status', p.status),
-    'roles', CASE WHEN auth_helper.staff_level_of(p.id) IS NULL THEN '[]'::jsonb ELSE '["staff"]'::jsonb END,
-    'staff_level', auth_helper.staff_level_of(p.id))
-    FROM identity.profiles AS p
-    JOIN auth.users AS u ON u.id = p.id
-   WHERE p.id = p_account
 $$;

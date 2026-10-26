@@ -690,7 +690,19 @@ export type Database = {
             [_ in never]: never;
         };
         Views: {
-            [_ in never]: never;
+            "listed_interpreters": {
+                Row: {
+                    "account_id": string;
+                    "avatar_path": string | null;
+                    "city": string | null;
+                    "full_name": string;
+                    "modality": string | null;
+                    "slug": string;
+                };
+                ComputedFields: never;
+                Relationships: [
+                ];
+            };
         };
         Functions: {
             [_ in never]: never;
@@ -704,6 +716,174 @@ export type Database = {
     };
     "identity": {
         Tables: {
+            "consents": {
+                Row: {
+                    "accepted_at": string;
+                    "account_id": string;
+                    "id": string;
+                    "ip": string | null;
+                    "legal_document_id": string;
+                    "user_agent": string | null;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "accepted_at"?: string;
+                    "account_id": string;
+                    "id"?: string;
+                    "ip"?: string | null;
+                    "legal_document_id": string;
+                    "user_agent"?: string | null;
+                };
+                Update: {
+                    "accepted_at"?: string;
+                    "account_id"?: string;
+                    "id"?: string;
+                    "ip"?: string | null;
+                    "legal_document_id"?: string;
+                    "user_agent"?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "consents_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "account_directory";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "consents_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "consents_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "consents_legal_document_id_fkey";
+                        columns: [
+                            "legal_document_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "legal_documents";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "interpreter_profiles": {
+                Row: {
+                    "accepts_negotiation": boolean;
+                    "account_id": string;
+                    "bio": string | null;
+                    "city": string | null;
+                    "contact_phone": string | null;
+                    "contact_whatsapp": string | null;
+                    "created_at": string;
+                    "facebook_url": string | null;
+                    "instagram_url": string | null;
+                    "linkedin_url": string | null;
+                    "minimum_hourly_rate_aoa": number | null;
+                    "modality": string | null;
+                    "slug": string;
+                    "travel_fee_aoa": number | null;
+                    "updated_at": string;
+                    "website_url": string | null;
+                    "years_experience": number | null;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "accepts_negotiation"?: boolean;
+                    "account_id": string;
+                    "bio"?: string | null;
+                    "city"?: string | null;
+                    "contact_phone"?: string | null;
+                    "contact_whatsapp"?: string | null;
+                    "created_at"?: string;
+                    "facebook_url"?: string | null;
+                    "instagram_url"?: string | null;
+                    "linkedin_url"?: string | null;
+                    "minimum_hourly_rate_aoa"?: number | null;
+                    "modality"?: string | null;
+                    "slug": string;
+                    "travel_fee_aoa"?: number | null;
+                    "updated_at"?: string;
+                    "website_url"?: string | null;
+                    "years_experience"?: number | null;
+                };
+                Update: {
+                    "accepts_negotiation"?: boolean;
+                    "account_id"?: string;
+                    "bio"?: string | null;
+                    "city"?: string | null;
+                    "contact_phone"?: string | null;
+                    "contact_whatsapp"?: string | null;
+                    "created_at"?: string;
+                    "facebook_url"?: string | null;
+                    "instagram_url"?: string | null;
+                    "linkedin_url"?: string | null;
+                    "minimum_hourly_rate_aoa"?: number | null;
+                    "modality"?: string | null;
+                    "slug"?: string;
+                    "travel_fee_aoa"?: number | null;
+                    "updated_at"?: string;
+                    "website_url"?: string | null;
+                    "years_experience"?: number | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "interpreter_profiles_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: true;
+                        referencedRelation: "account_directory";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "interpreter_profiles_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: true;
+                        referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "interpreter_profiles_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: true;
+                        referencedRelation: "public_profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
             "legal_documents": {
                 Row: {
                     "body": string;
@@ -746,7 +926,40 @@ export type Database = {
                             "created_by"
                         ];
                         isOneToOne: false;
+                        referencedRelation: "account_directory";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "legal_documents_created_by_fkey";
+                        columns: [
+                            "created_by"
+                        ];
+                        isOneToOne: false;
                         referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "legal_documents_created_by_fkey";
+                        columns: [
+                            "created_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "legal_documents_published_by_fkey";
+                        columns: [
+                            "published_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "account_directory";
                         referencedColumns: [
                             "id"
                         ];
@@ -758,6 +971,331 @@ export type Database = {
                         ];
                         isOneToOne: false;
                         referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "legal_documents_published_by_fkey";
+                        columns: [
+                            "published_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "organization_invites": {
+                Row: {
+                    "accepted_by": string | null;
+                    "created_at": string;
+                    "decided_at": string | null;
+                    "email": string;
+                    "expires_at": string;
+                    "id": string;
+                    "invited_by": string | null;
+                    "organization_id": string;
+                    "role": string;
+                    "status": string;
+                    "token_hash": string;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "accepted_by"?: string | null;
+                    "created_at"?: string;
+                    "decided_at"?: string | null;
+                    "email": string;
+                    "expires_at": string;
+                    "id"?: string;
+                    "invited_by"?: string | null;
+                    "organization_id": string;
+                    "role": string;
+                    "status"?: string;
+                    "token_hash": string;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "accepted_by"?: string | null;
+                    "created_at"?: string;
+                    "decided_at"?: string | null;
+                    "email"?: string;
+                    "expires_at"?: string;
+                    "id"?: string;
+                    "invited_by"?: string | null;
+                    "organization_id"?: string;
+                    "role"?: string;
+                    "status"?: string;
+                    "token_hash"?: string;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "organization_invites_accepted_by_fkey";
+                        columns: [
+                            "accepted_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "account_directory";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organization_invites_accepted_by_fkey";
+                        columns: [
+                            "accepted_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organization_invites_accepted_by_fkey";
+                        columns: [
+                            "accepted_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organization_invites_invited_by_fkey";
+                        columns: [
+                            "invited_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "account_directory";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organization_invites_invited_by_fkey";
+                        columns: [
+                            "invited_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organization_invites_invited_by_fkey";
+                        columns: [
+                            "invited_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organization_invites_organization_id_fkey";
+                        columns: [
+                            "organization_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "organization_directory";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organization_invites_organization_id_fkey";
+                        columns: [
+                            "organization_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "organizations";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "organization_members": {
+                Row: {
+                    "account_id": string;
+                    "created_at": string;
+                    "joined_at": string;
+                    "organization_id": string;
+                    "removed_at": string | null;
+                    "role": string;
+                    "status": string;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "account_id": string;
+                    "created_at"?: string;
+                    "joined_at"?: string;
+                    "organization_id": string;
+                    "removed_at"?: string | null;
+                    "role": string;
+                    "status"?: string;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "account_id"?: string;
+                    "created_at"?: string;
+                    "joined_at"?: string;
+                    "organization_id"?: string;
+                    "removed_at"?: string | null;
+                    "role"?: string;
+                    "status"?: string;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "organization_members_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "account_directory";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organization_members_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organization_members_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organization_members_organization_id_fkey";
+                        columns: [
+                            "organization_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "organization_directory";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organization_members_organization_id_fkey";
+                        columns: [
+                            "organization_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "organizations";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "organizations": {
+                Row: {
+                    "address": string | null;
+                    "anonymized_at": string | null;
+                    "city": string | null;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "id": string;
+                    "name": string;
+                    "nif": string;
+                    "phone": string | null;
+                    "sector": string | null;
+                    "status": string;
+                    "suspended_at": string | null;
+                    "suspended_reason": string | null;
+                    "updated_at": string;
+                    "website_url": string | null;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "address"?: string | null;
+                    "anonymized_at"?: string | null;
+                    "city"?: string | null;
+                    "created_at"?: string;
+                    "created_by"?: string | null;
+                    "id"?: string;
+                    "name": string;
+                    "nif": string;
+                    "phone"?: string | null;
+                    "sector"?: string | null;
+                    "status"?: string;
+                    "suspended_at"?: string | null;
+                    "suspended_reason"?: string | null;
+                    "updated_at"?: string;
+                    "website_url"?: string | null;
+                };
+                Update: {
+                    "address"?: string | null;
+                    "anonymized_at"?: string | null;
+                    "city"?: string | null;
+                    "created_at"?: string;
+                    "created_by"?: string | null;
+                    "id"?: string;
+                    "name"?: string;
+                    "nif"?: string;
+                    "phone"?: string | null;
+                    "sector"?: string | null;
+                    "status"?: string;
+                    "suspended_at"?: string | null;
+                    "suspended_reason"?: string | null;
+                    "updated_at"?: string;
+                    "website_url"?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "organizations_created_by_fkey";
+                        columns: [
+                            "created_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "account_directory";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organizations_created_by_fkey";
+                        columns: [
+                            "created_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organizations_created_by_fkey";
+                        columns: [
+                            "created_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_profiles";
                         referencedColumns: [
                             "id"
                         ];
@@ -808,6 +1346,68 @@ export type Database = {
                 Relationships: [
                 ];
             };
+            "requester_profiles": {
+                Row: {
+                    "account_id": string;
+                    "address": string | null;
+                    "city": string | null;
+                    "created_at": string;
+                    "nif": string | null;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "account_id": string;
+                    "address"?: string | null;
+                    "city"?: string | null;
+                    "created_at"?: string;
+                    "nif"?: string | null;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "account_id"?: string;
+                    "address"?: string | null;
+                    "city"?: string | null;
+                    "created_at"?: string;
+                    "nif"?: string | null;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "requester_profiles_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: true;
+                        referencedRelation: "account_directory";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "requester_profiles_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: true;
+                        referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "requester_profiles_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: true;
+                        referencedRelation: "public_profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
             "staff_members": {
                 Row: {
                     "account_id": string;
@@ -841,7 +1441,40 @@ export type Database = {
                             "account_id"
                         ];
                         isOneToOne: true;
+                        referencedRelation: "account_directory";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "staff_members_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: true;
                         referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "staff_members_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: true;
+                        referencedRelation: "public_profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "staff_members_created_by_fkey";
+                        columns: [
+                            "created_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "account_directory";
                         referencedColumns: [
                             "id"
                         ];
@@ -856,11 +1489,190 @@ export type Database = {
                         referencedColumns: [
                             "id"
                         ];
+                    },
+                    {
+                        foreignKeyName: "staff_members_created_by_fkey";
+                        columns: [
+                            "created_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
                     }
                 ];
             };
         };
         Views: {
+            "account_directory": {
+                Row: {
+                    "anonymized_at": string | null;
+                    "city": string | null;
+                    "created_at": string;
+                    "email": string | null;
+                    "full_name": string;
+                    "id": string;
+                    "interpreter_slug": string | null;
+                    "is_individual_requester": boolean | null;
+                    "is_interpreter": boolean | null;
+                    "is_org_member": boolean | null;
+                    "phone": string | null;
+                    "staff_level": string | null;
+                    "status": string;
+                    "suspended_at": string | null;
+                    "suspended_reason": string | null;
+                };
+                ComputedFields: never;
+                Relationships: [
+                ];
+            };
+            "organization_directory": {
+                Row: {
+                    "address": string | null;
+                    "city": string | null;
+                    "created_at": string;
+                    "id": string;
+                    "member_count": number | null;
+                    "name": string;
+                    "nif": string;
+                    "owner_email": string | null;
+                    "owner_id": string | null;
+                    "owner_name": string | null;
+                    "phone": string | null;
+                    "sector": string | null;
+                    "status": string;
+                    "suspended_at": string | null;
+                    "suspended_reason": string | null;
+                    "website_url": string | null;
+                };
+                ComputedFields: never;
+                Relationships: [
+                    {
+                        foreignKeyName: "organization_members_account_id_fkey";
+                        columns: [
+                            "owner_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "account_directory";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organization_members_account_id_fkey";
+                        columns: [
+                            "owner_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organization_members_account_id_fkey";
+                        columns: [
+                            "owner_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "organization_member_directory": {
+                Row: {
+                    "account_id": string;
+                    "email": string | null;
+                    "full_name": string;
+                    "joined_at": string;
+                    "organization_id": string;
+                    "removed_at": string | null;
+                    "role": string;
+                    "status": string;
+                };
+                ComputedFields: never;
+                Relationships: [
+                    {
+                        foreignKeyName: "organization_members_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "account_directory";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organization_members_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organization_members_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organization_members_organization_id_fkey";
+                        columns: [
+                            "organization_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "organization_directory";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "organization_members_organization_id_fkey";
+                        columns: [
+                            "organization_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "organizations";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "public_profiles": {
+                Row: {
+                    "avatar_path": string | null;
+                    "full_name": string;
+                    "id": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "avatar_path"?: string | null;
+                    "full_name"?: string | null;
+                    "id"?: string | null;
+                };
+                Update: {
+                    "avatar_path"?: string | null;
+                    "full_name"?: string | null;
+                    "id"?: string | null;
+                };
+                Relationships: [
+                ];
+            };
             "staff_directory": {
                 Row: {
                     "account_id": string;
@@ -880,7 +1692,40 @@ export type Database = {
                             "account_id"
                         ];
                         isOneToOne: true;
+                        referencedRelation: "account_directory";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "staff_members_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: true;
                         referencedRelation: "profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "staff_members_account_id_fkey";
+                        columns: [
+                            "account_id"
+                        ];
+                        isOneToOne: true;
+                        referencedRelation: "public_profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "staff_members_created_by_fkey";
+                        columns: [
+                            "created_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "account_directory";
                         referencedColumns: [
                             "id"
                         ];
@@ -895,11 +1740,44 @@ export type Database = {
                         referencedColumns: [
                             "id"
                         ];
+                    },
+                    {
+                        foreignKeyName: "staff_members_created_by_fkey";
+                        columns: [
+                            "created_by"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_profiles";
+                        referencedColumns: [
+                            "id"
+                        ];
                     }
                 ];
             };
         };
         Functions: {
+            "accept_invite": {
+                Args: {
+                    "p_actor": string;
+                    "p_token": string;
+                };
+                Returns: {
+                    "account_id": string;
+                    "created_at": string;
+                    "joined_at": string;
+                    "organization_id": string;
+                    "removed_at": string | null;
+                    "role": string;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "organization_members";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
             "add_staff_member": {
                 Args: {
                     "p_actor": string;
@@ -921,12 +1799,95 @@ export type Database = {
                     isSetofReturn: false;
                 };
             };
+            "anonymize_account": {
+                Args: {
+                    "p_account": string;
+                };
+                Returns: undefined;
+            };
+            "assert_acceptable_documents": {
+                Args: {
+                    "p_document_ids": (string)[];
+                };
+                Returns: undefined;
+            };
+            "assert_org_role": {
+                Args: {
+                    "p_actor": string;
+                    "p_org": string;
+                    "p_roles": (string)[];
+                };
+                Returns: string;
+            };
             "assert_staff": {
                 Args: {
                     "p_actor": string;
                     "p_levels": (string)[];
                 };
                 Returns: string;
+            };
+            "become_interpreter": {
+                Args: {
+                    "p_actor": string;
+                    "p_bio": string;
+                    "p_city": string;
+                };
+                Returns: {
+                    "accepts_negotiation": boolean;
+                    "account_id": string;
+                    "bio": string | null;
+                    "city": string | null;
+                    "contact_phone": string | null;
+                    "contact_whatsapp": string | null;
+                    "created_at": string;
+                    "facebook_url": string | null;
+                    "instagram_url": string | null;
+                    "linkedin_url": string | null;
+                    "minimum_hourly_rate_aoa": number | null;
+                    "modality": string | null;
+                    "slug": string;
+                    "travel_fee_aoa": number | null;
+                    "updated_at": string;
+                    "website_url": string | null;
+                    "years_experience": number | null;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "interpreter_profiles";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "become_requester": {
+                Args: {
+                    "p_actor": string;
+                    "p_address": string;
+                    "p_city": string;
+                    "p_nif": string;
+                };
+                Returns: {
+                    "account_id": string;
+                    "address": string | null;
+                    "city": string | null;
+                    "created_at": string;
+                    "nif": string | null;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "requester_profiles";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "create_invite": {
+                Args: {
+                    "p_actor": string;
+                    "p_email": string;
+                    "p_org": string;
+                    "p_role": string;
+                };
+                Returns: Json;
             };
             "create_legal_draft": {
                 Args: {
@@ -952,11 +1913,81 @@ export type Database = {
                     isSetofReturn: false;
                 };
             };
+            "create_organization": {
+                Args: {
+                    "p_actor": string;
+                    "p_address": string;
+                    "p_city": string;
+                    "p_name": string;
+                    "p_nif": string;
+                    "p_phone": string;
+                    "p_sector": string;
+                    "p_website_url": string;
+                };
+                Returns: {
+                    "address": string | null;
+                    "anonymized_at": string | null;
+                    "city": string | null;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "id": string;
+                    "name": string;
+                    "nif": string;
+                    "phone": string | null;
+                    "sector": string | null;
+                    "status": string;
+                    "suspended_at": string | null;
+                    "suspended_reason": string | null;
+                    "updated_at": string;
+                    "website_url": string | null;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "organizations";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "email_in_use": {
+                Args: {
+                    "p_email": string;
+                };
+                Returns: boolean;
+            };
+            "expire_org_invites": {
+                Args: Record<PropertyKey, never>;
+                Returns: number;
+            };
+            "hash_token": {
+                Args: {
+                    "p_token": string;
+                };
+                Returns: string;
+            };
+            "invite_preview": {
+                Args: {
+                    "p_token": string;
+                };
+                Returns: Json;
+            };
+            "mask_email": {
+                Args: {
+                    "p_email": string;
+                };
+                Returns: string;
+            };
             "me": {
                 Args: {
                     "p_account": string;
                 };
                 Returns: Json;
+            };
+            "member_role": {
+                Args: {
+                    "p_account": string;
+                    "p_org": string;
+                };
+                Returns: string;
             };
             "publish_legal_document": {
                 Args: {
@@ -981,6 +2012,156 @@ export type Database = {
                     isSetofReturn: false;
                 };
             };
+            "reactivate_account": {
+                Args: {
+                    "p_account": string;
+                    "p_actor": string;
+                };
+                Returns: {
+                    "anonymized_at": string | null;
+                    "avatar_path": string | null;
+                    "created_at": string;
+                    "full_name": string;
+                    "id": string;
+                    "last_active_role": string | null;
+                    "phone": string | null;
+                    "status": string;
+                    "suspended_at": string | null;
+                    "suspended_reason": string | null;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "profiles";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "reactivate_organization": {
+                Args: {
+                    "p_actor": string;
+                    "p_org": string;
+                };
+                Returns: {
+                    "address": string | null;
+                    "anonymized_at": string | null;
+                    "city": string | null;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "id": string;
+                    "name": string;
+                    "nif": string;
+                    "phone": string | null;
+                    "sector": string | null;
+                    "status": string;
+                    "suspended_at": string | null;
+                    "suspended_reason": string | null;
+                    "updated_at": string;
+                    "website_url": string | null;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "organizations";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "record_consents": {
+                Args: {
+                    "p_account": string;
+                    "p_document_ids": (string)[];
+                    "p_ip": string;
+                    "p_user_agent": string;
+                };
+                Returns: number;
+            };
+            "remove_member": {
+                Args: {
+                    "p_account": string;
+                    "p_actor": string;
+                    "p_org": string;
+                };
+                Returns: {
+                    "account_id": string;
+                    "created_at": string;
+                    "joined_at": string;
+                    "organization_id": string;
+                    "removed_at": string | null;
+                    "role": string;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "organization_members";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "revoke_invite": {
+                Args: {
+                    "p_actor": string;
+                    "p_invite": string;
+                    "p_org": string;
+                };
+                Returns: {
+                    "accepted_by": string | null;
+                    "created_at": string;
+                    "decided_at": string | null;
+                    "email": string;
+                    "expires_at": string;
+                    "id": string;
+                    "invited_by": string | null;
+                    "organization_id": string;
+                    "role": string;
+                    "status": string;
+                    "token_hash": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "organization_invites";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "roles_of": {
+                Args: {
+                    "p_account": string;
+                };
+                Returns: (string)[];
+            };
+            "set_active_role": {
+                Args: {
+                    "p_actor": string;
+                    "p_role": string;
+                };
+                Returns: string;
+            };
+            "set_member_role": {
+                Args: {
+                    "p_account": string;
+                    "p_actor": string;
+                    "p_org": string;
+                    "p_role": string;
+                };
+                Returns: {
+                    "account_id": string;
+                    "created_at": string;
+                    "joined_at": string;
+                    "organization_id": string;
+                    "removed_at": string | null;
+                    "role": string;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "organization_members";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
             "set_staff_member": {
                 Args: {
                     "p_account": string;
@@ -999,6 +2180,98 @@ export type Database = {
                 SetofOptions: {
                     from: "*";
                     to: "staff_members";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "slugify": {
+                Args: {
+                    "p_text": string;
+                };
+                Returns: string;
+            };
+            "suspend_account": {
+                Args: {
+                    "p_account": string;
+                    "p_actor": string;
+                    "p_reason": string;
+                };
+                Returns: {
+                    "anonymized_at": string | null;
+                    "avatar_path": string | null;
+                    "created_at": string;
+                    "full_name": string;
+                    "id": string;
+                    "last_active_role": string | null;
+                    "phone": string | null;
+                    "status": string;
+                    "suspended_at": string | null;
+                    "suspended_reason": string | null;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "profiles";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "suspend_organization": {
+                Args: {
+                    "p_actor": string;
+                    "p_org": string;
+                    "p_reason": string;
+                };
+                Returns: {
+                    "address": string | null;
+                    "anonymized_at": string | null;
+                    "city": string | null;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "id": string;
+                    "name": string;
+                    "nif": string;
+                    "phone": string | null;
+                    "sector": string | null;
+                    "status": string;
+                    "suspended_at": string | null;
+                    "suspended_reason": string | null;
+                    "updated_at": string;
+                    "website_url": string | null;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "organizations";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "transfer_ownership": {
+                Args: {
+                    "p_actor": string;
+                    "p_new_owner": string;
+                    "p_org": string;
+                };
+                Returns: {
+                    "address": string | null;
+                    "anonymized_at": string | null;
+                    "city": string | null;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "id": string;
+                    "name": string;
+                    "nif": string;
+                    "phone": string | null;
+                    "sector": string | null;
+                    "status": string;
+                    "suspended_at": string | null;
+                    "suspended_reason": string | null;
+                    "updated_at": string;
+                    "website_url": string | null;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "organizations";
                     isOneToOne: true;
                     isSetofReturn: false;
                 };

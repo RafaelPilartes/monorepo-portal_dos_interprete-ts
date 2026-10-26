@@ -21,7 +21,8 @@ const failing = { send: async () => { throw new Error('smtp refused') } }
 
 async function enqueue(email: string): Promise<string> {
   return db.transaction(async (client) => {
-    const result = await client.query<{ id: string }>("SELECT notify.enqueue_email('org_invite', $1, '{}') AS id", [email])
+    // A kind without its own template yet: the generic text (AD-027).
+    const result = await client.query<{ id: string }>("SELECT notify.enqueue_email('payment_requested', $1, '{}') AS id", [email])
     return result.rows[0]?.id as string
   })
 }
@@ -39,6 +40,8 @@ async function setClock(at: string | null) {
 beforeEach(async () => {
   await setClock(null)
   await owner.query("DELETE FROM notify.email_outbox WHERE to_email LIKE 'worker-%'")
+  // Emails other tests queued wait out of the way, so a batch here holds only this file's.
+  await owner.query("UPDATE notify.email_outbox SET next_attempt_at = now() + interval '100 years' WHERE status IN ('queued', 'sending') AND to_email NOT LIKE 'worker-%'")
 })
 
 afterAll(async () => {

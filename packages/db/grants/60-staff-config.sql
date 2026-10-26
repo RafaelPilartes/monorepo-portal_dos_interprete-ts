@@ -21,5 +21,5 @@ GRANT EXECUTE ON FUNCTION
   identity.create_legal_draft(uuid, text, text), identity.update_legal_draft(uuid, uuid, text),
   identity.publish_legal_document(uuid, uuid),
   config.save_document_type(uuid, uuid, text, text, text, boolean, boolean, integer),
-  config.delete_document_type(uuid, uuid), identity.me(uuid)
+  config.delete_document_type(uuid, uuid)
   TO service_role;

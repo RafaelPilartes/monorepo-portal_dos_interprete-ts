@@ -1,4 +1,5 @@
 import { EnvError, loadEnv } from './config/env.js'
+import { createAuthServer } from './integrations/auth.js'
 import { createSmtpAdapter } from './integrations/email/adapter.js'
 import { createStorageClient } from './integrations/storage.js'
 import { startEmailWorker } from './jobs/emailOutbox.js'
@@ -20,6 +21,7 @@ try {
 }
 
 const db = createDatabase(env.DATABASE_URL)
+const appUrls = { site: env.SITE_URL, requester: env.REQUESTER_URL, interpreter: env.INTERPRETER_URL, admin: env.ADMIN_URL }
 const server = await buildServer({
   commit: resolveCommit(),
   logger: { level: env.LOG_LEVEL },
@@ -29,13 +31,15 @@ const server = await buildServer({
   db,
   verifyToken: createTokenVerifier({ supabaseUrl: env.SUPABASE_URL, jwtSecret: env.SUPABASE_JWT_SECRET }),
   storage: createStorageClient({ supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY }),
+  authServer: createAuthServer({ supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY }),
+  appUrls,
 })
 
 const stopWorker = env.EMAIL_WORKER_ENABLED
   ? startEmailWorker({
       db,
       log: server.log,
-      appUrls: { site: env.SITE_URL, requester: env.REQUESTER_URL, interpreter: env.INTERPRETER_URL, admin: env.ADMIN_URL },
+      appUrls,
       adapter: createSmtpAdapter({
         host: env.SMTP_HOST,
         port: env.SMTP_PORT,

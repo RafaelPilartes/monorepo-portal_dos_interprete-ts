@@ -193,6 +193,11 @@ BEGIN
   RAISE NOTICE 'ok - a published legal document is immutable';
 END $$;
 
+-- From H2 the published legal documents must be accepted before anything is read (R-PRIV-02).
+INSERT INTO identity.consents (account_id, legal_document_id)
+SELECT p.id, d.id FROM identity.profiles AS p CROSS JOIN LATERAL auth_helper.pending_legal_documents(p.id) AS d
+ WHERE p.id::text LIKE '00000000-0000-4000-8000-0000000000a_';
+
 -- Reads by RLS: what each caller sees (R-AUD-03, data-model §1, §4) ------------------------------------
 
 INSERT INTO audit.events (actor_role, action, entity_type, entity_id) VALUES ('system', 'test.catalog', 'document_type', 't1');

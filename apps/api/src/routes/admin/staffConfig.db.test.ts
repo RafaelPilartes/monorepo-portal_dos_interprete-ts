@@ -8,6 +8,7 @@ import { createDatabase } from '../../lib/db.js'
 import { createTokenVerifier } from '../../lib/tokens.js'
 import { buildServer } from '../../server.js'
 import { local } from '../../testing/localSupabase.js'
+import { acceptCurrentTerms } from '../../testing/terms.js'
 
 // Step H1 routes against the local database (staff-and-config.md criteria 2–4).
 
@@ -32,6 +33,7 @@ beforeAll(async () => {
   moderator = await createConfirmedAccount(local.API_URL, local.SERVICE_ROLE_KEY, local.ANON_KEY)
   // Test setup only: the team as bootstrap-admin would leave it.
   await owner.query("INSERT INTO identity.staff_members (account_id, level) VALUES ($1, 'super_admin'), ($2, 'moderator')", [superAdmin.id, moderator.id])
+  for (const account of [superAdmin, moderator]) await acceptCurrentTerms(owner, account.id)
   if (!(await currentVersion())) {
     const draft = (await owner.query("SELECT id FROM config.platform_versions WHERE status = 'draft' ORDER BY version_number LIMIT 1")).rows[0].id
     await owner.query('SELECT config.publish_version($1, $2, NULL)', [superAdmin.id, draft])
@@ -138,6 +140,8 @@ describe('legal documents and document types', () => {
     expect(draft.statusCode).toBe(201)
     const id = draft.json().id
     expect((await app.inject({ method: 'POST', url: `/admin/legal-documents/${id}/publish`, headers: as(superAdmin) })).statusCode).toBe(200)
+    // A new version must be accepted before anything else (R-PRIV-02).
+    for (const account of [superAdmin, moderator]) await acceptCurrentTerms(owner, account.id)
     const edit = await app.inject({ method: 'PATCH', url: `/admin/legal-documents/${id}`, headers: as(superAdmin), payload: { body: 'outro' } })
     expect(edit.json().error.code).toBe('STATE_CHANGED')
   })

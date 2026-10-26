@@ -7,7 +7,9 @@ import { createDatabase } from './lib/db.js'
 import { resolveMigrationInBuild } from './lib/migrations.js'
 import { createTokenVerifier } from './lib/tokens.js'
 import { buildServer } from './server.js'
+import pg from 'pg'
 import { local } from './testing/localSupabase.js'
+import { acceptCurrentTerms } from './testing/terms.js'
 
 // The API against the local database and Auth server (foundation.md §G, "Feito quando").
 
@@ -27,6 +29,9 @@ beforeAll(async () => {
     db.transaction((client) => client.query('SELECT 1 / 0')),
   )
   account = await createConfirmedAccount(local.API_URL, local.SERVICE_ROLE_KEY, local.ANON_KEY)
+  const owner = new pg.Pool({ connectionString: local.DB_URL, max: 1 })
+  await acceptCurrentTerms(owner, account.id)
+  await owner.end()
 })
 
 afterAll(async () => {

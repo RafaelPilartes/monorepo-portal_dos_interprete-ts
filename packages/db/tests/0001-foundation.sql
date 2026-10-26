@@ -62,7 +62,22 @@ END $$;
 -- Column grants: the complete list of what the session may write. A step that grants a column
 -- adds it here, so a grant nobody meant fails this test.
 DO $$
-DECLARE v_unexpected text; v_expected text[] := ARRAY['authenticated UPDATE notify.notifications.read_at'];
+DECLARE v_unexpected text; v_expected text[] := ARRAY['authenticated UPDATE notify.notifications.read_at',
+    -- H2 (data-model.md §1, "U coluna"): the owner's profile and roles, an organisation's open columns.
+    'authenticated UPDATE identity.profiles.full_name', 'authenticated UPDATE identity.profiles.phone',
+    'authenticated UPDATE identity.profiles.avatar_path',
+    'authenticated UPDATE identity.requester_profiles.nif', 'authenticated UPDATE identity.requester_profiles.address',
+    'authenticated UPDATE identity.requester_profiles.city',
+    'authenticated UPDATE identity.interpreter_profiles.bio', 'authenticated UPDATE identity.interpreter_profiles.years_experience',
+    'authenticated UPDATE identity.interpreter_profiles.modality', 'authenticated UPDATE identity.interpreter_profiles.minimum_hourly_rate_aoa',
+    'authenticated UPDATE identity.interpreter_profiles.accepts_negotiation', 'authenticated UPDATE identity.interpreter_profiles.travel_fee_aoa',
+    'authenticated UPDATE identity.interpreter_profiles.city', 'authenticated UPDATE identity.interpreter_profiles.contact_phone',
+    'authenticated UPDATE identity.interpreter_profiles.contact_whatsapp', 'authenticated UPDATE identity.interpreter_profiles.website_url',
+    'authenticated UPDATE identity.interpreter_profiles.linkedin_url', 'authenticated UPDATE identity.interpreter_profiles.instagram_url',
+    'authenticated UPDATE identity.interpreter_profiles.facebook_url',
+    'authenticated UPDATE identity.organizations.name', 'authenticated UPDATE identity.organizations.sector',
+    'authenticated UPDATE identity.organizations.address', 'authenticated UPDATE identity.organizations.city',
+    'authenticated UPDATE identity.organizations.website_url', 'authenticated UPDATE identity.organizations.phone'];
 BEGIN
   SELECT string_agg(entry, ', ') INTO v_unexpected FROM (
     SELECT format('%s %s %s.%s.%s', pg_get_userbyid(a.grantee), a.privilege_type, n.nspname, c.relname, att.attname) AS entry

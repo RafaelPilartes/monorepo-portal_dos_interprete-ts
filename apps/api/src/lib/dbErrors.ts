@@ -8,10 +8,14 @@ export interface DatabaseErrorLike {
   code?: string
   message?: string
   constraint?: string
+  /** "<field>:<reason>" when a SQL function refuses one form value (RAISE ... HINT). */
+  hint?: string
 }
 
 /** Constraint name → catalog code; feature steps add their unique and check constraints here. */
-export const CONSTRAINT_CODES: Readonly<Record<string, ErrorCode>> = {}
+export const CONSTRAINT_CODES: Readonly<Record<string, ErrorCode>> = {
+  organizations_nif_key: 'NIF_IN_USE',
+}
 
 const SQLSTATE = /^[0-9A-Z]{5}$/
 
@@ -33,6 +37,14 @@ export const UNIQUE_FIELDS: Readonly<Record<string, { field: string; message: st
   verification_document_types_code_key: { field: 'code', message: 'Já existe um tipo de documento com este código.' },
 }
 
+/** What the person reads for a value a SQL function refused, by the reason in its HINT. */
+export const FIELD_REASONS: Readonly<Record<string, string>> = {
+  already_member: 'Esta pessoa já é membro da organização.',
+  required: 'Preenche este campo.',
+  invalid: 'Valor inválido.',
+}
+const FIELD_HINT = /^([a-z_]+):([a-z_]+)$/
+
 const DOMAIN_CODES: Readonly<Record<string, ErrorCode>> = {
   iban_ao_check: 'INVALID_IBAN',
   nif_check: 'INVALID_NIF',
@@ -42,6 +54,8 @@ const DOMAIN_CODES: Readonly<Record<string, ErrorCode>> = {
 /** Like codeForDatabaseError, and for a value the database refuses, the field it belongs to. */
 export function answerForDatabaseError(error: DatabaseErrorLike & { column?: string; table?: string }, fieldMessage: string): DatabaseErrorAnswer {
   const constraint = error.constraint ?? ''
+  const hint = error.code === 'P0001' && error.message === 'VALIDATION_FAILED' ? FIELD_HINT.exec(error.hint ?? '') : null
+  if (hint?.[1] && hint[2]) return { code: 'VALIDATION_FAILED', details: { [hint[1]]: FIELD_REASONS[hint[2]] ?? fieldMessage } }
   const unique = error.code === '23505' ? UNIQUE_FIELDS[constraint] : undefined
   if (unique) return { code: 'VALIDATION_FAILED', details: { [unique.field]: unique.message } }
   if (error.code === '23514' && DOMAIN_CODES[constraint]) return { code: DOMAIN_CODES[constraint] as ErrorCode }
