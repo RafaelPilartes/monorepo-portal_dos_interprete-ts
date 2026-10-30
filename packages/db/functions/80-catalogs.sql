@@ -1,5 +1,7 @@
 -- Catalogs (step H3; catalogs.md, R-CAT-01, R-CAT-02). Writes by the API, moderator and
--- super_admin; every change audited.
+-- super_admin; every change audited. An update changes only the values it is given (a null keeps
+-- the stored one), so "Desactivar" cannot bring back a price someone changed meanwhile; the slug
+-- is fixed once the item exists, because the site keys its content by it (AD-032).
 
 -- How many rows use each catalog item: the one place "used" is defined (R-CAT-01). Each step that
 -- references a catalog adds its table here (requests H5, opportunities H17).
@@ -37,7 +39,9 @@ BEGIN
     SELECT * INTO v_before FROM catalog.languages AS l WHERE l.id = p_id FOR UPDATE;
     IF v_before.id IS NULL THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'NOT_FOUND'; END IF;
     UPDATE catalog.languages
-       SET code = lower(trim(p_code)), name = trim(p_name), is_sign_language = p_is_sign_language, active = p_active, sort = p_sort
+       SET code = coalesce(lower(trim(p_code)), code), name = coalesce(trim(p_name), name),
+           is_sign_language = coalesce(p_is_sign_language, is_sign_language), active = coalesce(p_active, active),
+           sort = coalesce(p_sort, sort)
      WHERE id = p_id RETURNING * INTO v_after;
   END IF;
   PERFORM audit.record(p_actor, v_level, CASE WHEN p_id IS NULL THEN 'language.created' ELSE 'language.updated' END,
@@ -65,7 +69,8 @@ BEGIN
     SELECT * INTO v_before FROM catalog.specialties AS s WHERE s.id = p_id FOR UPDATE;
     IF v_before.id IS NULL THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'NOT_FOUND'; END IF;
     UPDATE catalog.specialties
-       SET slug = trim(p_slug), name = trim(p_name), description = coalesce(p_description, ''), active = p_active, sort = p_sort
+       SET name = coalesce(trim(p_name), name), description = coalesce(p_description, description),
+           active = coalesce(p_active, active), sort = coalesce(p_sort, sort)
      WHERE id = p_id RETURNING * INTO v_after;
   END IF;
   PERFORM audit.record(p_actor, v_level, CASE WHEN p_id IS NULL THEN 'specialty.created' ELSE 'specialty.updated' END,
@@ -96,9 +101,11 @@ BEGIN
     SELECT * INTO v_before FROM catalog.services AS s WHERE s.id = p_id FOR UPDATE;
     IF v_before.id IS NULL THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'NOT_FOUND'; END IF;
     UPDATE catalog.services
-       SET slug = trim(p_slug), title = trim(p_title), description = coalesce(p_description, ''),
-           pricing_mode = p_pricing_mode, platform_price_aoa = p_platform_price_aoa, icon = nullif(trim(p_icon), ''),
-           active = p_active, sort = p_sort
+       SET title = coalesce(trim(p_title), title), description = coalesce(p_description, description),
+           pricing_mode = coalesce(p_pricing_mode, pricing_mode),
+           platform_price_aoa = coalesce(p_platform_price_aoa, platform_price_aoa),
+           icon = CASE WHEN p_icon IS NULL THEN icon ELSE nullif(trim(p_icon), '') END,
+           active = coalesce(p_active, active), sort = coalesce(p_sort, sort)
      WHERE id = p_id RETURNING * INTO v_after;
   END IF;
   PERFORM audit.record(p_actor, v_level, CASE WHEN p_id IS NULL THEN 'service.created' ELSE 'service.updated' END,

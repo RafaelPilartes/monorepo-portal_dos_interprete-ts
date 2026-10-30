@@ -34,7 +34,7 @@ BEGIN
   v_code := NULL;
   BEGIN PERFORM catalog.save_service('00000000-0000-4000-8000-0000000000c1', v_service.id, v_service.slug, v_service.title, '', 'hourly', 9000, NULL, true, 5);
   EXCEPTION WHEN raise_exception THEN GET STACKED DIAGNOSTICS v_code = MESSAGE_TEXT, v_hint = PG_EXCEPTION_HINT; END;
-  IF v_code IS DISTINCT FROM 'VALIDATION_FAILED' OR v_hint IS DISTINCT FROM 'pricing_mode:locked' THEN
+  IF v_code IS DISTINCT FROM 'VALIDATION_FAILED' OR v_hint IS DISTINCT FROM 'pricing_mode:pricing_mode_locked' THEN
     RAISE EXCEPTION 'FAIL - the pricing mode of a used service does not change (got %, %)', v_code, v_hint;
   END IF;
   -- The price and the state still change (a new price applies to new quotes).
@@ -51,6 +51,26 @@ BEGIN
   RAISE NOTICE 'ok - a used service keeps its pricing mode and is deactivated, never deleted (R-CAT-01, R-CAT-02, criteria 1–2)';
 END $$;
 
+-- Review of H3 (AD-032): an update keeps what it is not given, the slug is fixed, the price is positive.
+DO $$
+DECLARE v_service catalog.services; v_after catalog.services; v_code text;
+BEGIN
+  v_service := catalog.save_service('00000000-0000-4000-8000-0000000000c1', NULL, 'servico-parcial', 'Serviço parcial', 'Desc', 'hourly', 9000, 'health', true, 5);
+  -- Someone changes the price; another person then only deactivates it.
+  PERFORM catalog.save_service('00000000-0000-4000-8000-0000000000c1', v_service.id, NULL, NULL, NULL, NULL, 14000, NULL, NULL, NULL);
+  v_after := catalog.save_service('00000000-0000-4000-8000-0000000000c1', v_service.id, 'outro-slug', NULL, NULL, NULL, NULL, NULL, false, NULL);
+  IF v_after.platform_price_aoa <> 14000 OR v_after.active OR v_after.icon IS DISTINCT FROM 'health' OR v_after.title <> 'Serviço parcial' THEN
+    RAISE EXCEPTION 'FAIL - deactivating keeps the price and the rest (got %)', to_jsonb(v_after);
+  END IF;
+  IF v_after.slug <> 'servico-parcial' THEN RAISE EXCEPTION 'FAIL - the slug is fixed once the service exists'; END IF;
+  v_after := catalog.save_service('00000000-0000-4000-8000-0000000000c1', v_service.id, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL);
+  IF v_after.icon IS NOT NULL THEN RAISE EXCEPTION 'FAIL - an empty icon clears it'; END IF;
+  BEGIN PERFORM catalog.save_service('00000000-0000-4000-8000-0000000000c1', v_service.id, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL);
+  EXCEPTION WHEN check_violation THEN GET STACKED DIAGNOSTICS v_code = CONSTRAINT_NAME; END;
+  IF v_code IS DISTINCT FROM 'services_platform_price_aoa_check' THEN RAISE EXCEPTION 'FAIL - a price of 0 is refused (got %)', v_code; END IF;
+  RAISE NOTICE 'ok - an update keeps what it is not given, the slug is fixed and the table price is positive (AD-032)';
+END $$;
+
 DO $$
 DECLARE v_language catalog.languages; v_specialty catalog.specialties; v_code text;
 BEGIN
@@ -61,6 +81,13 @@ BEGIN
   BEGIN PERFORM catalog.delete_item('00000000-0000-4000-8000-0000000000c1', 'language', v_language.id);
   EXCEPTION WHEN raise_exception THEN v_code := SQLERRM; END;
   IF v_code IS DISTINCT FROM 'IN_USE' THEN RAISE EXCEPTION 'FAIL - a used language is not deleted (got %)', v_code; END IF;
+  INSERT INTO directory.interpreter_specialties (interpreter_id, specialty_id)
+  VALUES ('00000000-0000-4000-8000-0000000000c3', v_specialty.id);
+  v_code := NULL;
+  BEGIN PERFORM catalog.delete_item('00000000-0000-4000-8000-0000000000c1', 'specialty', v_specialty.id);
+  EXCEPTION WHEN raise_exception THEN v_code := SQLERRM; END;
+  IF v_code IS DISTINCT FROM 'IN_USE' THEN RAISE EXCEPTION 'FAIL - a used specialty is not deleted (got %)', v_code; END IF;
+  DELETE FROM directory.interpreter_specialties WHERE specialty_id = v_specialty.id;
   PERFORM catalog.delete_item('00000000-0000-4000-8000-0000000000c1', 'specialty', v_specialty.id);
   IF EXISTS (SELECT 1 FROM catalog.specialties WHERE id = v_specialty.id) THEN RAISE EXCEPTION 'FAIL - an unused item is deleted'; END IF;
   v_code := NULL;

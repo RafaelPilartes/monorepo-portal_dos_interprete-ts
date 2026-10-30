@@ -21,7 +21,8 @@ import { useCatalog, useCatalogMutations, type CatalogKind, type CatalogRow } fr
 
 // /catalog/languages, /catalog/specialties, /catalog/services (catalogs.md): the items with their
 // usage; create and edit in a side panel; "Apagar" only for items never used (R-CAT-01); the
-// pricing mode of a used service is locked (R-CAT-02).
+// pricing mode of a used service is locked (R-CAT-02). An edit sends only the values that changed
+// and never the slug, fixed once the item exists (AD-032).
 
 type Values = Record<string, string | number | boolean | null>
 
@@ -34,8 +35,27 @@ const TEXTS: Record<CatalogKind, { title: string; description: string; empty: st
 const EMPTY: Record<CatalogKind, Values> = {
   languages: { code: '', name: '', is_sign_language: false, active: true, sort: 0 },
   specialties: { slug: '', name: '', description: '', active: true, sort: 0 },
-  services: { slug: '', title: '', description: '', pricing_mode: 'hourly', platform_price_aoa: 0, icon: '', active: true, sort: 0 },
+  services: { slug: '', title: '', description: '', pricing_mode: 'hourly', platform_price_aoa: '', icon: '', active: true, sort: 0 },
 }
+
+/** The form values as the API takes them: numbers as numbers, an empty icon as none. */
+function payloadOf(kind: CatalogKind, values: Values): Values {
+  const payload: Values = { ...values, sort: Number(values.sort ?? 0) }
+  if (kind === 'services') {
+    payload.platform_price_aoa = Number(values.platform_price_aoa)
+    payload.icon = String(values.icon ?? '').trim() || null
+  }
+  return payload
+}
+
+/** Only what the person changed, without the slug: another person's change to the rest stays. */
+function changesOf(before: Values, after: Values): Values {
+  const changes: Values = {}
+  for (const [key, value] of Object.entries(after)) if (key !== 'slug' && value !== before[key]) changes[key] = value
+  return changes
+}
+
+const SLUG_FIXED = 'Não muda depois de criado: o site e as ligações usam-no.'
 
 function nameOf(row: CatalogRow): string {
   return ('title' in row ? row.title : row.name) ?? ''
@@ -61,18 +81,25 @@ function Field({ id, label, hint, error, children }: { id: string; label: string
 function Editor({ kind, editing, onClose }: { kind: CatalogKind; editing: { id: string | null; values: Values; usedIn: number }; onClose: () => void }) {
   const { save } = useCatalogMutations(kind)
   const [values, setValues] = useState<Values>(editing.values)
-  const errors = save.isError ? errorDetails(save.error) : {}
+  const [priceMissing, setPriceMissing] = useState(false)
+  const errors: Record<string, string> = save.isError ? errorDetails(save.error) : {}
+  if (priceMissing) errors.platform_price_aoa = 'Indica o preço de tabela.'
+  const editingExisting = editing.id !== null
   const set = (key: string, value: Values[string]) => setValues((current) => ({ ...current, [key]: value }))
   const text = (key: string) => String(values[key] ?? '')
   const pricingLocked = kind === 'services' && editing.id !== null && editing.usedIn > 0
 
   const submit = () => {
-    const payload: Values = { ...values, sort: Number(values.sort ?? 0) }
-    if (kind === 'services') {
-      payload.platform_price_aoa = Number(values.platform_price_aoa ?? 0)
-      payload.icon = text('icon').trim() || null
+    const missing = kind === 'services' && text('platform_price_aoa').trim() === ''
+    setPriceMissing(missing)
+    if (missing) return
+    const payload = payloadOf(kind, values)
+    const changes = editingExisting ? changesOf(payloadOf(kind, editing.values), payload) : payload
+    if (editingExisting && Object.keys(changes).length === 0) {
+      onClose()
+      return
     }
-    save.mutate({ id: editing.id, values: payload }, {
+    save.mutate({ id: editing.id, values: changes }, {
       onSuccess: () => {
         toast.success('Alterações guardadas.')
         onClose()
@@ -101,8 +128,8 @@ function Editor({ kind, editing, onClose }: { kind: CatalogKind; editing: { id: 
         {kind === 'specialties' && (
           <>
             <Field id="name" label="Nome" error={errors.name}><Input id="name" value={text('name')} onChange={(e) => set('name', e.target.value)} /></Field>
-            <Field id="slug" label="Identificador" hint="Letras minúsculas, números e hífenes (ex.: comunicacao-social)." error={errors.slug}>
-              <Input id="slug" value={text('slug')} onChange={(e) => set('slug', e.target.value)} aria-invalid={!!errors.slug} />
+            <Field id="slug" label="Identificador" hint={editingExisting ? SLUG_FIXED : 'Letras minúsculas, números e hífenes (ex.: comunicacao-social).'} error={errors.slug}>
+              <Input id="slug" value={text('slug')} onChange={(e) => set('slug', e.target.value)} aria-invalid={!!errors.slug} disabled={editingExisting} />
             </Field>
             <Field id="description" label="Descrição" error={errors.description}>
               <Textarea id="description" rows={3} value={text('description')} onChange={(e) => set('description', e.target.value)} />
@@ -112,8 +139,8 @@ function Editor({ kind, editing, onClose }: { kind: CatalogKind; editing: { id: 
         {kind === 'services' && (
           <>
             <Field id="title" label="Título" error={errors.title}><Input id="title" value={text('title')} onChange={(e) => set('title', e.target.value)} /></Field>
-            <Field id="slug" label="Identificador" hint="Letras minúsculas, números e hífenes (ex.: interpretacao-medica)." error={errors.slug}>
-              <Input id="slug" value={text('slug')} onChange={(e) => set('slug', e.target.value)} aria-invalid={!!errors.slug} />
+            <Field id="slug" label="Identificador" hint={editingExisting ? SLUG_FIXED : 'Letras minúsculas, números e hífenes (ex.: interpretacao-medica).'} error={errors.slug}>
+              <Input id="slug" value={text('slug')} onChange={(e) => set('slug', e.target.value)} aria-invalid={!!errors.slug} disabled={editingExisting} />
             </Field>
             <Field id="description" label="Descrição" error={errors.description}>
               <Textarea id="description" rows={3} value={text('description')} onChange={(e) => set('description', e.target.value)} />
@@ -138,7 +165,7 @@ function Editor({ kind, editing, onClose }: { kind: CatalogKind; editing: { id: 
               hint="Usado nos orçamentos novos do pedido gerido; os já feitos não mudam."
               error={errors.platform_price_aoa}
             >
-              <Input id="platform_price_aoa" type="number" min={0} step={1} inputMode="numeric" value={text('platform_price_aoa')} onChange={(e) => set('platform_price_aoa', e.target.value)} />
+              <Input id="platform_price_aoa" type="number" min={1} step={1} aria-invalid={!!errors.platform_price_aoa} inputMode="numeric" value={text('platform_price_aoa')} onChange={(e) => set('platform_price_aoa', e.target.value)} />
             </Field>
             <Field id="icon" label="Ícone" hint="Chave da imagem no site (ex.: health, education)." error={errors.icon}>
               <Input id="icon" value={text('icon')} onChange={(e) => set('icon', e.target.value)} />
@@ -175,7 +202,7 @@ export default function AdminCatalog({ kind }: { kind: CatalogKind }) {
     : { id: null, values: { ...EMPTY[kind], sort: ((items.data?.length ?? 0) + 1) * 10 }, usedIn: 0 })
 
   const deactivate = (row: CatalogRow) => save.mutate(
-    { id: row.id ?? null, values: { ...valuesOf(kind, row), active: false } },
+    { id: row.id ?? null, values: { active: false } },
     { onSuccess: () => toast.success(`Desactivámos ${nameOf(row)}.`), onError: (error) => toast.error(errorMessage(error)) },
   )
 

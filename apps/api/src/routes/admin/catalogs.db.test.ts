@@ -67,7 +67,46 @@ describe('catalogs (R-CAT-01, R-CAT-02)', () => {
     expect(deleted.json().error).toMatchObject({ code: 'IN_USE', message: 'Este item já foi usado. Desactiva-o em vez de o apagar.' })
     const mode = await app.inject({ method: 'PATCH', url: `/admin/catalog/services/${id}`, headers: as(moderator), payload: { ...service(created.json().slug, 'fixed') } })
     expect(mode.json().error).toMatchObject({ code: 'VALIDATION_FAILED', details: { pricing_mode: 'O modo de preço não muda depois de usado. Cria um serviço novo e desactiva este.' } })
-    const deactivated = await app.inject({ method: 'PATCH', url: `/admin/catalog/services/${id}`, headers: as(moderator), payload: { ...service(created.json().slug), active: false, platform_price_aoa: 12000 } })
-    expect(deactivated.json()).toMatchObject({ active: false, platform_price_aoa: 12000 })
+    const repriced = await app.inject({ method: 'PATCH', url: `/admin/catalog/services/${id}`, headers: as(moderator), payload: { platform_price_aoa: 12000 } })
+    expect(repriced.json()).toMatchObject({ platform_price_aoa: 12000, active: true })
+    // "Desactivar" sends only the state: the price someone just changed stays (AD-032).
+    const deactivated = await app.inject({ method: 'PATCH', url: `/admin/catalog/services/${id}`, headers: as(moderator), payload: { active: false } })
+    expect(deactivated.json()).toMatchObject({ active: false, platform_price_aoa: 12000, pricing_mode: 'hourly' })
+  })
+
+  it('answers a price of 0 on its field, and keeps the slug of an existing service', async () => {
+    const free = await app.inject({ method: 'POST', url: '/admin/catalog/services', headers: as(moderator), payload: { ...service(`s-${randomUUID().slice(0, 8)}`), platform_price_aoa: 0 } })
+    expect(free.json().error).toMatchObject({ code: 'VALIDATION_FAILED', details: { platform_price_aoa: 'O preço de tabela tem de ser maior que zero.' } })
+    const slug = `s-${randomUUID().slice(0, 8)}`
+    const created = await app.inject({ method: 'POST', url: '/admin/catalog/services', headers: as(moderator), payload: service(slug) })
+    const renamed = await app.inject({ method: 'PATCH', url: `/admin/catalog/services/${created.json().id}`, headers: as(moderator), payload: { slug: 'outro', title: 'Novo título' } })
+    expect(renamed.json()).toMatchObject({ slug, title: 'Novo título' })
+  })
+})
+
+describe('languages and specialties (R-CAT-01)', () => {
+  const code = () => `t${randomUUID().replace(/[^a-f]/g, '').slice(0, 6).padEnd(3, 'a')}`
+
+  it('creates and edits a language; a bad code answers on the code field, from the table rule', async () => {
+    const created = await app.inject({ method: 'POST', url: '/admin/catalog/languages', headers: as(moderator), payload: { code: code(), name: 'Língua de teste', is_sign_language: true, active: true, sort: 1 } })
+    expect(created.statusCode).toBe(201)
+    const edited = await app.inject({ method: 'PATCH', url: `/admin/catalog/languages/${created.json().id}`, headers: as(moderator), payload: { name: 'Outro nome' } })
+    expect(edited.json()).toMatchObject({ name: 'Outro nome', is_sign_language: true })
+    const bad = await app.inject({ method: 'POST', url: '/admin/catalog/languages', headers: as(moderator), payload: { code: 'p1', name: 'Língua', is_sign_language: false, active: true, sort: 1 } })
+    expect(bad.json().error).toMatchObject({ code: 'VALIDATION_FAILED', details: { code: 'Usa de 2 a 8 letras minúsculas (ex.: pt, lga).' } })
+    const twice = await app.inject({ method: 'POST', url: '/admin/catalog/languages', headers: as(moderator), payload: { code: created.json().code, name: 'Outra', is_sign_language: false, active: true, sort: 1 } })
+    expect(twice.json().error.details).toEqual({ code: 'Já existe uma língua com este código.' })
+  })
+
+  it('deletes an unused specialty and answers IN_USE for a used one', async () => {
+    const payload = () => ({ slug: `e-${randomUUID().slice(0, 8)}`, name: 'Especialidade de teste', active: true, sort: 1 })
+    const unused = await app.inject({ method: 'POST', url: '/admin/catalog/specialties', headers: as(moderator), payload: payload() })
+    expect((await app.inject({ method: 'DELETE', url: `/admin/catalog/specialties/${unused.json().id}`, headers: as(moderator) })).statusCode).toBe(204)
+    const used = await app.inject({ method: 'POST', url: '/admin/catalog/specialties', headers: as(moderator), payload: payload() })
+    const interpreter = await createConfirmedAccount(local.API_URL, local.SERVICE_ROLE_KEY, local.ANON_KEY)
+    await owner.query('SELECT identity.become_interpreter($1, NULL, NULL)', [interpreter.id])
+    await owner.query('INSERT INTO directory.interpreter_specialties (interpreter_id, specialty_id) VALUES ($1, $2)', [interpreter.id, used.json().id])
+    const refused = await app.inject({ method: 'DELETE', url: `/admin/catalog/specialties/${used.json().id}`, headers: as(moderator) })
+    expect(refused.json().error.code).toBe('IN_USE')
   })
 })

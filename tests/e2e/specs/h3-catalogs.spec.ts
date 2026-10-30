@@ -29,6 +29,9 @@ test('the team creates a service in the side panel and it appears on /services (
   await panel.getByLabel('Título').fill(title)
   await panel.getByLabel('Identificador').fill('saude')
   await panel.getByLabel('Descrição').fill('Serviço criado pelo teste do passo H3.')
+  // An empty price is not saved as 0 Kz (review of H3, AD-032).
+  await panel.getByRole('button', { name: 'Guardar' }).click()
+  await expect(panel.getByText('Indica o preço de tabela.')).toBeVisible()
   await panel.getByLabel(/Preço de tabela/).fill('17500')
   await panel.getByRole('button', { name: 'Guardar' }).click()
   await expect(panel.getByText('Já existe um serviço com este identificador.')).toBeVisible()
@@ -62,11 +65,14 @@ test('an item in use: no "Apagar", the pricing mode is locked, and deactivating 
   const panel = page.getByRole('dialog')
   await expect(panel.getByRole('combobox')).toBeDisabled()
   await expect(panel.getByText(/o modo de preço não muda/)).toBeVisible()
+  await expect(panel.getByLabel('Identificador')).toBeDisabled()
   await shot(page, '05-pricing-mode-locked')
   await page.keyboard.press('Escape')
 
   await row.getByRole('button', { name: 'Desactivar' }).click()
   await expect(row.getByText('Inactivo')).toBeVisible()
+  // "Desactivar" sends only the state: the price stays as it was.
+  await expect(row.getByText('17 500 Kz por hora')).toBeVisible()
   await shot(page, '06-deactivated')
   await page.goto(`${SITE_URL}/services`)
   await expect(page.getByRole('heading', { name: 'Saúde' })).toBeVisible()

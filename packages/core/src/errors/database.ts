@@ -34,7 +34,7 @@ export const UNIQUE_FIELDS: Readonly<Record<string, { field: string; message: st
 /** What the person reads for a value a SQL function refused, by the reason in its HINT. */
 export const FIELD_REASONS: Readonly<Record<string, string>> = {
   already_member: 'Esta pessoa já é membro da organização.',
-  locked: 'O modo de preço não muda depois de usado. Cria um serviço novo e desactiva este.',
+  pricing_mode_locked: 'O modo de preço não muda depois de usado. Cria um serviço novo e desactiva este.',
   required: 'Preenche este campo.',
   invalid: 'Valor inválido.',
 }
@@ -49,6 +49,12 @@ export const DOMAIN_CODES: Readonly<Record<string, ErrorCode>> = {
 /** Shared domains without a code of their own: the field they belong to and what the person reads. */
 export const DOMAIN_FIELDS: Readonly<Record<string, { field: string; message: string }>> = {
   slug_check: { field: 'slug', message: 'Usa só letras minúsculas, números e hífenes (ex.: interpretacao-medica).' },
+}
+
+/** Column checks whose rule the person must read in the field (the generic message would not say it). */
+export const CHECK_FIELDS: Readonly<Record<string, { field: string; message: string }>> = {
+  languages_code_check: { field: 'code', message: 'Usa de 2 a 8 letras minúsculas (ex.: pt, lga).' },
+  services_platform_price_aoa_check: { field: 'platform_price_aoa', message: 'O preço de tabela tem de ser maior que zero.' },
 }
 
 const FIELD_HINT = /^([a-z_]+):([a-z_]+)$/
@@ -79,7 +85,7 @@ export function answerForValueError(error: DatabaseErrorInput, fieldMessage: str
   }
   if (error.code === '23514') {
     if (DOMAIN_CODES[constraint]) return { code: DOMAIN_CODES[constraint] as ErrorCode }
-    const domainField = DOMAIN_FIELDS[constraint]
+    const domainField = DOMAIN_FIELDS[constraint] ?? CHECK_FIELDS[constraint]
     if (domainField) return { code: 'VALIDATION_FAILED', details: { [domainField.field]: domainField.message } }
     if (table && constraint.startsWith(`${table}_`) && COLUMN_CHECK.test(constraint)) {
       return { code: 'VALIDATION_FAILED', details: { [constraint.slice(table.length + 1, -'_check'.length)]: fieldMessage } }

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import rootPackage from '../../../package.json'
 import { AppProviders } from '@portal-dos-interpretes/features/app/AppProviders'
 import { App, SiteRoutes } from './App'
@@ -70,8 +70,18 @@ describe('site-web /services (catalogs.md, criterion 4)', () => {
     expect(screen.getByText('Consultas médicas')).toBeTruthy()
   })
 
-  it('says when there are no services, and when they cannot be read', async () => {
+  it('says when there are no services', async () => {
     renderAt('/services', fakeData([]))
     expect(await screen.findByText('Os serviços disponíveis aparecem aqui em breve.')).toBeTruthy()
+  })
+
+  it('says so when the services cannot be read, and offers to try again', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const failing = fakeData([])
+    failing.services.list = async () => { throw new Error('network down') }
+    renderAt('/services', failing)
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toContain('Não foi possível carregar os serviços neste momento.')
+    expect(screen.getByRole('button', { name: 'Tentar outra vez' })).toBeTruthy()
   })
 })

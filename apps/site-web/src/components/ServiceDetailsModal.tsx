@@ -3,11 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@portal-dos-interpretes/ui/components/button';
 import { Badge } from '@portal-dos-interpretes/ui/components/badge';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, MapPin, Video, Clock } from 'lucide-react';
+import { SERVICE_DETAILS } from './serviceContent';
+import { ArrowRight, CheckCircle2, MapPin, Video } from 'lucide-react';
 
 interface ServiceDetailsModalProps {
   service: {
-    /** The catalog slug (catalog.services.slug): the key of the extended details below. */
+    /** The catalog slug (catalog.services.slug): the key of its site content (serviceContent.ts). */
     slug: string;
     image?: string | undefined;
     name: string;
@@ -19,108 +20,9 @@ interface ServiceDetailsModalProps {
   children: React.ReactNode;
 }
 
-// Extended service details by catalog slug (site content); a service without them shows the
-// description from the database.
-const serviceDetails: Record<string, {
-  fullDescription: string;
-  benefits: string[];
-  modalities: { type: string; description: string }[];
-  duration: string;
-  videoUrl?: string;
-}> = {
-  educacao: {
-    fullDescription: 'Oferecemos serviços de interpretação especializados para o sector educacional, desde o ensino primário até ao ensino superior. Os nossos intérpretes são formados especificamente para contextos académicos, garantindo que alunos surdos tenham acesso pleno à educação.',
-    benefits: [
-      'Intérpretes com formação pedagógica',
-      'Conhecimento de terminologia académica',
-      'Experiência em todas as faixas etárias',
-      'Apoio em exames e avaliações'
-    ],
-    modalities: [
-      { type: 'Presencial', description: 'Acompanhamento em sala de aula' },
-      { type: 'Online', description: 'Interpretação para aulas virtuais' }
-    ],
-    duration: 'Por hora, dia ou semestre',
-    videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4'
-  },
-  saude: {
-    fullDescription: 'Garantimos que pacientes surdos tenham acesso completo aos serviços de saúde. Os nossos intérpretes especializados em saúde conhecem a terminologia médica e são treinados para situações sensíveis e de emergência.',
-    benefits: [
-      'Intérpretes com formação em terminologia médica',
-      'Disponibilidade para urgências',
-      'Confidencialidade garantida',
-      'Experiência em hospitais e clínicas'
-    ],
-    modalities: [
-      { type: 'Presencial', description: 'Acompanhamento em consultas e internamentos' },
-      { type: 'Online', description: 'Teleconsultas e acompanhamento remoto' }
-    ],
-    duration: 'Por consulta ou hora',
-    videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4'
-  },
-  juridico: {
-    fullDescription: 'Asseguramos o acesso à justiça para pessoas surdas através de interpretação profissional em todos os contextos legais. Os nossos intérpretes jurídicos são certificados e conhecem os procedimentos legais angolanos.',
-    benefits: [
-      'Certificação em interpretação jurídica',
-      'Conhecimento de procedimentos legais',
-      'Imparcialidade e ética profissional',
-      'Experiência em tribunais e esquadras'
-    ],
-    modalities: [
-      { type: 'Presencial', description: 'Audiências, depoimentos e consultas' },
-      { type: 'Online', description: 'Videochamadas com advogados' }
-    ],
-    duration: 'Por hora ou sessão',
-    videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4'
-  },
-  eventos: {
-    fullDescription: 'Tornamos eventos acessíveis a todos os participantes através de interpretação profissional. Cobrimos desde pequenas reuniões até grandes conferências internacionais, garantindo qualidade e profissionalismo.',
-    benefits: [
-      'Experiência em grandes eventos',
-      'Equipamento técnico disponível',
-      'Equipas de intérpretes coordenadas',
-      'Preparação prévia do conteúdo'
-    ],
-    modalities: [
-      { type: 'Presencial', description: 'Interpretação no palco ou zona designada' },
-      { type: 'Online', description: 'Streaming com interpretação integrada' }
-    ],
-    duration: 'Por evento',
-    videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4'
-  },
-  religioso: {
-    fullDescription: 'Facilitamos a participação plena de pessoas surdas em serviços religiosos e cerimónias. Os nossos intérpretes compreendem a importância espiritual destes momentos e interpretam com sensibilidade e respeito.',
-    benefits: [
-      'Interpretação respeitosa e sensível',
-      'Conhecimento de vocabulário religioso',
-      'Flexibilidade de horários',
-      'Experiência em diferentes denominações'
-    ],
-    modalities: [
-      { type: 'Presencial', description: 'Cultos, missas e cerimónias' }
-    ],
-    duration: 'Por serviço ou cerimónia',
-    videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4'
-  },
-  online: {
-    fullDescription: 'Oferecemos serviços de interpretação remota de alta qualidade para videoconferências, webinars e aulas online. Utilizamos as melhores plataformas e tecnologias para garantir uma comunicação fluida.',
-    benefits: [
-      'Sem necessidade de deslocação',
-      'Flexibilidade de horários',
-      'Gravação disponível',
-      'Múltiplas plataformas suportadas'
-    ],
-    modalities: [
-      { type: 'Online', description: 'Zoom, Teams, Google Meet e outras' }
-    ],
-    duration: 'Por hora ou sessão',
-    videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4'
-  }
-};
-
 export function ServiceDetailsModal({ service, children }: ServiceDetailsModalProps) {
   const [open, setOpen] = useState(false);
-  const details = serviceDetails[service.slug];
+  const details = SERVICE_DETAILS[service.slug];
 
   // Extract YouTube video ID
   const getYouTubeEmbedUrl = (url: string) => {
@@ -206,12 +108,6 @@ export function ServiceDetailsModal({ service, children }: ServiceDetailsModalPr
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Duration */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4" />
-            <span>Duração: {details.duration}</span>
           </div>
           </>)}
 
