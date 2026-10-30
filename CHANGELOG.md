@@ -2,6 +2,14 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.12.0 — 2026-10-30 — Passo H3 (catálogos)
+
+- A equipa gere línguas, especialidades e serviços no painel, com o preço de tabela e o modo de preço de cada serviço.
+- Um item já usado não se apaga, desactiva-se; o modo de preço de um serviço usado não muda.
+- A página de serviços do site mostra os serviços activos da base, com o preço de tabela.
+- Os preços dos serviços na base local são fictícios, só para desenvolvimento.
+- Relatório: `docs/plan/step-reports/H3.md`.
+
 ## 0.11.0 — 2026-10-26 — Passo H2 (contas, papéis, organizações e consentimento)
 
 - Registo real com aceitação dos termos e da política em vigor, confirmação por email, recuperação da palavra-passe.

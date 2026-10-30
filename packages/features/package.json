@@ -1,6 +1,6 @@
 {
   "name": "@portal-dos-interpretes/features",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "private": true,
   "type": "module",
   "description": "Domain screens shared by more than one app.",
