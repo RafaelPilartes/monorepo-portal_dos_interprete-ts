@@ -285,3 +285,18 @@
   12. **`features` passa a depender de `db-types`** (`architecture.md` §2 e `verify.py` actualizados): os ecrãs do directório leem linhas tipadas.
   13. Os intérpretes de exemplo (`features/mocks/interpretersMocks.ts`) ficam só para o assistente de pedido, que o H5 substitui.
 - **Marcas:** [RISCO] dados pessoais (os contactos do intérprete ficam visíveis a qualquer conta activa, como decide `D-51`).
+
+## AD-034 — Decisões do passo H5 (pedidos, pedido directo, chat, sino)
+- **Passo:** H5
+- **Registo:**
+  1. **Só o pedido directo no H5.** `booking.create_request` recusa os outros tipos com `VALIDATION_FAILED` no campo `kind` ("Este tipo de pedido ainda não está disponível."); o assistente mostra "Publicar para intérpretes" e "Pedir à plataforma" como "Disponível em breve". Chegam no H7 e no H11.
+  2. **Valores das mensagens vindos da base.** Uma recusa que precisa de um valor na mensagem (`START_TOO_SOON`, `TOO_MANY_INTERPRETERS`, `CANNOT_REDUCE_BELOW_ACCEPTED`, `INTERPRETER_NOT_ELIGIBLE`) envia-o em `HINT = 'params:{json}'`, e a API preenche a mensagem do catálogo (`paramsOfHint` em `packages/core`).
+  3. **A pré-visualização do total é uma rota da API** (`POST /requests/preview`) e não uma chamada RPC: a regra da fundação mantém a sessão só nas funções de `auth_helper` (como no AD-033.1).
+  4. **`ends_at` por gatilho**, e não como coluna gerada: `timestamptz + interval` não é imutável no Postgres.
+  5. **Os dias da semana e a hora** do assistente são em hora de Luanda (UTC+01:00, sem hora de Verão); `fromLuandaLocal` em `packages/i18n` converte.
+  6. **O sino e o chat lêem por intervalos** (30 s e 10 s) em vez de Realtime; o sino fica em `packages/auth`, onde está o layout dos painéis.
+  7. **Quem vê as linhas dos intérpretes de um pedido:** o lado do solicitante e a equipa veem todas; um intérprete vê só a sua (o preço de outro não lhe diz respeito).
+  8. **Coluna `understaffed_warned_at`** em `booking.requests`, para o aviso de pedido incompleto sair uma só vez.
+  9. **Fica para depois:** a negociação (H6), o cancelamento (H8), o email `chat_message` para mensagens por ler, os ecrãs `/requests` da equipa (H8, com as operações) e a vista `request_contacts`.
+  10. **Excepções da verificação de aritmética de preços** (`verify.py`, `no-price-arithmetic`): os ecrãs de exemplo de ganhos (H10) e do histórico de verificações (H12), que ainda somam dados de exemplo. Nada se acrescenta a essa lista.
+- **Marcas:** [RISCO] dinheiro (o total vem sempre da base; o preço fica fixo na aceitação, `D-14`).
