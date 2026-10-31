@@ -2,6 +2,16 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.14.0 — 2026-10-31 — Passo H5 (pedidos, pedido directo, chat e sino)
+
+- Quem pede escolhe o intérprete num assistente de sete passos; o total aparece na revisão, calculado pelo servidor.
+- O intérprete recebe o convite, vê o preço e aceita ou recusa com um motivo; quando todos aceitam, o pedido fica confirmado.
+- Cada pedido tem o chat com cada intérprete e uma linha do tempo do que aconteceu.
+- O sino no cabeçalho dos painéis mostra os avisos, e cada um tem a sua página de notificações.
+- Convites sem resposta expiram; um pedido sem intérpretes suficientes avisa antes e expira à hora de início.
+- Por agora só existe o pedido directo; publicar para intérpretes e pedir à plataforma chegam nos próximos passos.
+- Relatório: `docs/plan/step-reports/H5.md`.
+
 ## 0.13.0 — 2026-10-31 — Passo H4 (perfil do intérprete e directório)
 
 - O intérprete preenche o perfil a sério: fotografia, biografia, modalidade, línguas, serviços e preços, percurso, contactos, vídeos, artigos e disponibilidade.
