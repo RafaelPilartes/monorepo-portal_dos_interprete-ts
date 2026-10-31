@@ -31,6 +31,7 @@ create_tag v0.10.0 e98efb6ccfbcdcaa43d171194d5ce933137f15e9 "v0.10.0 - step H1, 
 create_tag v0.11.0 5b87efa8d428337192b5d6a2e627e42e82d00371 "v0.11.0 - step H2 (accounts and organisations)"
 create_tag v0.12.0 60960524302f4a0a036f7302228dd1236d4d9902 "v0.12.0 - step H3 (catalogs)"
 create_tag v0.13.0 ff96d7187241e39c4b4506b4fa52228f812ffd51 "v0.13.0 - step H4 (interpreter profile and directory)"
+create_tag v0.14.0 9f8a94828626f03ec4da808438caffcfaa404562 "v0.14.0 - step H5 (requests, direct, chat, bell)"
 # TAGS-END
 
 git push origin --tags
