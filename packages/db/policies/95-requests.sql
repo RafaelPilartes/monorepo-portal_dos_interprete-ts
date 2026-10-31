@@ -1,9 +1,7 @@
 -- Policies of step H5 (data-model.md §5). Requests, assignments and the log are read through the
--- views (definer, they filter); the tables themselves only for who may see the request. Writes
+-- views (definer, they filter); the requests table is not readable by the session at all (D-95). Writes
 -- only through the API, except chat messages and read marks (participants, open thread).
 DROP POLICY IF EXISTS requests_select ON booking.requests;
-CREATE POLICY requests_select ON booking.requests FOR SELECT TO authenticated
-  USING ((SELECT auth_helper.can_view_request(id)));
 DROP POLICY IF EXISTS request_languages_select ON booking.request_languages;
 CREATE POLICY request_languages_select ON booking.request_languages FOR SELECT TO authenticated
   USING ((SELECT auth_helper.can_view_request(request_id)));

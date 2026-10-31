@@ -22,6 +22,11 @@ BEGIN
   IF v_mode = 'fixed' THEN RETURN p_unit_price; END IF;
   v_minimum := config.require(p_config, 'billing_minimum_minutes')::integer;
   v_round := config.require(p_config, 'billing_round_minutes')::integer;
+  -- A step of 0 cannot round anything: the configuration is incomplete, not a division by zero.
+  IF v_round <= 0 THEN
+    RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'CONFIG_VALUE_MISSING',
+      DETAIL = format('billing_round_minutes is %s in version %s', v_round, p_config);
+  END IF;
   v_billable := greatest(v_minimum, ceil(p_duration::numeric / v_round)::integer * v_round);
   RETURN ceil(p_unit_price::numeric * v_billable / 60)::bigint;
 END;
@@ -332,7 +337,7 @@ BEGIN
            'price_aoa', catalog.quote_service(v_service, s.price_aoa, v_duration, v_config),
            'travel_fee_aoa', CASE WHEN v_in_person THEN coalesce(i.travel_fee_aoa, 0) ELSE 0 END)), '[]')
     INTO v_lines
-    FROM jsonb_array_elements_text(coalesce(p_input -> 'interpreter_ids', '[]')) AS chosen (id)
+    FROM (SELECT DISTINCT x AS id FROM jsonb_array_elements_text(coalesce(p_input -> 'interpreter_ids', '[]')) AS x) AS chosen
     JOIN directory.interpreter_services AS s ON s.interpreter_id = chosen.id::uuid AND s.service_id = v_service AND s.active
     JOIN identity.interpreter_profiles AS i ON i.account_id = s.interpreter_id;
   RETURN jsonb_build_object(
@@ -519,7 +524,8 @@ END;
 $$;
 
 -- R-REQ-09: go on with fewer interpreters. Pending invites beyond the new number are cancelled,
--- the newest first; the request is confirmed if it is now full.
+-- the newest first (the oldest keep their place), and their interpreters told; the request is
+-- confirmed if it is now full.
 CREATE OR REPLACE FUNCTION booking.reduce_interpreters_needed(p_actor uuid, p_request uuid, p_needed integer)
 RETURNS booking.requests
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
@@ -546,14 +552,16 @@ BEGIN
   END IF;
   UPDATE booking.requests SET interpreters_needed = p_needed WHERE id = p_request;
   FOR v_cancel IN
-    SELECT a.id FROM booking.request_assignments AS a
+    SELECT a.id, a.status, a.interpreter_id FROM booking.request_assignments AS a
      WHERE a.request_id = p_request AND a.status IN ('invited', 'applied')
-     ORDER BY a.created_at DESC
+     ORDER BY a.created_at, a.id
      OFFSET greatest(p_needed - v_active, 0)
   LOOP
     UPDATE booking.request_assignments SET status = 'cancelled', cancelled_by_role = 'requester', cancel_reason = 'Pedido reduzido'
      WHERE id = v_cancel.id;
-    PERFORM booking.log_event(p_request, v_cancel.id, 'invited', 'cancelled', p_actor, 'requester', 'Pedido reduzido');
+    PERFORM booking.log_event(p_request, v_cancel.id, v_cancel.status, 'cancelled', p_actor, 'requester', 'Pedido reduzido');
+    PERFORM booking.notify_request('request_cancelled', ARRAY[v_cancel.interpreter_id], p_request, 'interpreter',
+      jsonb_build_object('reason', 'O solicitante seguiu com menos intérpretes'));
   END LOOP;
   PERFORM booking.refresh_request_status(p_request, p_actor, 'requester');
   SELECT * INTO v_request FROM booking.requests AS r WHERE r.id = p_request;
@@ -614,10 +622,12 @@ DECLARE
   v_row record;
   v_count integer := 0;
 BEGIN
+  -- The request is locked before its assignment, in the same order as accept and decline.
   FOR v_row IN
     SELECT a.id, a.request_id, a.interpreter_id FROM booking.request_assignments AS a
+      JOIN booking.requests AS r ON r.id = a.request_id
      WHERE a.status = 'invited' AND a.invite_expires_at <= util.now()
-     FOR UPDATE SKIP LOCKED
+     FOR UPDATE OF r, a SKIP LOCKED
   LOOP
     UPDATE booking.request_assignments SET status = 'expired' WHERE id = v_row.id;
     PERFORM booking.log_event(v_row.request_id, v_row.id, 'invited', 'expired', NULL, 'system');

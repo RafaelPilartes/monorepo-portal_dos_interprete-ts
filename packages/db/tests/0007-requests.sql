@@ -157,11 +157,16 @@ END $$;
 DO $$ BEGIN PERFORM set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000f2", "role": "authenticated"}', true); END $$;
 SET LOCAL ROLE authenticated;
 DO $$
+DECLARE v_denied boolean := false;
 BEGIN
   IF (SELECT beneficiary_name FROM booking.request_details WHERE id = (SELECT id FROM h5 WHERE key = 'request')) IS NOT NULL
      OR NOT EXISTS (SELECT 1 FROM booking.request_details WHERE id = (SELECT id FROM h5 WHERE key = 'request')) THEN
     RAISE EXCEPTION 'FAIL - an invited interpreter sees the request, not the beneficiary';
   END IF;
+  -- Not around the view either: the table itself is closed to the session (review of H5).
+  BEGIN PERFORM beneficiary_name FROM booking.requests;
+  EXCEPTION WHEN insufficient_privilege THEN v_denied := true; END;
+  IF NOT v_denied THEN RAISE EXCEPTION 'FAIL - the session never reads booking.requests directly'; END IF;
 END $$;
 RESET ROLE;
 DO $$
@@ -293,6 +298,13 @@ SET LOCAL ROLE authenticated;
 INSERT INTO booking.messages (thread_id, sender_account, body)
 SELECT id, '00000000-0000-4000-8000-0000000000f2', 'Bom dia, estarei lá 10 minutos antes.'
   FROM booking.threads WHERE assignment_id = (SELECT id FROM h5 WHERE key = 'assignment');
+-- The read mark is an upsert, as the screen sends it.
+INSERT INTO booking.thread_reads (thread_id, account_id, last_read_at)
+SELECT id, '00000000-0000-4000-8000-0000000000f2', now() FROM booking.threads WHERE assignment_id = (SELECT id FROM h5 WHERE key = 'assignment')
+ON CONFLICT (thread_id, account_id) DO UPDATE SET thread_id = EXCLUDED.thread_id, account_id = EXCLUDED.account_id, last_read_at = EXCLUDED.last_read_at;
+INSERT INTO booking.thread_reads (thread_id, account_id, last_read_at)
+SELECT id, '00000000-0000-4000-8000-0000000000f2', now() FROM booking.threads WHERE assignment_id = (SELECT id FROM h5 WHERE key = 'assignment')
+ON CONFLICT (thread_id, account_id) DO UPDATE SET thread_id = EXCLUDED.thread_id, account_id = EXCLUDED.account_id, last_read_at = EXCLUDED.last_read_at;
 RESET ROLE;
 DO $$ BEGIN PERFORM set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000f3", "role": "authenticated"}', true); END $$;
 SET LOCAL ROLE authenticated;
@@ -308,3 +320,26 @@ BEGIN
   IF (SELECT sender_role FROM booking.messages LIMIT 1) <> 'interpreter' THEN RAISE EXCEPTION 'FAIL - the sender role comes from the thread'; END IF;
   RAISE NOTICE 'ok - the chat: participants write with their role; outsiders read nothing (R-REQ-08, R-REQ-07)';
 END $$;
+
+-- Review of H5: an interpreter's timeline holds the request's lines and its own, not another's.
+DO $$
+DECLARE v_req booking.requests;
+BEGIN
+  v_req := booking.create_request('00000000-0000-4000-8000-0000000000f1', (SELECT input FROM h5_input)
+    || jsonb_build_object('starts_at', now() + interval '30 days', 'interpreters_needed', 2, 'expected_total_aoa', 15999,
+                          'interpreter_ids', jsonb_build_array('00000000-0000-4000-8000-0000000000f2', '00000000-0000-4000-8000-0000000000f4')));
+  PERFORM booking.decline_assignment('00000000-0000-4000-8000-0000000000f2',
+    (SELECT id FROM booking.request_assignments WHERE request_id = v_req.id AND interpreter_id = '00000000-0000-4000-8000-0000000000f2'), 'Estou de férias');
+  INSERT INTO h5 VALUES ('two', v_req.id);
+END $$;
+DO $$ BEGIN PERFORM set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000f4", "role": "authenticated"}', true); END $$;
+SET LOCAL ROLE authenticated;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM booking.request_timeline WHERE request_id = (SELECT id FROM h5 WHERE key = 'two') AND reason = 'Estou de férias')
+     OR NOT EXISTS (SELECT 1 FROM booking.request_timeline WHERE request_id = (SELECT id FROM h5 WHERE key = 'two') AND assignment_id IS NULL) THEN
+    RAISE EXCEPTION 'FAIL - an interpreter sees the request''s timeline without another interpreter''s lines';
+  END IF;
+  RAISE NOTICE 'ok - the table is closed to the session, read marks upsert, the timeline hides other interpreters (review of H5)';
+END $$;
+RESET ROLE;

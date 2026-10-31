@@ -54,12 +54,17 @@ export class RequestsRepository {
     return (data ?? []) as T[]
   }
 
-  /** /requests and /history: the requests the account sees on the requester's side, paginated. */
-  async list(query: { finished: boolean; mineOnly?: { accountId: string } | undefined; limit: number; offset: number }): Promise<{ rows: RequestRow[]; total: number }> {
+  /**
+   * /requests and /history, paginated: in an organisation's context its requests (all of them, or
+   * only the ones the person created); as a private person, the person's own requests without an
+   * organisation (R-REQ-07: every active member sees the organisation's requests).
+   */
+  async list(query: { finished: boolean; accountId: string; organizationId: string | null; mineOnly: boolean; limit: number; offset: number }): Promise<{ rows: RequestRow[]; total: number }> {
     const finals = `(${FINAL_REQUEST_STATUSES.join(',')})`
-    let request = this.booking('request_details').select('*', { count: 'exact' }).eq('can_manage', true)
+    let request = this.booking('request_details').select('*', { count: 'exact' })
     request = query.finished ? request.in('status', [...FINAL_REQUEST_STATUSES]) : request.not('status', 'in', finals)
-    if (query.mineOnly) request = request.eq('created_by', query.mineOnly.accountId)
+    request = query.organizationId ? request.eq('organization_id', query.organizationId) : request.is('organization_id', null).eq('created_by', query.accountId)
+    if (query.organizationId && query.mineOnly) request = request.eq('created_by', query.accountId)
     const { data, error, count } = await request.order('starts_at', { ascending: !query.finished }).range(query.offset, query.offset + query.limit - 1)
     if (error) throw translatePostgrestError(error, 'booking.request_details')
     return { rows: (data ?? []) as RequestRow[], total: count ?? 0 }

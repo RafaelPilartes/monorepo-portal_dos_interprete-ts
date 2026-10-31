@@ -98,7 +98,8 @@ export function RequestChat({ threadId, title }: { threadId: string; title: stri
 
   useEffect(() => {
     end.current?.scrollIntoView({ block: 'nearest' })
-    if (count > 0) void repository.markThreadRead(threadId, accountId).catch(() => undefined)
+    // A read mark that fails only leaves the thread counted as unread; it is logged, not hidden.
+    if (count > 0) void repository.markThreadRead(threadId, accountId).catch((error: unknown) => console.error('[chat] read mark failed', error))
   }, [count, threadId, accountId, repository])
 
   const send = async () => {

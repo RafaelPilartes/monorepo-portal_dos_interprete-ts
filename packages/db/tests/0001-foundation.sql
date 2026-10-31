@@ -166,7 +166,8 @@ DECLARE v_unexpected text; v_expected text[] := ARRAY['authenticated UPDATE noti
     'authenticated INSERT booking.messages.thread_id', 'authenticated INSERT booking.messages.sender_account',
     'authenticated INSERT booking.messages.body', 'authenticated INSERT booking.thread_reads.thread_id',
     'authenticated INSERT booking.thread_reads.account_id', 'authenticated INSERT booking.thread_reads.last_read_at',
-    'authenticated UPDATE booking.thread_reads.last_read_at'];
+    'authenticated UPDATE booking.thread_reads.last_read_at', 'authenticated UPDATE booking.thread_reads.thread_id',
+    'authenticated UPDATE booking.thread_reads.account_id'];
 BEGIN
   SELECT string_agg(entry, ', ') INTO v_unexpected FROM (
     SELECT format('%s %s %s.%s.%s', pg_get_userbyid(a.grantee), a.privilege_type, n.nspname, c.relname, att.attname) AS entry

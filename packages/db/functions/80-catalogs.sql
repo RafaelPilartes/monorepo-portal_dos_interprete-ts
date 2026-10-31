@@ -3,23 +3,27 @@
 -- the stored one), so "Desactivar" cannot bring back a price someone changed meanwhile; the slug
 -- is fixed once the item exists, because the site keys its content by it (AD-032).
 
--- How many rows use each catalog item: the one place "used" is defined (R-CAT-01). Each step that
--- references a catalog adds its table here (requests H5, opportunities H17).
+-- How many rows use each catalog item: the one place "used" is defined (R-CAT-01), one row per
+-- item. Each step that references a catalog adds its table inside (requests H5, opportunities H17).
 CREATE OR REPLACE VIEW catalog.item_usage AS
-SELECT 'language'::text AS kind, l.language_id AS id, count(*)::integer AS used
-  FROM directory.interpreter_languages AS l GROUP BY l.language_id
-UNION ALL
-SELECT 'specialty', s.specialty_id, count(*)::integer
-  FROM directory.interpreter_specialties AS s GROUP BY s.specialty_id
-UNION ALL
-SELECT 'service', s.service_id, count(*)::integer
-  FROM directory.interpreter_services AS s GROUP BY s.service_id
-UNION ALL
-SELECT 'service', r.service_id, count(*)::integer
-  FROM booking.requests AS r GROUP BY r.service_id
-UNION ALL
-SELECT 'language', l.language_id, count(*)::integer
-  FROM booking.request_languages AS l GROUP BY l.language_id;
+SELECT u.kind, u.id, sum(u.used)::integer AS used
+  FROM (
+    SELECT 'language'::text AS kind, l.language_id AS id, count(*)::integer AS used
+      FROM directory.interpreter_languages AS l GROUP BY l.language_id
+    UNION ALL
+    SELECT 'specialty', s.specialty_id, count(*)::integer
+      FROM directory.interpreter_specialties AS s GROUP BY s.specialty_id
+    UNION ALL
+    SELECT 'service', s.service_id, count(*)::integer
+      FROM directory.interpreter_services AS s GROUP BY s.service_id
+    UNION ALL
+    SELECT 'service', r.service_id, count(*)::integer
+      FROM booking.requests AS r GROUP BY r.service_id
+    UNION ALL
+    SELECT 'language', l.language_id, count(*)::integer
+      FROM booking.request_languages AS l GROUP BY l.language_id
+  ) AS u
+ GROUP BY u.kind, u.id;
 
 CREATE OR REPLACE FUNCTION catalog.usage_count(p_kind text, p_id uuid) RETURNS integer
   LANGUAGE sql STABLE SECURITY DEFINER

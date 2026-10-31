@@ -16,12 +16,13 @@ const PAGE_SIZE = 15
 
 /**
  * requester-web /requests (active) and /history (finished): paginated on the server, with the
- * "Criados por mim / Toda a organização" filter for organisation members (requests-core.md).
+ * "Criados por mim / Toda a organização" filter in an organisation's context (requests-core.md).
  */
-export function RequestList({ finished, inOrganization }: { finished: boolean; inOrganization: boolean }) {
+export function RequestList({ finished, organizationId }: { finished: boolean; organizationId: string | null }) {
   const [page, setPage] = useState(1)
   const [mineOnly, setMineOnly] = useState(false)
-  const list = useRequestList(finished, mineOnly, page, PAGE_SIZE)
+  const list = useRequestList(finished, organizationId, mineOnly, page, PAGE_SIZE)
+  const inOrganization = organizationId !== null
 
   return (
     <div className="space-y-4">

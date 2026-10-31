@@ -57,6 +57,7 @@ export function notificationText(kind: string, payload: Payload): { title: strin
     case 'request_confirmed': return { title: 'Pedido confirmado', body: request }
     case 'request_understaffed_warning': return { title: 'Ainda faltam intérpretes', body: `${request}. Convida mais ou segue com os que tens.` }
     case 'request_expired': return { title: 'O pedido expirou', body: `Não houve intérpretes suficientes a tempo. ${request}` }
+    case 'request_cancelled': return { title: 'Um pedido foi cancelado', body: text(payload.reason) ? `${request}. ${text(payload.reason)}` : request }
     case 'meeting_link_changed': return { title: 'O link da reunião mudou', body: request }
     case 'org_invite_accepted': return { title: 'Um convite foi aceite', body: text(payload.organization_name) }
     case 'content_removed': return { title: 'A equipa removeu um conteúdo teu', body: text(payload.reason) ? `Motivo: ${text(payload.reason)}` : text(payload.title) }

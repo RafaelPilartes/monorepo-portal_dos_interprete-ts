@@ -122,13 +122,16 @@ export default function NewRequest() {
       if (!form.serviceId) found.service_id = 'Escolhe o serviço.'
       if (form.languageIds.length === 0) found.language_ids = 'Escolhe pelo menos uma língua.'
       if (form.interpreterIds.length === 0) found.interpreter_ids = 'Escolhe pelo menos um intérprete.'
-      if (form.interpreterIds.length > needed) found.interpreter_ids = `Escolhe no máximo ${needed} ${needed === 1 ? 'intérprete' : 'intérpretes'}.`
     }
     if (current === 2 && !form.modality) found.modality = 'Escolhe presencial ou online.'
     if (current === 3) {
       if (!form.day || !form.time) found.starts_at = 'Indica o dia e a hora.'
       const minutes = Number(form.durationMinutes)
       if (!Number.isInteger(minutes) || minutes < 15 || minutes > 720) found.duration_minutes = 'A duração tem de estar entre 15 minutos e 12 horas.'
+      // Every interpreter chosen gets an invite, so they cannot be more than the places.
+      if (form.interpreterIds.length > needed) {
+        found.interpreters_needed = `Escolheste ${form.interpreterIds.length} intérpretes: pede pelo menos ${form.interpreterIds.length}.`
+      }
     }
     if (current === 4) {
       if (form.modality === 'online' && !form.meetingLink.trim()) found.meeting_link = 'Indica o link da reunião.'
@@ -191,8 +194,11 @@ export default function NewRequest() {
         return
       }
       const fields = errorDetails(error)
-      const field = error instanceof DataError && error.field ? error.field : Object.keys(fields)[0]
-      setErrors(field ? { [field]: fields[field] ?? errorMessage(error) } : {})
+      // SLOTS_FULL has no field of its own: here it means more interpreters chosen than places.
+      const field = error instanceof DataError && error.code === 'SLOTS_FULL' ? 'interpreters_needed'
+        : error instanceof DataError && error.field ? error.field : Object.keys(fields)[0]
+      setErrors(field ? { [field]: error instanceof DataError && error.code === 'SLOTS_FULL'
+        ? 'Há mais intérpretes escolhidos do que lugares no pedido.' : fields[field] ?? errorMessage(error) } : {})
       if (field && FIELD_STEP[field] !== undefined) setStep(FIELD_STEP[field])
       else setPreviewError(errorMessage(error))
     } finally {
@@ -224,7 +230,7 @@ export default function NewRequest() {
               </button>
               {[{ title: 'Publicar para intérpretes', text: 'Os intérpretes disponíveis candidatam-se.' }, { title: 'Pedir à plataforma', text: 'A equipa escolhe e faz o orçamento.' }].map((option) => (
                 <div key={option.title} aria-disabled="true" className="rounded-lg border p-4 opacity-60">
-                  <p className="font-medium">{option.title} <Badge variant="outline" className="ml-1">Disponível em breve</Badge></p>
+                  <div className="flex flex-wrap items-center gap-2"><p className="font-medium">{option.title}</p><Badge variant="outline">Disponível em breve</Badge></div>
                   <p className="text-sm text-muted-foreground">{option.text}</p>
                 </div>
               ))}

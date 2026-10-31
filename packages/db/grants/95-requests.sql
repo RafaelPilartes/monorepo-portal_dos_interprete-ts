@@ -1,8 +1,11 @@
 -- Grants of step H5 (api.md §7, §16).
-GRANT SELECT ON booking.requests, booking.request_languages, booking.threads, booking.messages, booking.thread_reads,
+-- No SELECT on booking.requests itself: its private fields (D-95) are read only through
+-- booking.request_details, which masks them (review of H5).
+GRANT SELECT ON booking.request_languages, booking.threads, booking.messages, booking.thread_reads,
   booking.request_details, booking.assignment_details, booking.my_assignments, booking.request_timeline TO authenticated;
 GRANT INSERT (thread_id, sender_account, body) ON booking.messages TO authenticated;
-GRANT INSERT (thread_id, account_id, last_read_at), UPDATE (last_read_at) ON booking.thread_reads TO authenticated;
+-- The read mark is an upsert: PostgREST's ON CONFLICT updates every column it sends.
+GRANT INSERT (thread_id, account_id, last_read_at), UPDATE (thread_id, account_id, last_read_at) ON booking.thread_reads TO authenticated;
 GRANT SELECT ON booking.requests, booking.request_assignments, booking.request_events, booking.threads, booking.messages,
   booking.request_details TO service_role;
 

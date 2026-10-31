@@ -885,13 +885,14 @@ PRICE_ARITHMETIC_MOCKS = {
 
 
 def check_no_price_arithmetic(ctx: Context) -> list[Violation]:
-    """No app multiplies or adds prices, fees or totals (requests-core.md criterion 3)."""
+    """No screen (apps, features, ui, auth) multiplies or adds prices, fees or totals (requests-core.md criterion 3)."""
     violations = []
     for path in code_files(ctx.root):
         rel = relative(ctx.root, path)
         if rel in PRICE_ARITHMETIC_MOCKS:
             continue
-        if not rel.startswith("apps/") or rel.startswith("apps/api/") or ".test." in rel or not rel.endswith((".ts", ".tsx")):
+        screens = rel.startswith(("apps/", "packages/features/", "packages/ui/", "packages/auth/")) and not rel.startswith("apps/api/")
+        if not screens or ".test." in rel or not rel.endswith((".ts", ".tsx")):
             continue
         code, _ = mask_source(path.read_text())
         for match in PRICE_ARITHMETIC.finditer(code):

@@ -31,11 +31,11 @@ export const requestKeys = {
   messages: (threadId: string) => ['requests', 'messages', threadId] as const,
 }
 
-export function useRequestList(finished: boolean, mineOnly: boolean, page: number, pageSize: number) {
+export function useRequestList(finished: boolean, organizationId: string | null, mineOnly: boolean, page: number, pageSize: number) {
   const { repository, accountId } = useRequests()
   return useQuery({
-    queryKey: requestKeys.list(finished, mineOnly, page),
-    queryFn: () => repository.list({ finished, mineOnly: mineOnly ? { accountId } : undefined, limit: pageSize, offset: (page - 1) * pageSize }),
+    queryKey: [...requestKeys.list(finished, mineOnly, page), organizationId],
+    queryFn: () => repository.list({ finished, accountId, organizationId, mineOnly, limit: pageSize, offset: (page - 1) * pageSize }),
     placeholderData: keepPreviousData,
   })
 }

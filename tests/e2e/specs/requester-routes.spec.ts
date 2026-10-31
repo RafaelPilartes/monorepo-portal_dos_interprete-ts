@@ -8,7 +8,7 @@ const routes: SmokeRoute[] = [
   { path: '/', name: 'overview', expectText: 'Olá, Joana' },
   { path: '/requests', name: 'requests', expectText: 'Minhas Solicitações' },
   { path: '/requests/new', name: 'requests-new', expectText: 'Nova Solicitação' },
-  { path: '/requests/REQ-001', name: 'request-details', expectText: 'REQ-001' },
+  { path: '/requests/00000000-0000-4000-8000-000000000000', name: 'request-not-found', expectText: 'Não encontrámos este pedido.' },
   { path: '/interpreters', name: 'interpreters', expectText: 'Intérpretes' },
   { path: '/favorites', name: 'favorites', expectText: 'Os intérpretes que marcaste para encontrar depressa.' },
   { path: '/history', name: 'history', expectText: 'Histórico de Solicitações' },

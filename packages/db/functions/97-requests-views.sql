@@ -51,10 +51,17 @@ SELECT a.id, a.request_id, a.status, a.offered_price_aoa, a.offered_travel_fee_a
  WHERE a.interpreter_id = (SELECT auth_helper.account_id()) AND (SELECT auth_helper.is_active());
 
 -- The log of a request as a timeline (R-REQ-11), with the actor's name.
+-- An interpreter sees the request's own lines and its own, never another interpreter's (nor its
+-- reason to decline).
 CREATE OR REPLACE VIEW booking.request_timeline WITH (security_invoker = false) AS
 SELECT e.id, e.request_id, e.assignment_id, e.from_status, e.to_status, e.actor_role, e.reason, e.at,
        (SELECT p.full_name FROM identity.profiles AS p WHERE p.id = e.actor_account) AS actor_name,
        (SELECT p.full_name FROM booking.request_assignments AS a JOIN identity.profiles AS p ON p.id = a.interpreter_id
          WHERE a.id = e.assignment_id) AS interpreter_name
   FROM booking.request_events AS e
- WHERE (SELECT auth_helper.can_view_request(e.request_id));
+ WHERE (SELECT auth_helper.can_view_request(e.request_id))
+   AND (e.assignment_id IS NULL
+        OR (SELECT auth_helper.is_staff())
+        OR (SELECT auth_helper.account_id()) IN (SELECT auth_helper.requester_accounts(e.request_id))
+        OR EXISTS (SELECT 1 FROM booking.request_assignments AS a
+                    WHERE a.id = e.assignment_id AND a.interpreter_id = (SELECT auth_helper.account_id())));
