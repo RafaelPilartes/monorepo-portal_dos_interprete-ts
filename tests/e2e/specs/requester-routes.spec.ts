@@ -10,15 +10,15 @@ const routes: SmokeRoute[] = [
   { path: '/requests/new', name: 'requests-new', expectText: 'Nova Solicitação' },
   { path: '/requests/REQ-001', name: 'request-details', expectText: 'REQ-001' },
   { path: '/interpreters', name: 'interpreters', expectText: 'Intérpretes' },
-  { path: '/favorites', name: 'favorites', expectText: 'Intérpretes Favoritos' },
+  { path: '/favorites', name: 'favorites', expectText: 'Os intérpretes que marcaste para encontrar depressa.' },
   { path: '/history', name: 'history', expectText: 'Histórico de Solicitações' },
   { path: '/reviews', name: 'reviews', expectText: 'Minhas Avaliações' },
   { path: '/profile', name: 'profile', expectText: 'Meu Perfil' },
   { path: '/settings', name: 'settings', expectText: 'Notificações' },
-  { path: '/interpreters/maria-silva', name: 'interpreter-profile', expectText: 'Sobre o Intérprete' },
-  { path: '/interpreters/maria-silva/videos', name: 'interpreter-videos', expectText: 'Vídeos de Maria Silva' },
-  { path: '/interpreters/maria-silva/articles', name: 'interpreter-articles', expectText: 'Artigos de Maria Silva' },
-  { path: '/interpreters/maria-silva/articles/0', name: 'interpreter-article', expectText: 'Maria Silva' },
+  // An unknown slug (the real profiles, videos and articles are in h4-directory.spec.ts).
+  { path: '/interpreters/nao-existe', name: 'interpreter-not-found', expectText: 'Este intérprete não existe ou já não está disponível.' },
+  { path: '/interpreters/nao-existe/videos', name: 'interpreter-videos-not-found', expectText: 'Este intérprete não existe ou já não está disponível.' },
+  { path: '/interpreters/nao-existe/articles/x', name: 'interpreter-article-not-found', expectText: 'Este intérprete não existe ou já não está disponível.' },
   { path: '/does-not-exist', name: 'not-found', expectText: 'Página não encontrada' },
 ]
 
@@ -41,13 +41,6 @@ test.describe('entry pages', () => {
       await visitAndCapture(page, REQUESTER, 'D3', route)
     })
   }
-})
-
-test('requester: a card on /interpreters opens the profile inside requester-web', async ({ page }) => {
-  await page.goto(`${REQUESTER}/interpreters`)
-  await page.getByRole('link', { name: /Ver Perfil/ }).first().click()
-  await expect(page).toHaveURL(new RegExp(`^${REQUESTER}/interpreters/[a-z-]+$`))
-  await expect(page.getByText('Sobre o Intérprete').first()).toBeVisible()
 })
 
 test('requester: /requests/new keeps the ?interpreter= pre-selection', async ({ page }) => {
