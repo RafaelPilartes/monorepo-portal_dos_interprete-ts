@@ -1,3 +1,4 @@
+import Notifications from '@portal-dos-interpretes/auth/pages/Notifications'
 import AdminCatalog from '@/pages/catalog/AdminCatalog'
 import AdminAccountDetails from '@/pages/accounts/AdminAccountDetails'
 import AdminAccounts from '@/pages/accounts/AdminAccounts'
@@ -55,6 +56,7 @@ const AdminRoutes = () => {
       <Route path="settings/document-types" element={<RequireStaffLevel levels={['moderator']}><AdminDocumentTypes /></RequireStaffLevel>} />
       <Route path="team" element={<RequireStaffLevel levels={['super_admin']}><AdminTeam /></RequireStaffLevel>} />
       <Route path="audit" element={<AdminAudit />} />
+      <Route path="notifications" element={<Notifications app="admin" />} />
       <Route
         path="verifications/requests"
         element={<AdminVerificationRequests />}

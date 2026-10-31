@@ -39,6 +39,13 @@ export interface ListingQuery {
   offset: number
 }
 
+export interface ConfigHints {
+  request_min_lead_minutes: number | null
+  urgent_threshold_hours: number | null
+  max_interpreters_per_request: number | null
+  two_interpreters_suggest_minutes: number | null
+}
+
 /** Everything an account may read of one interpreter (R-DIR-04), in one object. */
 export interface InterpreterDetails {
   profile: InterpreterProfileRow
@@ -116,6 +123,14 @@ export class DirectoryRepository {
       this.rows<ServiceRow>(this.from('catalog', 'services').select('*').order('sort'), 'catalog.services'),
     ])
     return { languages, specialties, services }
+  }
+
+  /** The values of the configuration in force the request wizard shows as hints (the rules stay in the database). */
+  async configInForce(): Promise<ConfigHints | null> {
+    const rows = await this.rows<ConfigHints>(this.from('config', 'platform_versions')
+      .select('request_min_lead_minutes, urgent_threshold_hours, max_interpreters_per_request, two_interpreters_suggest_minutes')
+      .eq('status', 'published'), 'config.platform_versions')
+    return rows[0] ?? null
   }
 
   /** null when the slug does not exist or the account may not read it (R-DIR-04). */

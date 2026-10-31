@@ -1,544 +1,399 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import { PageHeader } from "@portal-dos-interpretes/ui/components/page-header";
-import { Button } from "@portal-dos-interpretes/ui/components/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@portal-dos-interpretes/ui/components/card";
-import { Input } from "@portal-dos-interpretes/ui/components/input";
-import { Label } from "@portal-dos-interpretes/ui/components/label";
-import { Textarea } from "@portal-dos-interpretes/ui/components/textarea";
-import { RadioGroup, RadioGroupItem } from "@portal-dos-interpretes/ui/components/radio-group";
-import { Calendar } from "@portal-dos-interpretes/ui/components/calendar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@portal-dos-interpretes/ui/components/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@portal-dos-interpretes/ui/components/popover";
-import { cn } from "@portal-dos-interpretes/ui/lib/utils";
-import { format } from "date-fns";
-import { pt } from "date-fns/locale";
-import { CalendarIcon, ArrowLeft, ArrowRight, Check, Video, MapPin, Clock, FileText, Users, User, DollarSign, Star, CheckCircle2, AlertCircle } from "lucide-react";
-import { toast } from "sonner";
-import { Badge } from "@portal-dos-interpretes/ui/components/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@portal-dos-interpretes/ui/components/avatar";
-import { interpreters } from "@portal-dos-interpretes/features/mocks/interpretersMocks";
-import { Alert, AlertDescription } from "@portal-dos-interpretes/ui/components/alert";
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { useRequestContext, useSession } from '@portal-dos-interpretes/auth'
+import { DataError } from '@portal-dos-interpretes/data'
+import { useDirectory, useDirectoryCatalog, useListing } from '@portal-dos-interpretes/features/directory/DirectoryContext'
+import { PRICING_SUFFIX } from '@portal-dos-interpretes/features/directory/labels'
+import { errorDetails, errorMessage } from '@portal-dos-interpretes/features/lib/errorText'
+import type { NewRequest as NewRequestInput, RequestPreview } from '@portal-dos-interpretes/features/requests/data'
+import { durationText } from '@portal-dos-interpretes/features/requests/RequestParts'
+import { useRequests } from '@portal-dos-interpretes/features/requests/RequestsContext'
+import { formatAoa, formatDateTime, fromLuandaLocal, luandaDay, MODALITY_TEXT } from '@portal-dos-interpretes/i18n'
+import { Alert, AlertDescription } from '@portal-dos-interpretes/ui/components/alert'
+import { Badge } from '@portal-dos-interpretes/ui/components/badge'
+import { Button } from '@portal-dos-interpretes/ui/components/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@portal-dos-interpretes/ui/components/card'
+import { Checkbox } from '@portal-dos-interpretes/ui/components/checkbox'
+import { Input } from '@portal-dos-interpretes/ui/components/input'
+import { Label } from '@portal-dos-interpretes/ui/components/label'
+import { PageHeader } from '@portal-dos-interpretes/ui/components/page-header'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@portal-dos-interpretes/ui/components/select'
+import { Skeleton } from '@portal-dos-interpretes/ui/components/skeleton'
+import { Textarea } from '@portal-dos-interpretes/ui/components/textarea'
+import { AlertCircle, ArrowLeft, ArrowRight, Check, MapPin, Video } from 'lucide-react'
 
-const serviceTypes = [
-  { id: "medical", name: "Consulta Médica", description: "Interpretação em ambiente de saúde" },
-  { id: "legal", name: "Audiência Jurídica", description: "Interpretação em tribunais e consultas legais" },
-  { id: "education", name: "Evento Educacional", description: "Aulas, palestras e formações" },
-  { id: "corporate", name: "Reunião Empresarial", description: "Reuniões corporativas e conferências" },
-  { id: "religious", name: "Evento Religioso", description: "Cultos, missas e cerimónias religiosas" },
-  { id: "other", name: "Outro", description: "Especifique nas observações" },
-];
+// /requests/new (requests-core.md, "assistente"): seven steps, wired to the database. Only the
+// direct request exists in H5; the open and managed requests arrive with H7 and H11 (AD-034).
+// Each step checks its fields with the catalog's messages; the total of the review comes from
+// booking.preview_request_total, and success is shown only after the 201.
 
-const durations = [
-  { value: "1h", label: "1 hora" },
-  { value: "2h", label: "2 horas" },
-  { value: "3h", label: "3 horas" },
-  { value: "4h", label: "4 horas" },
-  { value: "half-day", label: "Meio dia (5h)" },
-  { value: "full-day", label: "Dia inteiro (8h)" },
-];
+const STEPS = ['Tipo', 'Serviço e intérprete', 'Modalidade', 'Data e duração', 'Local', 'Orçamento', 'Revisão'] as const
+type Step = number
 
-const steps = [
-  { id: 1, title: "Tipo de Solicitação", icon: Users },
-  { id: 2, title: "Tipo de Serviço", icon: FileText },
-  { id: 3, title: "Modalidade", icon: Video },
-  { id: 4, title: "Data e Hora", icon: CalendarIcon },
-  { id: 5, title: "Local", icon: MapPin },
-  { id: 6, title: "Duração e Orçamento", icon: Clock },
-  { id: 7, title: "Confirmação", icon: Check },
-];
+// Which step owns each field the API may refuse, to go back to it.
+const FIELD_STEP: Readonly<Record<string, Step>> = {
+  kind: 0, service_id: 1, language_ids: 1, interpreter_id: 1, interpreter_ids: 1, modality: 2,
+  starts_at: 3, duration_minutes: 3, interpreters_needed: 3, meeting_link: 4, address: 4, city: 4,
+}
+
+interface Form {
+  serviceId: string
+  languageIds: string[]
+  interpreterIds: string[]
+  modality: 'online' | 'in_person' | ''
+  day: string
+  time: string
+  durationMinutes: string
+  needed: string
+  meetingLink: string
+  address: string
+  city: string
+  notes: string
+  beneficiaryName: string
+  beneficiaryContact: string
+}
+
+const EMPTY: Form = {
+  serviceId: '', languageIds: [], interpreterIds: [], modality: '', day: '', time: '', durationMinutes: '60', needed: '1',
+  meetingLink: '', address: '', city: '', notes: '', beneficiaryName: '', beneficiaryContact: '',
+}
+
+function Field({ id, label, error, hint, children }: { id: string; label: string; error?: string | undefined; hint?: string | undefined; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      {children}
+      {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
+    </div>
+  )
+}
+
+/** The configuration in force, for the hints the wizard shows (the rules stay in the database). */
+function useConfigInForce() {
+  const { repository } = useDirectory()
+  return useQuery({ queryKey: ['config', 'in-force'], queryFn: () => repository.configInForce(), staleTime: 5 * 60_000 })
+}
 
 export default function NewRequest() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const preselectedInterpreter = searchParams.get("interpreter");
+  const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const session = useSession()
+  const account = session.status === 'authenticated' ? session.account : null
+  const [organizationId] = useRequestContext(account)
+  const { repository: requests } = useRequests()
+  const { repository: directory } = useDirectory()
+  const catalog = useDirectoryCatalog()
+  const config = useConfigInForce()
+  const [step, setStep] = useState<Step>(0)
+  const [form, setForm] = useState<Form>(EMPTY)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [preview, setPreview] = useState<RequestPreview | null>(null)
+  const [previewError, setPreviewError] = useState<string | null>(null)
+  const [sending, setSending] = useState(false)
+  const set = <K extends keyof Form>(key: K, value: Form[K]) => setForm((current) => ({ ...current, [key]: value }))
 
-  const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
-    requestType: preselectedInterpreter ? "direct" : "" as "direct" | "open" | "",
-    selectedInterpreter: preselectedInterpreter || "",
-    serviceType: "",
-    modality: "presencial" as "presencial" | "online",
-    date: undefined as Date | undefined,
-    time: "",
-    duration: "",
-    location: "",
-    meetingLink: "",
-    observations: "",
-    estimatedBudget: "",
-  });
-
+  // "Pedir este intérprete": the profile's slug comes in ?interpreter=.
+  const preselected = params.get('interpreter')
+  const fromProfile = useListing({ search: undefined, limit: 50, offset: 0 })
   useEffect(() => {
-    if (preselectedInterpreter) {
-      setFormData(prev => ({
-        ...prev,
-        requestType: "direct",
-        selectedInterpreter: preselectedInterpreter
-      }));
+    if (!preselected || form.interpreterIds.length > 0) return
+    const row = fromProfile.data?.rows.find((item) => item.slug === preselected)
+    if (row?.account_id) set('interpreterIds', [row.account_id])
+  }, [preselected, fromProfile.data, form.interpreterIds.length])
+
+  const service = catalog.data?.services.find((row) => row.id === form.serviceId)
+  const needed = Math.max(1, Number(form.needed) || 1)
+  const firstLanguage = form.languageIds[0]
+  const candidates = useListing({ languageId: firstLanguage, limit: 50, offset: 0 })
+  const suggestTwo = config.data?.two_interpreters_suggest_minutes ?? null
+
+  const startsAt = form.day && form.time ? fromLuandaLocal(form.day, form.time) : null
+  const urgent = useMemo(() => {
+    const hours = config.data?.urgent_threshold_hours
+    return startsAt && hours !== null && hours !== undefined ? new Date(startsAt).getTime() < Date.now() + hours * 3_600_000 : false
+  }, [startsAt, config.data])
+
+  /** The checks a step makes before moving on, with the catalog's messages; the database checks again. */
+  const check = (current: Step): Record<string, string> => {
+    const found: Record<string, string> = {}
+    if (current === 1) {
+      if (!form.serviceId) found.service_id = 'Escolhe o serviço.'
+      if (form.languageIds.length === 0) found.language_ids = 'Escolhe pelo menos uma língua.'
+      if (form.interpreterIds.length === 0) found.interpreter_ids = 'Escolhe pelo menos um intérprete.'
+      if (form.interpreterIds.length > needed) found.interpreter_ids = `Escolhe no máximo ${needed} ${needed === 1 ? 'intérprete' : 'intérpretes'}.`
     }
-  }, [preselectedInterpreter]);
-
-  const selectedInterpreterData = interpreters.find(i => i.slug === formData.selectedInterpreter);
-
-  const canProceed = () => {
-    switch (currentStep) {
-      case 1: return !!formData.requestType;
-      case 2: 
-        if (formData.requestType === "direct" && !formData.selectedInterpreter) return false;
-        return !!formData.serviceType;
-      case 3: return !!formData.modality;
-      case 4: return !!formData.date && !!formData.time;
-      case 5: return formData.modality === "online" ? !!formData.meetingLink : !!formData.location;
-      case 6: return !!formData.duration;
-      case 7: return true;
-      default: return false;
+    if (current === 2 && !form.modality) found.modality = 'Escolhe presencial ou online.'
+    if (current === 3) {
+      if (!form.day || !form.time) found.starts_at = 'Indica o dia e a hora.'
+      const minutes = Number(form.durationMinutes)
+      if (!Number.isInteger(minutes) || minutes < 15 || minutes > 720) found.duration_minutes = 'A duração tem de estar entre 15 minutos e 12 horas.'
     }
-  };
+    if (current === 4) {
+      if (form.modality === 'online' && !form.meetingLink.trim()) found.meeting_link = 'Indica o link da reunião.'
+      if (form.modality === 'online' && form.meetingLink.trim() && !form.meetingLink.trim().startsWith('https://')) found.meeting_link = 'O link tem de começar por https://.'
+      if (form.modality === 'in_person' && !form.address.trim()) found.address = 'Indica a morada do serviço.'
+    }
+    return found
+  }
 
-  const handleNext = () => {
-    if (currentStep < 7) setCurrentStep(currentStep + 1);
-  };
+  const next = () => {
+    const found = check(step)
+    setErrors(found)
+    if (Object.keys(found).length > 0) return
+    // Step 6 (budget) is only for the open "first to accept" request (H7).
+    setStep((current) => (current === 4 ? 6 : Math.min(current + 1, STEPS.length - 1)))
+  }
+  const back = () => setStep((current) => (current === 6 ? 4 : Math.max(current - 1, 0)))
 
-  const handleBack = () => {
-    if (currentStep > 1) setCurrentStep(currentStep - 1);
-  };
+  // The review asks the server for the total (R-REQ-02).
+  useEffect(() => {
+    if (step !== 6 || !form.serviceId || !form.modality) return
+    let alive = true
+    setPreview(null)
+    setPreviewError(null)
+    requests.preview({ service_id: form.serviceId, duration_minutes: Number(form.durationMinutes), modality: form.modality, interpreter_ids: form.interpreterIds })
+      .then((result) => { if (alive) setPreview(result) })
+      .catch((error: unknown) => { if (alive) setPreviewError(errorMessage(error)) })
+    return () => { alive = false }
+  }, [step, form.serviceId, form.durationMinutes, form.modality, form.interpreterIds, requests])
 
-  const handleSubmit = () => {
-    const requestTypeLabel = formData.requestType === "direct" ? "direta" : "aberta";
-    toast.success(`Solicitação ${requestTypeLabel} criada com sucesso!`, {
-      description: formData.requestType === "direct" 
-        ? `Aguarde a resposta de ${selectedInterpreterData?.name}.`
-        : "A solicitação está disponível para todos os intérpretes elegíveis.",
-    });
-    navigate("/requests");
-  };
+  const submit = async () => {
+    if (!preview || !startsAt || !form.modality) return
+    const input: NewRequestInput = {
+      kind: 'direct',
+      organization_id: organizationId ?? undefined,
+      service_id: form.serviceId,
+      language_ids: form.languageIds,
+      modality: form.modality,
+      starts_at: startsAt,
+      duration_minutes: Number(form.durationMinutes),
+      interpreters_needed: needed,
+      meeting_link: form.modality === 'online' ? form.meetingLink.trim() : undefined,
+      address: form.modality === 'in_person' ? form.address.trim() : undefined,
+      city: form.city.trim() || undefined,
+      notes: form.notes.trim() || undefined,
+      beneficiary_name: form.beneficiaryName.trim() || undefined,
+      beneficiary_contact: form.beneficiaryContact.trim() || undefined,
+      interpreter_ids: form.interpreterIds,
+      expected_total_aoa: preview.total_aoa,
+    }
+    setSending(true)
+    try {
+      const created = await requests.create(input)
+      navigate(`/requests/${created.id}`, { state: { created: created.code } })
+    } catch (error) {
+      if (error instanceof DataError && error.code === 'PRICE_CHANGED') {
+        // The total changed between the review and the send: show the new one (requests-core.md).
+        setPreview(await requests.preview({ service_id: input.service_id, duration_minutes: input.duration_minutes, modality: input.modality, interpreter_ids: input.interpreter_ids }).catch(() => null))
+        setPreviewError(errorMessage(error))
+        return
+      }
+      const fields = errorDetails(error)
+      const field = error instanceof DataError && error.field ? error.field : Object.keys(fields)[0]
+      setErrors(field ? { [field]: fields[field] ?? errorMessage(error) } : {})
+      if (field && FIELD_STEP[field] !== undefined) setStep(FIELD_STEP[field])
+      else setPreviewError(errorMessage(error))
+    } finally {
+      setSending(false)
+    }
+  }
 
-  const selectedService = serviceTypes.find(s => s.id === formData.serviceType);
+  if (catalog.isPending) return <Skeleton className="h-96 w-full" />
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Nova Solicitação"
-        description="Solicite um intérprete para o seu evento"
-        action={<Button variant="outline" asChild><Link to="/requests"><ArrowLeft className="h-4 w-4 mr-2" />Voltar</Link></Button>}
-      />
-
-      {/* Progress Steps */}
-      <div className="flex items-center justify-between overflow-x-auto pb-2">
-        {steps.map((step, index) => (
-          <div key={step.id} className="flex items-center flex-shrink-0">
-            <div className={cn(
-              "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors",
-              currentStep >= step.id
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-muted-foreground/30 text-muted-foreground"
-            )}>
-              <step.icon className="h-5 w-5" />
-            </div>
-            {index < steps.length - 1 && (
-              <div className={cn(
-                "h-0.5 w-6 sm:w-12 lg:w-16",
-                currentStep > step.id ? "bg-primary" : "bg-muted-foreground/30"
-              )} />
-            )}
-          </div>
+    <>
+      <PageHeader title="Nova Solicitação" description="Pede um intérprete em poucos passos." />
+      <ol className="mb-6 flex flex-wrap gap-2 text-xs" aria-label="Passos">
+        {STEPS.map((name, index) => index === 5 ? null : (
+          <li key={name} aria-current={index === step ? 'step' : undefined}
+            className={`rounded-full border px-3 py-1 ${index === step ? 'border-primary bg-primary/10 font-medium text-primary' : index < step ? 'text-foreground' : 'text-muted-foreground'}`}>
+            {index < step && <Check className="mr-1 inline h-3 w-3" aria-hidden="true" />}{name}
+          </li>
         ))}
-      </div>
+      </ol>
 
-      {/* Step Content */}
       <Card>
-        <CardHeader>
-          <CardTitle>{steps[currentStep - 1]?.title}</CardTitle>
-          {currentStep === 1 && (
-            <CardDescription>Escolha como deseja solicitar o serviço de interpretação</CardDescription>
-          )}
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Step 1: Request Type */}
-          {currentStep === 1 && (
-            <RadioGroup
-              value={formData.requestType}
-              onValueChange={(value) => setFormData({ ...formData, requestType: value as "direct" | "open" })}
-              className="grid gap-4 sm:grid-cols-2"
-            >
-              <Label
-                htmlFor="direct"
-                className={cn(
-                  "flex cursor-pointer flex-col items-center gap-4 rounded-lg border p-8 transition-colors hover:bg-muted",
-                  formData.requestType === "direct" && "border-primary bg-primary/5"
-                )}
-              >
-                <RadioGroupItem value="direct" id="direct" className="sr-only" />
-                <User className="h-12 w-12 text-primary" />
-                <div className="text-center">
-                  <span className="font-medium">Solicitação Direta</span>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Escolha um intérprete específico para o seu serviço
-                  </p>
+        <CardContent className="space-y-6 pt-6">
+          {step === 0 && (
+            <div className="grid gap-3 md:grid-cols-3">
+              <button type="button" aria-pressed="true" className="rounded-lg border-2 border-primary bg-primary/5 p-4 text-left">
+                <p className="font-medium">Escolher um intérprete</p>
+                <p className="text-sm text-muted-foreground">Escolhes quem queres e convidas directamente.</p>
+              </button>
+              {[{ title: 'Publicar para intérpretes', text: 'Os intérpretes disponíveis candidatam-se.' }, { title: 'Pedir à plataforma', text: 'A equipa escolhe e faz o orçamento.' }].map((option) => (
+                <div key={option.title} aria-disabled="true" className="rounded-lg border p-4 opacity-60">
+                  <p className="font-medium">{option.title} <Badge variant="outline" className="ml-1">Disponível em breve</Badge></p>
+                  <p className="text-sm text-muted-foreground">{option.text}</p>
                 </div>
-              </Label>
-              <Label
-                htmlFor="open"
-                className={cn(
-                  "flex cursor-pointer flex-col items-center gap-4 rounded-lg border p-8 transition-colors hover:bg-muted",
-                  formData.requestType === "open" && "border-primary bg-primary/5"
-                )}
-              >
-                <RadioGroupItem value="open" id="open" className="sr-only" />
-                <Users className="h-12 w-12 text-primary" />
-                <div className="text-center">
-                  <span className="font-medium">Solicitação Aberta</span>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Todos os intérpretes elegíveis podem candidatar-se
-                  </p>
-                </div>
-              </Label>
-            </RadioGroup>
-          )}
-
-          {/* Step 2: Service Type + Interpreter Selection for Direct */}
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              {formData.requestType === "direct" && (
-                <div className="space-y-4">
-                  <Label>Selecionar Intérprete</Label>
-                  <div className="grid gap-3 max-h-[300px] overflow-y-auto">
-                    {interpreters.filter(i => i.verified).map((interpreter) => (
-                      <div
-                        key={interpreter.slug}
-                        onClick={() => setFormData({ ...formData, selectedInterpreter: interpreter.slug })}
-                        className={cn(
-                          "flex items-center gap-4 p-4 rounded-lg border cursor-pointer transition-colors hover:bg-muted",
-                          formData.selectedInterpreter === interpreter.slug && "border-primary bg-primary/5"
-                        )}
-                      >
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={interpreter.photo} alt={interpreter.name} />
-                          <AvatarFallback>{interpreter.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium truncate">{interpreter.name}</span>
-                            {interpreter.verified && (
-                              <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground truncate">{interpreter.specialty}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            {interpreter.rating && (
-                              <div className="flex items-center gap-1">
-                                <Star className="h-3 w-3 text-warning fill-warning" />
-                                <span className="text-xs">{interpreter.rating.toFixed(1)}</span>
-                              </div>
-                            )}
-                            {interpreter.minimumHourlyRate && (
-                              <Badge variant="outline" className="text-xs">
-                                <DollarSign className="h-3 w-3 mr-1" />
-                                {interpreter.minimumHourlyRate} AOA/h
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {selectedInterpreterData && (
-                    <Alert>
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        {selectedInterpreterData.minimumHourlyRate 
-                          ? `Taxa mínima: ${selectedInterpreterData.minimumHourlyRate} AOA/hora. O valor final pode ser negociado.`
-                          : "Este intérprete está aberto a negociação de preço."
-                        }
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </div>
-              )}
-
-              <div className="space-y-4">
-                <Label>Tipo de Serviço</Label>
-                <RadioGroup
-                  value={formData.serviceType}
-                  onValueChange={(value) => setFormData({ ...formData, serviceType: value })}
-                  className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-                >
-                  {serviceTypes.map((service) => (
-                    <Label
-                      key={service.id}
-                      htmlFor={`service-${service.id}`}
-                      className={cn(
-                        "flex cursor-pointer flex-col gap-2 rounded-lg border p-4 transition-colors hover:bg-muted",
-                        formData.serviceType === service.id && "border-primary bg-primary/5"
-                      )}
-                    >
-                      <RadioGroupItem value={service.id} id={`service-${service.id}`} className="sr-only" />
-                      <span className="font-medium">{service.name}</span>
-                      <span className="text-sm text-muted-foreground">{service.description}</span>
-                    </Label>
-                  ))}
-                </RadioGroup>
-              </div>
+              ))}
             </div>
           )}
 
-          {/* Step 3: Modality */}
-          {currentStep === 3 && (
-            <RadioGroup
-              value={formData.modality}
-              onValueChange={(value) => setFormData({ ...formData, modality: value as "presencial" | "online" })}
-              className="grid gap-4 sm:grid-cols-2"
-            >
-              <Label
-                htmlFor="presencial"
-                className={cn(
-                  "flex cursor-pointer flex-col items-center gap-4 rounded-lg border p-8 transition-colors hover:bg-muted",
-                  formData.modality === "presencial" && "border-primary bg-primary/5"
-                )}
-              >
-                <RadioGroupItem value="presencial" id="presencial" className="sr-only" />
-                <MapPin className="h-12 w-12 text-primary" />
-                <div className="text-center">
-                  <span className="font-medium">Presencial</span>
-                  <p className="text-sm text-muted-foreground">O intérprete estará fisicamente presente</p>
-                </div>
-              </Label>
-              <Label
-                htmlFor="online"
-                className={cn(
-                  "flex cursor-pointer flex-col items-center gap-4 rounded-lg border p-8 transition-colors hover:bg-muted",
-                  formData.modality === "online" && "border-primary bg-primary/5"
-                )}
-              >
-                <RadioGroupItem value="online" id="online" className="sr-only" />
-                <Video className="h-12 w-12 text-primary" />
-                <div className="text-center">
-                  <span className="font-medium">Online</span>
-                  <p className="text-sm text-muted-foreground">Interpretação via videochamada</p>
-                </div>
-              </Label>
-            </RadioGroup>
-          )}
-
-          {/* Step 4: Date and Time */}
-          {currentStep === 4 && (
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Data do Serviço</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !formData.date && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.date ? format(formData.date, "PPP", { locale: pt }) : "Selecione a data"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={formData.date}
-                      onSelect={(date) => setFormData({ ...formData, date })}
-                      disabled={(date) => date < new Date()}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="time">Horário de Início</Label>
-                <Input
-                  id="time"
-                  type="time"
-                  value={formData.time}
-                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Step 5: Location/Link */}
-          {currentStep === 5 && (
-            <div className="space-y-4">
-              {formData.modality === "presencial" ? (
-                <div className="space-y-2">
-                  <Label htmlFor="location">Endereço Completo</Label>
-                  <Textarea
-                    id="location"
-                    placeholder="Ex: Rua Principal 123, Luanda, Angola"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    rows={3}
-                  />
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <Label htmlFor="meetingLink">Link da Reunião</Label>
-                  <Input
-                    id="meetingLink"
-                    type="url"
-                    placeholder="Ex: https://zoom.us/j/123456789"
-                    value={formData.meetingLink}
-                    onChange={(e) => setFormData({ ...formData, meetingLink: e.target.value })}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Zoom, Google Meet, Microsoft Teams ou outra plataforma
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Step 6: Duration and Budget */}
-          {currentStep === 6 && (
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <Label>Duração Estimada</Label>
-                <Select
-                  value={formData.duration}
-                  onValueChange={(value) => setFormData({ ...formData, duration: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a duração" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {durations.map((d) => (
-                      <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
-                    ))}
-                  </SelectContent>
+          {step === 1 && (
+            <div className="space-y-5">
+              <Field id="service" label="Serviço" error={errors.service_id}>
+                <Select value={form.serviceId} onValueChange={(value) => set('serviceId', value)}>
+                  <SelectTrigger id="service"><SelectValue placeholder="Escolhe o serviço" /></SelectTrigger>
+                  <SelectContent>{catalog.data?.services.filter((row) => row.active).map((row) => <SelectItem key={row.id} value={row.id}>{row.title}</SelectItem>)}</SelectContent>
                 </Select>
-              </div>
+              </Field>
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium">Línguas</legend>
+                <div className="flex flex-wrap gap-2">
+                  {catalog.data?.languages.filter((row) => row.active).map((row) => {
+                    const on = form.languageIds.includes(row.id)
+                    return (
+                      <Button key={row.id} type="button" size="sm" variant={on ? 'default' : 'outline'} aria-pressed={on}
+                        onClick={() => set('languageIds', on ? form.languageIds.filter((id) => id !== row.id) : [...form.languageIds, row.id])}>
+                        {row.name}
+                      </Button>
+                    )
+                  })}
+                </div>
+                {errors.language_ids && <p className="text-sm text-destructive">{errors.language_ids}</p>}
+              </fieldset>
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium">Intérprete</legend>
+                {!firstLanguage ? <p className="text-sm text-muted-foreground">Escolhe primeiro uma língua.</p>
+                  : candidates.isPending ? <Skeleton className="h-24 w-full" />
+                  : (candidates.data?.rows.length ?? 0) === 0 ? <p className="text-sm text-muted-foreground">Ainda não há intérpretes no directório para esta língua.</p>
+                  : (
+                    <ul className="grid gap-2 sm:grid-cols-2">
+                      {candidates.data?.rows.map((row) => {
+                        const id = row.account_id ?? ''
+                        const on = form.interpreterIds.includes(id)
+                        const photo = directory.publicUrl('avatars', row.avatar_path)
+                        return (
+                          <li key={id}>
+                            <label className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 ${on ? 'border-primary bg-primary/5' : ''}`}>
+                              <Checkbox checked={on} onCheckedChange={(value) => set('interpreterIds', value === true ? [...form.interpreterIds, id] : form.interpreterIds.filter((item) => item !== id))} />
+                              {photo ? <img src={photo} alt="" className="h-9 w-9 rounded-full object-cover" /> : <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-sm font-semibold">{(row.full_name ?? '').charAt(0)}</span>}
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate font-medium">{row.full_name}</span>
+                                <span className="block truncate text-xs text-muted-foreground">{(row.language_names ?? []).join(', ')}{row.city ? ` · ${row.city}` : ''}</span>
+                              </span>
+                              <Link to={`/interpreters/${row.slug}`} target="_blank" className="text-xs text-primary hover:underline">Perfil</Link>
+                            </label>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  )}
+                {errors.interpreter_ids && <p className="text-sm text-destructive">{errors.interpreter_ids}</p>}
+                {errors.interpreter_id && <p className="text-sm text-destructive">{errors.interpreter_id}</p>}
+                <p className="text-xs text-muted-foreground">O preço de cada intérprete aparece na revisão. Só recebem o convite os que oferecem este serviço nas línguas escolhidas.</p>
+              </fieldset>
+            </div>
+          )}
 
-              {formData.requestType === "open" && (
-                <div className="space-y-2">
-                  <Label htmlFor="budget">Orçamento Estimado (opcional)</Label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="budget"
-                      type="number"
-                      placeholder="Ex: 15000"
-                      value={formData.estimatedBudget}
-                      onChange={(e) => setFormData({ ...formData, estimatedBudget: e.target.value })}
-                      className="pl-10"
-                    />
+          {step === 2 && (
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">Modalidade</legend>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {([['in_person', MapPin, 'No local do serviço.'], ['online', Video, 'Por videochamada (Zoom, Meet, Teams…).']] as const).map(([value, Icon, text]) => (
+                  <button key={value} type="button" aria-pressed={form.modality === value} onClick={() => set('modality', value)}
+                    className={`flex items-start gap-3 rounded-lg border-2 p-4 text-left ${form.modality === value ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                    <Icon className="h-5 w-5 text-primary" aria-hidden="true" />
+                    <span><span className="block font-medium">{MODALITY_TEXT[value]}</span><span className="text-sm text-muted-foreground">{text}</span></span>
+                  </button>
+                ))}
+              </div>
+              {errors.modality && <p className="text-sm text-destructive">{errors.modality}</p>}
+            </fieldset>
+          )}
+
+          {step === 3 && (
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field id="day" label="Dia" error={errors.starts_at}>
+                <Input id="day" type="date" min={luandaDay(new Date())} value={form.day} onChange={(e) => set('day', e.target.value)} />
+              </Field>
+              <Field id="time" label="Hora (hora de Luanda)" hint={config.data?.request_min_lead_minutes ? `Pelo menos ${config.data.request_min_lead_minutes} minutos a partir de agora.` : undefined}>
+                <Input id="time" type="time" value={form.time} onChange={(e) => set('time', e.target.value)} />
+              </Field>
+              <Field id="duration" label="Duração (minutos)" error={errors.duration_minutes} hint={Number(form.durationMinutes) >= 15 ? durationText(Number(form.durationMinutes)) : undefined}>
+                <Input id="duration" type="number" min={15} max={720} step={15} value={form.durationMinutes} onChange={(e) => set('durationMinutes', e.target.value)} />
+              </Field>
+              <Field id="needed" label="Quantos intérpretes" error={errors.interpreters_needed}
+                hint={suggestTwo !== null && Number(form.durationMinutes) > suggestTwo ? 'Serviços longos costumam precisar de dois intérpretes a revezar.' : undefined}>
+                <Input id="needed" type="number" min={1} max={config.data?.max_interpreters_per_request ?? undefined} value={form.needed} onChange={(e) => set('needed', e.target.value)} />
+              </Field>
+              {urgent && (
+                <Alert className="sm:col-span-2"><AlertCircle className="h-4 w-4" /><AlertDescription>Pedido urgente: os convites expiram à hora de início.</AlertDescription></Alert>
+              )}
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="grid gap-5 sm:grid-cols-2">
+              {form.modality === 'online' ? (
+                <Field id="meeting_link" label="Link da reunião" error={errors.meeting_link} hint="Começa por https://">
+                  <Input id="meeting_link" type="url" value={form.meetingLink} onChange={(e) => set('meetingLink', e.target.value)} />
+                </Field>
+              ) : (
+                <Field id="address" label="Morada" error={errors.address} hint="Só os intérpretes aceites a veem.">
+                  <Input id="address" value={form.address} onChange={(e) => set('address', e.target.value)} />
+                </Field>
+              )}
+              <Field id="city" label="Cidade" error={errors.city}><Input id="city" value={form.city} onChange={(e) => set('city', e.target.value)} /></Field>
+              <Field id="beneficiary_name" label="Para quem é o serviço (opcional)" hint="Só os intérpretes aceites o veem."><Input id="beneficiary_name" value={form.beneficiaryName} onChange={(e) => set('beneficiaryName', e.target.value)} /></Field>
+              <Field id="beneficiary_contact" label="Contacto dessa pessoa (opcional)"><Input id="beneficiary_contact" value={form.beneficiaryContact} onChange={(e) => set('beneficiaryContact', e.target.value)} /></Field>
+              <div className="sm:col-span-2"><Field id="notes" label="Notas para o intérprete (opcional)"><Textarea id="notes" rows={3} value={form.notes} onChange={(e) => set('notes', e.target.value)} /></Field></div>
+            </div>
+          )}
+
+          {step === 6 && (
+            <div className="space-y-5">
+              <CardHeader className="p-0">
+                <CardTitle>Revisão</CardTitle>
+                <CardDescription>Confirma o pedido antes de enviar.</CardDescription>
+              </CardHeader>
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                <div><dt className="text-muted-foreground">Serviço</dt><dd className="font-medium">{service?.title} ({PRICING_SUFFIX[service?.pricing_mode ?? 'hourly']})</dd></div>
+                <div><dt className="text-muted-foreground">Quando</dt><dd className="font-medium">{startsAt ? `${formatDateTime(startsAt)} (hora de Luanda)` : ''} · {durationText(Number(form.durationMinutes))}</dd></div>
+                <div><dt className="text-muted-foreground">Modalidade</dt><dd className="font-medium">{form.modality ? MODALITY_TEXT[form.modality] : ''}{form.modality === 'in_person' ? ` · ${form.address}` : ''}</dd></div>
+                <div><dt className="text-muted-foreground">Intérpretes</dt><dd className="font-medium">{needed}</dd></div>
+              </dl>
+              {previewError && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{previewError}</AlertDescription></Alert>}
+              {!preview ? (!previewError && <Skeleton className="h-24 w-full" />) : (
+                <div className="rounded-lg border">
+                  <ul className="divide-y text-sm">
+                    {preview.lines.map((line) => {
+                      const row = candidates.data?.rows.find((item) => item.account_id === line.interpreter_id)
+                      return (
+                        <li key={line.interpreter_id} className="flex flex-wrap justify-between gap-2 p-3">
+                          <span>{row?.full_name ?? 'Intérprete'}</span>
+                          <span className="tabular-nums">{formatAoa(line.price_aoa)}{line.travel_fee_aoa > 0 ? ` + ${formatAoa(line.travel_fee_aoa)} de deslocação` : ''}</span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                  <div className="flex justify-between border-t bg-muted/40 p-3 font-semibold">
+                    <span>Total</span><span className="tabular-nums">{formatAoa(preview.total_aoa)}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Valor em AOA. O valor final pode ser negociado com o intérprete.
-                  </p>
                 </div>
               )}
-
-              <div className="space-y-2">
-                <Label htmlFor="observations">Observações (opcional)</Label>
-                <Textarea
-                  id="observations"
-                  placeholder="Informações adicionais sobre o serviço..."
-                  value={formData.observations}
-                  onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
-                  rows={4}
-                />
-              </div>
+              {preview && preview.lines.length < form.interpreterIds.length && (
+                <Alert><AlertCircle className="h-4 w-4" /><AlertDescription>Algum intérprete escolhido não oferece este serviço: volta ao passo 2 e escolhe outro.</AlertDescription></Alert>
+              )}
             </div>
           )}
 
-          {/* Step 7: Confirmation */}
-          {currentStep === 7 && (
-            <div className="space-y-6">
-              <div className="rounded-lg border bg-muted/50 p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">Resumo da Solicitação</h3>
-                  <Badge variant={formData.requestType === "direct" ? "default" : "secondary"}>
-                    {formData.requestType === "direct" ? "Direta" : "Aberta"}
-                  </Badge>
-                </div>
-                
-                {formData.requestType === "direct" && selectedInterpreterData && (
-                  <div className="flex items-center gap-4 p-4 bg-background rounded-lg border">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={selectedInterpreterData.photo} alt={selectedInterpreterData.name} />
-                      <AvatarFallback>{selectedInterpreterData.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <span className="font-medium">{selectedInterpreterData.name}</span>
-                      <p className="text-sm text-muted-foreground">{selectedInterpreterData.specialty}</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <span className="text-sm text-muted-foreground">Tipo de Serviço</span>
-                    <p className="font-medium">{selectedService?.name}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm text-muted-foreground">Modalidade</span>
-                    <p className="font-medium">{formData.modality === "online" ? "Online" : "Presencial"}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm text-muted-foreground">Data</span>
-                    <p className="font-medium">{formData.date ? format(formData.date, "PPP", { locale: pt }) : "-"}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm text-muted-foreground">Horário</span>
-                    <p className="font-medium">{formData.time}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm text-muted-foreground">Duração</span>
-                    <p className="font-medium">{durations.find(d => d.value === formData.duration)?.label}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm text-muted-foreground">{formData.modality === "online" ? "Link" : "Local"}</span>
-                    <p className="font-medium">{formData.modality === "online" ? formData.meetingLink : formData.location}</p>
-                  </div>
-                  {formData.requestType === "open" && formData.estimatedBudget && (
-                    <div>
-                      <span className="text-sm text-muted-foreground">Orçamento Estimado</span>
-                      <p className="font-medium">{formData.estimatedBudget} AOA</p>
-                    </div>
-                  )}
-                </div>
-                {formData.observations && (
-                  <div>
-                    <span className="text-sm text-muted-foreground">Observações</span>
-                    <p className="font-medium">{formData.observations}</p>
-                  </div>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {formData.requestType === "direct"
-                  ? "Ao confirmar, a sua solicitação será enviada diretamente ao intérprete selecionado."
-                  : "Ao confirmar, a sua solicitação ficará visível para todos os intérpretes elegíveis. O primeiro a aceitar garantirá o serviço."
-                }
-              </p>
-            </div>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-between pt-4">
-            <Button variant="outline" onClick={handleBack} disabled={currentStep === 1}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar
+          <div className="flex justify-between border-t pt-4">
+            <Button variant="outline" onClick={step === 0 ? () => navigate('/requests') : back} disabled={sending}>
+              <ArrowLeft className="h-4 w-4" />{step === 0 ? 'Cancelar' : 'Voltar'}
             </Button>
-            {currentStep < 7 ? (
-              <Button onClick={handleNext} disabled={!canProceed()}>
-                Próximo
-                <ArrowRight className="ml-2 h-4 w-4" />
+            {step === 6 ? (
+              <Button onClick={() => void submit()} disabled={sending || !preview || preview.lines.length < form.interpreterIds.length}>
+                {sending ? 'A enviar…' : 'Enviar pedido'}
               </Button>
             ) : (
-              <Button onClick={handleSubmit}>
-                <Check className="mr-2 h-4 w-4" />
-                Confirmar Solicitação
-              </Button>
+              <Button onClick={next}>Seguinte<ArrowRight className="h-4 w-4" /></Button>
             )}
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    </>
+  )
 }

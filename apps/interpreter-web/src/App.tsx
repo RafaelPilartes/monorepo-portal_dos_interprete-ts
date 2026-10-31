@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { PanelLayout, PortalServicesProvider, RequireRole, SessionProvider, type PortalServices } from '@portal-dos-interpretes/auth'
 import AcceptTerms from '@portal-dos-interpretes/auth/pages/AcceptTerms'
 import Login from '@portal-dos-interpretes/auth/pages/Login'
+import Notifications from '@portal-dos-interpretes/auth/pages/Notifications'
 import { InterpreterOnboarding } from '@portal-dos-interpretes/auth/pages/Onboarding'
 import RecoverPassword from '@portal-dos-interpretes/auth/pages/RecoverPassword'
 import Register from '@portal-dos-interpretes/auth/pages/Register'
@@ -102,6 +103,7 @@ export function InterpreterAppRoutes() {
         <Route path="verification" element={<InterpreterVerification />} />
         <Route path="verification/documents" element={<InterpreterDocuments />} />
         <Route path="settings" element={<InterpreterSettings />} />
+        <Route path="notifications" element={<Notifications app="interpreter" />} />
         {placeholders.map(({ path, title, description }) => (
           <Route key={path} path={path} element={<ModulePlaceholder title={title} description={description} />} />
         ))}

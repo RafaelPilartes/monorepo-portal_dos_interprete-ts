@@ -13,8 +13,8 @@ import { hhmm, LANGUAGE_LEVELS, PRICING_SUFFIX, WEEKDAYS } from '../directory/la
 
 // /interpreters/:slug in requester-web and interpreter-web (R-DIR-04): everything an active
 // account may read, contacts included (D-51). An unknown slug, an incomplete profile or a
-// suspended account read as "não existe". "Pedir este intérprete" arrives with the request wizard
-// (H5); the rating (R-DIR-05) and the late cancellations (R-DIR-06) with their tables.
+// suspended account read as "não existe". "Pedir este intérprete" (requester-web) opens the
+// wizard with the interpreter chosen; the rating (R-DIR-05) and the late cancellations (R-DIR-06) with their tables.
 
 export function InterpreterNotFound() {
   return (
@@ -91,6 +91,9 @@ export function InterpreterProfileView({ details }: { details: InterpreterDetail
             </div>
             <p className="text-sm text-muted-foreground">Ainda sem avaliações</p>
           </div>
+          {favorites && (
+            <Button asChild><Link to={`/requests/new?interpreter=${profile.slug}`}>Pedir este intérprete</Link></Button>
+          )}
           {favorites && (
             <Button
               variant={marked ? 'secondary' : 'outline'}

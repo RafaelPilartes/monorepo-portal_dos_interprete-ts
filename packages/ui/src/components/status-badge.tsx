@@ -1,4 +1,4 @@
-import { COMMON_TEXTS } from "@portal-dos-interpretes/i18n";
+import { ASSIGNMENT_STATUS_LABELS, COMMON_TEXTS, REQUEST_STATUS_LABELS } from "@portal-dos-interpretes/i18n";
 import { cn } from "../lib/utils";
 
 type StatusType = 
@@ -67,6 +67,22 @@ const statusConfig: Record<StatusType, { label: string; className: string }> = {
   }
 };
 
+// The statuses of requests and assignments (data-model.md §5), labels from packages/i18n.
+const tone = {
+  waiting: 'bg-warning/10 text-warning border-warning/20',
+  good: 'bg-success/10 text-success border-success/20',
+  info: 'bg-primary/10 text-primary border-primary/20',
+  bad: 'bg-destructive/10 text-destructive border-destructive/20',
+  ended: 'bg-muted text-muted-foreground border-border',
+};
+const BOOKING_TONES: Record<string, string> = {
+  awaiting_approval: tone.waiting, quoting: tone.waiting, awaiting_interpreters: tone.waiting, awaiting_payment: tone.waiting,
+  payment_review: tone.waiting, invited: tone.waiting, applied: tone.waiting,
+  confirmed: tone.good, accepted: tone.good, completed: tone.good,
+  delivered: tone.info, disputed: tone.bad, declined: tone.bad,
+  cancelled: tone.ended, expired: tone.ended, not_selected: tone.ended, withdrawn: tone.ended,
+};
+
 const UNKNOWN_STATUS = { label: COMMON_TEXTS.unknownStatus, className: 'bg-muted text-muted-foreground border-border' };
 
 function isKnownStatus(status: string): status is StatusType {
@@ -77,12 +93,18 @@ function isKnownStatus(status: string): status is StatusType {
  * The old badge crashed on a status it did not know (04-gaps.md item 7); an
  * unknown one now shows "Estado desconhecido" and logs a warning (foundation.md §E).
  */
-export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const known = isKnownStatus(status);
+export function StatusBadge({ status, className, kind }: StatusBadgeProps & {
+  /** A request or an assignment status: labels from the booking vocabulary (packages/i18n). */
+  kind?: 'request' | 'assignment';
+}) {
+  const bookingLabel = kind === 'request' ? (REQUEST_STATUS_LABELS as Record<string, string>)[status]
+    : kind === 'assignment' ? (ASSIGNMENT_STATUS_LABELS as Record<string, string>)[status] : undefined;
+  const known = bookingLabel !== undefined || isKnownStatus(status);
   if (!known) {
     console.warn(`StatusBadge: unknown status "${status}"`);
   }
-  const config = known ? statusConfig[status] : UNKNOWN_STATUS;
+  const config = bookingLabel !== undefined ? { label: bookingLabel, className: BOOKING_TONES[status] ?? tone.ended }
+    : known && isKnownStatus(status) ? statusConfig[status] : UNKNOWN_STATUS;
 
   return (
     <span

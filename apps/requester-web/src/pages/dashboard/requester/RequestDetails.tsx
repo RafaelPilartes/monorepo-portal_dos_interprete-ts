@@ -1,305 +1,149 @@
-import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { Button } from "@portal-dos-interpretes/ui/components/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@portal-dos-interpretes/ui/components/card";
-import { Badge } from "@portal-dos-interpretes/ui/components/badge";
-import { StatusBadge } from "@portal-dos-interpretes/ui/components/status-badge";
-import { Timeline } from "@portal-dos-interpretes/ui/components/timeline";
-import { ConfirmationModal } from "@portal-dos-interpretes/ui/components/confirmation-modal";
-import { ArrowLeft, Calendar, Clock, MapPin, Video, User, FileText, MessageSquare, Star, XCircle, Send, Edit } from "lucide-react";
+import { useState } from 'react'
+import { Link, useLocation, useParams } from 'react-router-dom'
+import { QueryError } from '@portal-dos-interpretes/features/components/QueryStates'
+import { useListing } from '@portal-dos-interpretes/features/directory/DirectoryContext'
+import { priceText, RequestChat, RequestFacts, RequestTimeline } from '@portal-dos-interpretes/features/requests/RequestParts'
+import { useRequestAction, useRequestDetail } from '@portal-dos-interpretes/features/requests/RequestsContext'
+import { formatDateTime, REQUEST_KIND_LABELS } from '@portal-dos-interpretes/i18n'
+import { Alert, AlertDescription } from '@portal-dos-interpretes/ui/components/alert'
+import { Button } from '@portal-dos-interpretes/ui/components/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@portal-dos-interpretes/ui/components/card'
+import { Input } from '@portal-dos-interpretes/ui/components/input'
+import { Label } from '@portal-dos-interpretes/ui/components/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@portal-dos-interpretes/ui/components/select'
+import { Skeleton } from '@portal-dos-interpretes/ui/components/skeleton'
+import { StatusBadge } from '@portal-dos-interpretes/ui/components/status-badge'
+import { ArrowLeft, CheckCircle2 } from 'lucide-react'
 
-type RequestStatus = 'pending' | 'approved' | 'rejected' | 'completed' | 'canceled' | 'in_progress' | 'confirmed';
+// requester-web /requests/:id (requests-core.md, requests-direct.md): the request, its interpreters
+// with their state and price, the chat with each, the timeline. Actions while it waits for
+// interpreters: invite another (when there is a free place), go on with fewer, change the link.
+// "Cancelar pedido" arrives with the service lifecycle (H8).
 
-// Mock data
-const requestData: {
-  id: string;
-  service: string;
-  description: string;
-  date: string;
-  time: string;
-  duration: string;
-  status: RequestStatus;
-  modality: "presencial" | "online";
-  location: string;
-  interpreter: {
-    name: string;
-    photo: string;
-    specialty: string;
-    rating: number;
-  };
-  createdAt: string;
-  notes: string;
-} = {
-  id: "REQ-001",
-  service: "Interpretação em Consulta Médica",
-  description: "Necessito de um intérprete para acompanhar-me numa consulta de cardiologia no Hospital Américo Boavida.",
-  date: "2024-01-20",
-  time: "10:00",
-  duration: "2 horas",
-  status: "confirmed",
-  modality: "presencial",
-  location: "Hospital Américo Boavida, Luanda",
-  interpreter: {
-    name: "Maria Silva",
-    photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-    specialty: "Saúde",
-    rating: 4.9,
-  },
-  createdAt: "2024-01-15",
-  notes: "Favor chegar 15 minutos antes da consulta.",
-};
+type Detail = NonNullable<ReturnType<typeof useRequestDetail>['data']>
 
-const timeline = [
-  {
-    id: "1",
-    title: "Solicitação criada",
-    description: "Solicitação submetida para análise.",
-    date: "15 Jan, 10:30",
-    iconColor: "bg-primary",
-  },
-  {
-    id: "2",
-    title: "Solicitação aprovada",
-    description: "A equipa da plataforma aprovou a solicitação.",
-    date: "15 Jan, 14:00",
-    iconColor: "bg-success",
-  },
-  {
-    id: "3",
-    title: "Intérprete atribuído",
-    description: "Maria Silva foi atribuída ao serviço.",
-    date: "16 Jan, 09:00",
-    iconColor: "bg-secondary",
-  },
-  {
-    id: "4",
-    title: "Serviço confirmado",
-    description: "O intérprete confirmou disponibilidade.",
-    date: "16 Jan, 11:30",
-    iconColor: "bg-success",
-  },
-];
+function assignmentLine(row: Detail['assignments'][number]): string {
+  switch (row.status) {
+    case 'invited': return `Convidado, responde até ${formatDateTime(row.invite_expires_at ?? '')}`
+    case 'declined': return `Recusou${row.decline_reason ? `: ${row.decline_reason}` : ''}`
+    case 'expired': return 'O convite expirou'
+    default: return ''
+  }
+}
+
+function InviteAnother({ detail }: { detail: Detail }) {
+  const [interpreterId, setInterpreterId] = useState('')
+  const listing = useListing({ limit: 50, offset: 0 })
+  const invite = useRequestAction((repository, id: string) => repository.invite(detail.request.id ?? '', id), 'Convite enviado.')
+  const taken = new Set(detail.assignments.map((row) => row.interpreter_id))
+  const options = (listing.data?.rows ?? []).filter((row) => row.account_id && !taken.has(row.account_id))
+  return (
+    <div className="flex flex-wrap items-end gap-3">
+      <div className="space-y-1.5">
+        <Label htmlFor="invite-another">Convidar outro intérprete</Label>
+        <Select value={interpreterId} onValueChange={setInterpreterId}>
+          <SelectTrigger id="invite-another" className="w-64"><SelectValue placeholder="Escolhe do directório" /></SelectTrigger>
+          <SelectContent>{options.map((row) => <SelectItem key={row.account_id} value={row.account_id ?? ''}>{row.full_name}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      <Button variant="outline" disabled={!interpreterId || invite.isPending} onClick={() => invite.mutate(interpreterId, { onSuccess: () => setInterpreterId('') })}>Convidar</Button>
+    </div>
+  )
+}
+
+function MeetingLink({ detail }: { detail: Detail }) {
+  const [link, setLink] = useState(detail.request.meeting_link ?? '')
+  const save = useRequestAction((repository, value: string) => repository.updateMeetingLink(detail.request.id ?? '', value), 'Link actualizado.')
+  return (
+    <div className="flex flex-wrap items-end gap-3">
+      <div className="min-w-64 flex-1 space-y-1.5">
+        <Label htmlFor="meeting-link">Link da reunião</Label>
+        <Input id="meeting-link" type="url" value={link} onChange={(e) => setLink(e.target.value)} />
+      </div>
+      <Button variant="outline" disabled={save.isPending || link.trim() === (detail.request.meeting_link ?? '')} onClick={() => save.mutate(link.trim())}>Guardar link</Button>
+    </div>
+  )
+}
 
 export default function RequestDetails() {
-  const { id } = useParams<{ id: string }>();
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const [_showReviewModal, setShowReviewModal] = useState(false);
+  const { id = '' } = useParams()
+  const location = useLocation()
+  const created = (location.state as { created?: string } | null)?.created
+  const detail = useRequestDetail(id)
+  const reduce = useRequestAction((repository, needed: number) => repository.reduce(id, needed), 'Pedido actualizado.')
 
-  const handleCancel = () => {
-    // Handle cancellation
-    setShowCancelModal(false);
-  };
+  if (detail.isPending) return <Skeleton className="h-96 w-full" />
+  if (detail.isError) return <QueryError error={detail.error} onRetry={() => void detail.refetch()} />
+  if (!detail.data) {
+    return (
+      <div className="mx-auto max-w-md space-y-4 py-16 text-center">
+        <h1 className="text-xl font-semibold">Não encontrámos este pedido.</h1>
+        <Button variant="outline" asChild><Link to="/requests">Ver os meus pedidos</Link></Button>
+      </div>
+    )
+  }
+  const { request, assignments, timeline } = detail.data
+  const waiting = request.status === 'awaiting_interpreters'
+  const accepted = request.accepted_count ?? 0
+  const pending = assignments.filter((row) => row.status === 'invited').length
+  const hasRoom = accepted + pending < (request.interpreters_needed ?? 0)
+  const manage = request.can_manage === true
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link to="/requests">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">{requestData.id}</h1>
-              <StatusBadge status={requestData.status} />
-            </div>
-            <p className="text-muted-foreground">{requestData.service}</p>
-          </div>
+      <Button variant="ghost" size="sm" asChild><Link to="/requests"><ArrowLeft className="h-4 w-4" />Pedidos</Link></Button>
+      {created && (
+        <Alert><CheckCircle2 className="h-4 w-4" /><AlertDescription>Pedido {created} enviado. Os intérpretes convidados foram avisados.</AlertDescription></Alert>
+      )}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="font-mono text-sm text-muted-foreground">{request.code} · {REQUEST_KIND_LABELS[request.kind as keyof typeof REQUEST_KIND_LABELS]}</p>
+          <h1 className="text-2xl font-semibold">{request.service_title}</h1>
         </div>
-        <div className="flex gap-2">
-          {requestData.status === "pending" && (
-            <>
-              <Button variant="outline" asChild>
-                <Link to={`/requests/${id}/edit`}>
-                  <Edit className="h-4 w-4" />
-                  Editar
-                </Link>
-              </Button>
-              <Button variant="destructive" onClick={() => setShowCancelModal(true)}>
-                <XCircle className="h-4 w-4" />
-                Cancelar
-              </Button>
-            </>
-          )}
-          {requestData.status === "completed" && (
-            <Button onClick={() => setShowReviewModal(true)}>
-              <Star className="h-4 w-4" />
-              Avaliar Serviço
-            </Button>
-          )}
-        </div>
+        <StatusBadge kind="request" status={request.status ?? ''} className="text-sm" />
       </div>
+      {waiting && (
+        <p className="text-sm text-muted-foreground">
+          {accepted} de {request.interpreters_needed} {request.interpreters_needed === 1 ? 'intérprete aceite' : 'intérpretes aceites'}.
+          {pending > 0 ? ` ${pending} ${pending === 1 ? 'convite' : 'convites'} à espera de resposta.` : ''}
+        </p>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Service Details */}
+        <div className="space-y-6 lg:col-span-2">
+          <RequestFacts request={request} />
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="h-5 w-5 text-primary" />
-                Detalhes do Serviço
-              </CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>Intérpretes</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Calendar className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Data</p>
-                    <p className="font-medium">{new Date(requestData.date).toLocaleDateString('pt-AO', { dateStyle: 'long' })}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-secondary/10 flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-secondary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Horário</p>
-                    <p className="font-medium">{requestData.time} ({requestData.duration})</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 sm:col-span-2">
-                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                    {requestData.modality === "presencial" ? (
-                      <MapPin className="h-5 w-5 text-primary" />
-                    ) : (
-                      <Video className="h-5 w-5 text-secondary" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      {requestData.modality === "presencial" ? "Local" : "Modalidade"}
-                    </p>
-                    <p className="font-medium">{requestData.location}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="pt-4 border-t border-border">
-                <h4 className="font-medium mb-2">Descrição</h4>
-                <p className="text-muted-foreground">{requestData.description}</p>
-              </div>
-
-              {requestData.notes && (
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <h4 className="font-medium mb-1 flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    Observações
-                  </h4>
-                  <p className="text-sm text-muted-foreground">{requestData.notes}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Timeline */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Histórico</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Timeline events={timeline} />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Interpreter Info */}
-          {requestData.interpreter && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <User className="h-5 w-5 text-primary" />
-                  Intérprete Atribuído
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <img
-                    src={requestData.interpreter.photo}
-                    alt={requestData.interpreter.name}
-                    className="h-16 w-16 rounded-full object-cover"
-                  />
-                  <div>
-                    <h4 className="font-semibold">{requestData.interpreter.name}</h4>
-                    <p className="text-sm text-muted-foreground">{requestData.interpreter.specialty}</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Star className="h-4 w-4 text-warning fill-warning" />
-                      <span className="text-sm font-medium">{requestData.interpreter.rating}</span>
+              <ul className="divide-y">
+                {assignments.map((row) => (
+                  <li key={row.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
+                    <div>
+                      <Link to={`/interpreters/${row.interpreter_slug}`} className="font-medium hover:underline">{row.interpreter_name}</Link>
+                      {assignmentLine(row) && <p className="text-muted-foreground">{assignmentLine(row)}</p>}
                     </div>
-                  </div>
-                </div>
-                <div className="mt-4 pt-4 border-t border-border">
-                  <Button className="w-full" variant="outline" asChild>
-                    <Link to={`/interpreters/${requestData.interpreter.name.toLowerCase().replace(' ', '-')}`}>
-                      Ver Perfil Completo
-                    </Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Status Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Estado da Solicitação</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Estado actual</span>
-                <StatusBadge status={requestData.status} />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Criada em</span>
-                <span className="font-medium">{new Date(requestData.createdAt).toLocaleDateString('pt-AO')}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Modalidade</span>
-                <Badge variant="outline" className="capitalize">
-                  {requestData.modality}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Acções</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start gap-2">
-                <Send className="h-4 w-4" />
-                Contactar Suporte
-              </Button>
-              {requestData.status === "confirmed" && (
-                <Button variant="outline" className="w-full justify-start gap-2 text-destructive" onClick={() => setShowCancelModal(true)}>
-                  <XCircle className="h-4 w-4" />
-                  Cancelar Solicitação
+                    <div className="flex items-center gap-3">
+                      <span className="tabular-nums">{row.agreed_price_aoa !== null ? priceText(row.agreed_price_aoa, row.agreed_travel_fee_aoa) : priceText(row.offered_price_aoa, row.offered_travel_fee_aoa)}</span>
+                      <StatusBadge kind="assignment" status={row.status ?? ''} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {manage && waiting && hasRoom && <InviteAnother detail={detail.data} />}
+              {manage && waiting && accepted > 0 && accepted < (request.interpreters_needed ?? 0) && (
+                <Button variant="outline" disabled={reduce.isPending} onClick={() => reduce.mutate(accepted)}>
+                  Seguir com {accepted} {accepted === 1 ? 'intérprete' : 'intérpretes'}
                 </Button>
               )}
+              {manage && request.modality === 'online' && accepted === 0 && waiting && <MeetingLink detail={detail.data} />}
             </CardContent>
           </Card>
+          {assignments.filter((row) => row.thread_id).map((row) => (
+            <RequestChat key={row.id} threadId={row.thread_id ?? ''} title={`Conversa com ${row.interpreter_name ?? 'o intérprete'}`} />
+          ))}
         </div>
+        <RequestTimeline rows={timeline} />
       </div>
-
-      {/* Cancel Modal */}
-      <ConfirmationModal
-        open={showCancelModal}
-        onOpenChange={setShowCancelModal}
-        title="Cancelar Solicitação"
-        description="Tem a certeza que deseja cancelar esta solicitação? Esta acção não pode ser desfeita."
-        confirmLabel="Sim, cancelar"
-        onConfirm={handleCancel}
-        variant="danger"
-      />
     </div>
-  );
+  )
 }

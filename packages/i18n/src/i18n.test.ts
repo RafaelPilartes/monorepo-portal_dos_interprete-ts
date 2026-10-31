@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { APP_TIMEZONE, COMMON_TEXTS, formatAoa, formatDate, formatDateTime, formatTime, luandaDay } from './index'
+import { APP_TIMEZONE, COMMON_TEXTS, formatAoa, formatDate, formatDateTime, formatTime, fromLuandaLocal, luandaDay } from './index'
 
 const NBSP = ' '
 
@@ -46,5 +46,12 @@ describe('Luanda dates (UTC+1, no daylight saving)', () => {
 describe('COMMON_TEXTS', () => {
   it('has the unknown-status label used by StatusBadge', () => {
     expect(COMMON_TEXTS.unknownStatus).toBe('Estado desconhecido')
+  })
+})
+
+describe('fromLuandaLocal', () => {
+  it('reads a Luanda day and time as UTC (one hour behind)', () => {
+    expect(fromLuandaLocal('2026-11-03', '14:30')).toBe('2026-11-03T13:30:00.000Z')
+    expect(fromLuandaLocal('2026-11-03', '00:15')).toBe('2026-11-02T23:15:00.000Z')
   })
 })

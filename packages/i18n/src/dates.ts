@@ -35,3 +35,11 @@ export function luandaDay(date: Date | string): string {
   const get = (type: string) => parts.find((part) => part.type === type)?.value ?? ''
   return `${get('year')}-${get('month')}-${get('day')}`
 }
+
+/**
+ * A day and a time typed in Luanda ("2026-11-03", "14:30") as an instant (ISO, UTC). Luanda is
+ * UTC+01:00 all year (no daylight saving), so the offset is fixed (requests-core.md, "Fuso horário").
+ */
+export function fromLuandaLocal(day: string, time: string): string {
+  return new Date(`${day}T${time}:00+01:00`).toISOString()
+}

@@ -2,16 +2,24 @@ import { useMemo, type ReactNode } from 'react'
 import { useRequiredPortalServices, useSession } from '@portal-dos-interpretes/auth'
 import { DirectoryProvider } from '@portal-dos-interpretes/features/directory/DirectoryContext'
 import { DirectoryRepository } from '@portal-dos-interpretes/features/directory/data'
+import { RequestsRepository } from '@portal-dos-interpretes/features/requests/data'
+import { RequestsProvider } from '@portal-dos-interpretes/features/requests/RequestsContext'
 
-/** The directory for the requester area: reads by RLS, favorites for the signed-in requester (R-DIR-10). */
+/**
+ * The data of the requester area: the directory (favorites for the signed-in requester, R-DIR-10)
+ * and the requests (reads by RLS, writes through the API).
+ */
 export function RequesterDirectory({ children }: { children: ReactNode }) {
-  const { client } = useRequiredPortalServices()
+  const { client, api } = useRequiredPortalServices()
   const session = useSession()
-  const repository = useMemo(() => new DirectoryRepository(client), [client])
+  const directory = useMemo(() => new DirectoryRepository(client), [client])
+  const requests = useMemo(() => new RequestsRepository(client, api), [client, api])
   const account = session.status === 'authenticated' ? session.account : null
   return (
-    <DirectoryProvider repository={repository} accountId={account?.id ?? null} canFavorite={account?.roles.includes('requester') ?? false}>
-      {children}
+    <DirectoryProvider repository={directory} accountId={account?.id ?? null} canFavorite={account?.roles.includes('requester') ?? false}>
+      <RequestsProvider repository={requests} accountId={account?.id ?? ''}>
+        {children}
+      </RequestsProvider>
     </DirectoryProvider>
   )
 }

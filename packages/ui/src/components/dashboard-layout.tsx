@@ -50,6 +50,8 @@ interface DashboardLayoutProps {
   onSignOut?: () => Promise<void>
   /** The left side of the top bar: role switch, organisation context (accounts-and-organizations.md). */
   headerStart?: ReactNode
+  /** Before the theme toggle: the notification bell (notifications.md). */
+  headerEnd?: ReactNode
 }
 
 function isNavGroup(item: NavItem | NavGroup): item is NavGroup {
@@ -78,6 +80,7 @@ export function DashboardLayout({
   settingsHref,
   onSignOut,
   headerStart,
+  headerEnd,
 }: DashboardLayoutProps) {
   // "Sair" and the logo lead to the public site, as before (it is now another app).
   const siteHome = appUrl('site')
@@ -197,6 +200,7 @@ export function DashboardLayout({
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex min-w-0 flex-1 items-center gap-3">{headerStart}</div>
+          {headerEnd}
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeftRight } from 'lucide-react'
 import { useSwitchRole } from '../guards/useSwitchRole'
 import { useRequiredPortalServices } from '../services/PortalServices'
+import { NotificationBell } from './NotificationBell'
 import { useSession, type Account } from '../session/SessionContext'
 
 // The dashboard of a panel app, filled from the session: name, email, the role switch for an
@@ -132,6 +133,7 @@ export function PanelLayout({ navigation, app, profileHref, settingsHref }: {
       {...(settingsHref ? { settingsHref } : {})}
       onSignOut={() => services.session.signOut()}
       headerStart={headerStart}
+      headerEnd={account ? <NotificationBell app={app} /> : undefined}
     />
   )
 }

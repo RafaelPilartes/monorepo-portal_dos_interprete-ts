@@ -3,6 +3,7 @@ import { PanelLayout, PortalServicesProvider, RequireRole, SessionProvider, type
 import AcceptInvite from '@portal-dos-interpretes/auth/pages/AcceptInvite'
 import AcceptTerms from '@portal-dos-interpretes/auth/pages/AcceptTerms'
 import Login from '@portal-dos-interpretes/auth/pages/Login'
+import Notifications from '@portal-dos-interpretes/auth/pages/Notifications'
 import { OrganizationOnboarding, RequesterOnboarding } from '@portal-dos-interpretes/auth/pages/Onboarding'
 import RecoverPassword from '@portal-dos-interpretes/auth/pages/RecoverPassword'
 import Register from '@portal-dos-interpretes/auth/pages/Register'
@@ -61,6 +62,7 @@ export function RequesterAppRoutes() {
         <Route path="reviews" element={<MyReviews />} />
         <Route path="profile" element={<RequesterProfile />} />
         <Route path="settings" element={<RequesterSettings />} />
+        <Route path="notifications" element={<Notifications app="requester" />} />
         <Route path="organization" element={<OrganizationPage />} />
         <Route path="organization/members" element={<OrganizationMembers />} />
         {/* Profile pages inside the requester layout, not the public header (AD-015). */}
