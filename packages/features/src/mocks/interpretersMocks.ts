@@ -1,4 +1,64 @@
-import { InterpreterData } from "../components/InterpreterCard";
+// Mock interpreters, used only by the request wizard until H5 replaces it with the directory.
+export interface InterpreterEducation {
+  degree: string;
+  institution: string;
+  year: string;
+}
+
+export interface InterpreterCertification {
+  name: string;
+  issuer: string;
+  year: string;
+}
+
+export interface InterpreterVideo {
+  title: string;
+  url: string;
+  type: "apresentacao" | "trabalho" | "palestra" | "aula";
+}
+
+export interface InterpreterPublication {
+  title: string;
+  date: string;
+  excerpt: string;
+}
+
+export interface InterpreterReview {
+  author: string;
+  rating: number;
+  comment: string;
+  date: string;
+}
+
+export interface InterpreterAvailability {
+  weekdays: string[];
+  hours: string;
+  notice: string;
+}
+
+export interface InterpreterData {
+  slug: string;
+  name: string;
+  photo: string;
+  specialty: string;
+  specialties?: string[];
+  modality: "presencial" | "online" | "ambos";
+  rating?: number;
+  verified?: boolean;
+  bio?: string;
+  experience?: string;
+  languages?: string[];
+  areas?: string[];
+  education?: InterpreterEducation[];
+  certifications?: InterpreterCertification[];
+  videos?: InterpreterVideo[];
+  publications?: InterpreterPublication[];
+  reviews?: InterpreterReview[];
+  availability?: InterpreterAvailability;
+  minimumHourlyRate?: number;
+  openToNegotiation?: boolean;
+}
+
 
 export const interpreters: InterpreterData[] = [
   {

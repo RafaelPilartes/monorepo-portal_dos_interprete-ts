@@ -12,10 +12,13 @@ import { AppProviders } from '@portal-dos-interpretes/features/app/AppProviders'
 import ArticlePage from '@portal-dos-interpretes/features/pages/ArticlePage'
 import InterpreterArticles from '@portal-dos-interpretes/features/pages/InterpreterArticles'
 import ColleagueProfile from '@portal-dos-interpretes/features/pages/InterpreterProfile'
+import { DirectoryList } from '@portal-dos-interpretes/features/directory/DirectoryList'
+import { PageHeader } from '@portal-dos-interpretes/ui/components/page-header'
 import InterpreterVideos from '@portal-dos-interpretes/features/pages/InterpreterVideos'
 import { AppFooter } from '@portal-dos-interpretes/ui'
 import ModulePlaceholder from '@portal-dos-interpretes/ui/components/module-placeholder'
 import NotFound from '@portal-dos-interpretes/ui/components/not-found'
+import { InterpreterDirectory } from '@/directory'
 import { navigation } from '@/navigation'
 import InterpreterAvailability from '@/pages/dashboard/interpreter/InterpreterAvailability'
 import InterpreterDocuments from '@/pages/dashboard/interpreter/InterpreterDocuments'
@@ -52,11 +55,23 @@ const placeholders: { path: string; title: string; description: string }[] = [
   { path: 'support', title: 'Suporte e Ouvidoria', description: LATER },
 ]
 
+/** /interpreters: the colleagues in the directory. */
+function Colleagues() {
+  return (
+    <>
+      <PageHeader title="Lista de profissionais" description="Os colegas que estão no directório." />
+      <DirectoryList />
+    </>
+  )
+}
+
 /** The interpreter area: a session with the interpreter role (R-ACC-02), in the panel layout. */
 function InterpreterArea() {
   return (
     <RequireRole role="interpreter">
-      <PanelLayout navigation={navigation} app="interpreter" profileHref="/profile" settingsHref="/settings" />
+      <InterpreterDirectory>
+        <PanelLayout navigation={navigation} app="interpreter" profileHref="/profile" settingsHref="/settings" />
+      </InterpreterDirectory>
     </RequireRole>
   )
 }
@@ -90,11 +105,8 @@ export function InterpreterAppRoutes() {
         {placeholders.map(({ path, title, description }) => (
           <Route key={path} path={path} element={<ModulePlaceholder title={title} description={description} />} />
         ))}
-        {/* The profile pages link back to the list; the colleagues' directory arrives in H4 (AD-017). */}
-        <Route
-          path="interpreters"
-          element={<ModulePlaceholder title="Lista de Profissionais" description={LATER} />}
-        />
+        {/* The colleagues' directory (interpreter-profile-and-directory.md). */}
+        <Route path="interpreters" element={<Colleagues />} />
         {/* Colleagues' public profiles (architecture.md §3: /interpreters/:slug). */}
         <Route path="interpreters/:slug" element={<ColleagueProfile />} />
         <Route path="interpreters/:slug/videos" element={<InterpreterVideos />} />

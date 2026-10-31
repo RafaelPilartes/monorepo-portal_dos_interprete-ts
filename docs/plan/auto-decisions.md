@@ -267,3 +267,14 @@
   7. **Números grandes como números.** A API devolve `bigint` (preços em Kz) como número JSON (`apps/api/src/lib/db.ts`): os valores do produto ficam muito abaixo de 2^53.
   8. **Preços do seed fictícios.** Os 7 serviços do seed (`packages/db/seed/0004-catalogs.sql`) têm preços inventados, só para desenvolvimento. Os preços reais vêm da Academia; o runbook do passo Z tem de dizer que o seed não corre em produção, ou que os preços se revêem antes de abrir.
 - **Marcas:** [RISCO] dinheiro (8: preços fictícios não podem chegar a produção; 5: última escrita ganha).
+
+## AD-033 — Decisões do passo H4 (perfil do intérprete e directório)
+- **Passo:** H4
+- **Registo:**
+  1. **`R-DIR-01` numa vista.** A regra do perfil completo está escrita uma vez, na vista `directory.profile_status` (o que falta, por chave: `bio`, `modality`, `languages`, `services`, `city`). As funções `directory.is_profile_complete` e `profile_missing` (para a API), a vista `directory.my_profile_status` (o ecrã `/profile` do próprio) e as vistas do directório leem-na. A regra da fundação ("a sessão só corre funções de `auth_helper`; o visitante não corre nenhuma") mantém-se, por isso a chamada RPC de `api.md` §16 passa a ser a leitura de `my_profile_status`.
+  2. **"Serviço activo"** conta só se o serviço do intérprete e o do catálogo estiverem activos. Uma língua desactivada no catálogo continua a contar para o perfil completo (a spec só a tira da elegibilidade).
+  3. **Quem lê o perfil (`R-DIR-04`)** decide-se numa função só, `auth_helper.can_read_interpreter`, usada por todas as políticas do perfil e das suas partes.
+  4. **Escritas do próprio** directas, com concessões de coluna; o teste da fundação passa a listar essas colunas e as tabelas onde a sessão pode apagar as próprias linhas.
+  5. **Fora do H4:** `directory.is_eligible_for` (`R-DIR-09`, critério 4) precisa dos pedidos e passa para o H5. A média das avaliações (`R-DIR-05`), os cancelamentos tardios (`R-DIR-06`) e o selo chegam com as suas tabelas; até lá `public_listing` tem `is_verified = false`, `rating_average = NULL` e `rating_count = 0`, e o perfil mostra "Ainda sem avaliações". "Denunciar" chega com as denúncias da comunidade; "Pedir este intérprete" com o assistente do H5.
+  6. **Fotografia e capas** carregam-se directamente para os buckets públicos `avatars` e `interpreter-media`, numa pasta com o id da conta (política de Storage: só o dono escreve).
+- **Marcas:** [RISCO] dados pessoais (os contactos do intérprete ficam visíveis a qualquer conta activa, como decide `D-51`).

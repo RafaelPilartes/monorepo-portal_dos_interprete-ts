@@ -9,6 +9,8 @@ export interface DatabaseErrorInput {
   message?: string | undefined
   constraint?: string | undefined
   table?: string | undefined
+  /** The column of a NOT NULL refusal (pg gives it as a field). */
+  column?: string | undefined
   /** "<field>:<reason>" when a SQL function refuses one form value (RAISE ... HINT). */
   hint?: string | undefined
 }
@@ -29,6 +31,7 @@ export const UNIQUE_FIELDS: Readonly<Record<string, { field: string; message: st
   languages_code_key: { field: 'code', message: 'Já existe uma língua com este código.' },
   specialties_slug_key: { field: 'slug', message: 'Já existe uma especialidade com este identificador.' },
   services_slug_key: { field: 'slug', message: 'Já existe um serviço com este identificador.' },
+  availability_exceptions_interpreter_id_day_key: { field: 'day', message: 'Este dia já está bloqueado.' },
 }
 
 /** What the person reads for a value a SQL function refused, by the reason in its HINT. */
@@ -90,6 +93,11 @@ export function answerForValueError(error: DatabaseErrorInput, fieldMessage: str
     if (table && constraint.startsWith(`${table}_`) && COLUMN_CHECK.test(constraint)) {
       return { code: 'VALIDATION_FAILED', details: { [constraint.slice(table.length + 1, -'_check'.length)]: fieldMessage } }
     }
+  }
+  // A required value left empty: the column is the field (pg gives it; PostgREST names it in the message).
+  if (error.code === '23502') {
+    const column = error.column ?? /column "([^"]+)"/.exec(error.message ?? '')?.[1]
+    if (column) return { code: 'VALIDATION_FAILED', details: { [column]: FIELD_REASONS.required ?? fieldMessage } }
   }
   // A value of the wrong type for its column (e.g. text where a number goes).
   if (error.code === '22P02' || error.code === '22003') return { code: 'VALIDATION_FAILED' }

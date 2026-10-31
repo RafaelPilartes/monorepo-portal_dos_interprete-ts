@@ -1,259 +1,145 @@
-import { useState } from "react";
-import { PageHeader } from "@portal-dos-interpretes/ui/components/page-header";
-import { ProfileSectionEditor } from "@/components/dashboard/profile/ProfileSectionEditor";
-import { ProfilePreviewCard } from "@/components/dashboard/profile/ProfilePreviewCard";
-import { TagList } from "@/components/dashboard/profile/EditableList";
-import { MediaUploader } from "@/components/dashboard/profile/MediaUploader";
-import { Input } from "@portal-dos-interpretes/ui/components/input";
-import { Label } from "@portal-dos-interpretes/ui/components/label";
-import { Textarea } from "@portal-dos-interpretes/ui/components/textarea";
-import { Switch } from "@portal-dos-interpretes/ui/components/switch";
-import { Button } from "@portal-dos-interpretes/ui/components/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@portal-dos-interpretes/ui/components/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@portal-dos-interpretes/ui/components/select";
-import { Save, Eye, ExternalLink } from "lucide-react";
-import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { useRef, useState } from 'react'
+import { Button } from '@portal-dos-interpretes/ui/components/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@portal-dos-interpretes/ui/components/card'
+import { Input } from '@portal-dos-interpretes/ui/components/input'
+import { Label } from '@portal-dos-interpretes/ui/components/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@portal-dos-interpretes/ui/components/select'
+import { Switch } from '@portal-dos-interpretes/ui/components/switch'
+import { Textarea } from '@portal-dos-interpretes/ui/components/textarea'
+import { Camera } from 'lucide-react'
+import { Field, numberOrNull, ProfileShell, type MyProfile } from '@/components/profile/ProfileShell'
+import { failureOf, useProfileWrite } from '@/viewModels/profile.viewmodel'
 
-const initialProfile = {
-  name: "Maria Santos",
-  photo: "/placeholder.svg",
-  coverPhoto: "",
-  specialty: "Intérprete de LGA",
-  bio: "Intérprete profissional de Língua Gestual Angolana com mais de 10 anos de experiência em contextos médicos, jurídicos e corporativos. Certificada pelo Instituto Nacional de Surdos.",
-  languages: ["Língua Gestual Angolana", "Português", "Inglês"],
-  specialties: ["Saúde", "Jurídico", "Corporativo", "Educação"],
-  modality: "ambos" as const,
-  minimumHourlyRate: 5000,
-  openToNegotiation: true,
-  verified: true,
-  rating: 4.8,
-  availableForOpenRequests: true,
-};
+// /profile/overview: photo, biography (with its counter), years of experience, modality, city,
+// minimum hourly rate, negotiation, travel fee (D-17). The database checks the values.
 
-export default function InterpreterProfileOverview() {
-  const [profile, setProfile] = useState(initialProfile);
-  const [saving, setSaving] = useState(false);
+const BIO_MIN = 80
 
-  const handleSave = async () => {
-    setSaving(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setSaving(false);
-    toast.success("Perfil atualizado com sucesso!");
-  };
-
+function Photo({ profile }: { profile: MyProfile }) {
+  const input = useRef<HTMLInputElement>(null)
+  const upload = useProfileWrite((repository, accountId, file: File) => repository.updateAvatar(accountId, file), 'Fotografia actualizada.')
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Visão Geral do Perfil"
-        description="Gerencie as informações principais exibidas no seu perfil público"
-        action={
-          <div className="flex gap-2">
-            <Button variant="outline" asChild>
-              <Link to={`/interpreters/maria-santos`} target="_blank">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Ver Perfil Público
-              </Link>
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              <Save className="h-4 w-4 mr-2" />
-              {saving ? "A guardar..." : "Guardar Alterações"}
-            </Button>
-          </div>
-        }
-      />
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Preview Card */}
-        <div className="lg:col-span-1 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Eye className="h-4 w-4" />
-                Pré-visualização
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ProfilePreviewCard
-                name={profile.name}
-                photo={profile.photo}
-                specialty={profile.specialty}
-                modality={profile.modality}
-                rating={profile.rating}
-                verified={profile.verified}
-                minimumHourlyRate={profile.minimumHourlyRate}
-                openToNegotiation={profile.openToNegotiation}
-                languages={profile.languages}
-                specialties={profile.specialties}
-              />
-            </CardContent>
-          </Card>
+    <div className="flex items-center gap-4">
+      {profile.details.avatarUrl ? (
+        <img src={profile.details.avatarUrl} alt="A tua fotografia" className="h-20 w-20 rounded-full object-cover" />
+      ) : (
+        <div aria-hidden="true" className="flex h-20 w-20 items-center justify-center rounded-full bg-muted text-2xl font-semibold text-muted-foreground">
+          {profile.details.fullName.charAt(0).toUpperCase()}
         </div>
-
-        {/* Edit Form */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Photos */}
-          <ProfileSectionEditor title="Fotografias" description="Foto de perfil e imagem de capa">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <MediaUploader
-                type="image"
-                label="Foto de Perfil"
-                value={profile.photo !== "/placeholder.svg" ? profile.photo : undefined}
-                onChange={(url) => setProfile({ ...profile, photo: url })}
-                onRemove={() => setProfile({ ...profile, photo: "/placeholder.svg" })}
-              />
-              <MediaUploader
-                type="image"
-                label="Foto de Capa"
-                value={profile.coverPhoto}
-                onChange={(url) => setProfile({ ...profile, coverPhoto: url })}
-                onRemove={() => setProfile({ ...profile, coverPhoto: "" })}
-              />
-            </div>
-          </ProfileSectionEditor>
-
-          {/* Basic Info */}
-          <ProfileSectionEditor title="Informações Básicas" description="Dados principais do seu perfil">
-            <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Nome Profissional</Label>
-                  <Input
-                    value={profile.name}
-                    onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Título/Especialidade Principal</Label>
-                  <Input
-                    value={profile.specialty}
-                    onChange={(e) => setProfile({ ...profile, specialty: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Biografia</Label>
-                <Textarea
-                  value={profile.bio}
-                  onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                  rows={4}
-                  placeholder="Descreva a sua experiência e especialidades..."
-                />
-                <p className="text-xs text-muted-foreground">
-                  {profile.bio.length}/500 caracteres
-                </p>
-              </div>
-            </div>
-          </ProfileSectionEditor>
-
-          {/* Modality & Pricing */}
-          <ProfileSectionEditor title="Modalidade e Preços" description="Como trabalha e valores de referência">
-            <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Modalidade de Trabalho</Label>
-                  <Select
-                    value={profile.modality}
-                    onValueChange={(v) => setProfile({ ...profile, modality: v as typeof profile.modality })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="presencial">Presencial</SelectItem>
-                      <SelectItem value="online">Online</SelectItem>
-                      <SelectItem value="ambos">Híbrido (Ambos)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Preço Mínimo por Hora (Kz)</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={profile.minimumHourlyRate}
-                    onChange={(e) =>
-                      setProfile({ ...profile, minimumHourlyRate: Number(e.target.value) })
-                    }
-                    placeholder="Ex: 5000"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Valor de referência. Deixe 0 para não exibir.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div>
-                  <p className="font-medium">Aberto a Negociação</p>
-                  <p className="text-sm text-muted-foreground">
-                    Indicar que está disponível para negociar o valor
-                  </p>
-                </div>
-                <Switch
-                  checked={profile.openToNegotiation}
-                  onCheckedChange={(checked) =>
-                    setProfile({ ...profile, openToNegotiation: checked })
-                  }
-                />
-              </div>
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div>
-                  <p className="font-medium">Aceitar Solicitações Abertas</p>
-                  <p className="text-sm text-muted-foreground">
-                    Receber notificações de solicitações abertas compatíveis
-                  </p>
-                </div>
-                <Switch
-                  checked={profile.availableForOpenRequests}
-                  onCheckedChange={(checked) =>
-                    setProfile({ ...profile, availableForOpenRequests: checked })
-                  }
-                />
-              </div>
-            </div>
-          </ProfileSectionEditor>
-
-          {/* Languages */}
-          <ProfileSectionEditor title="Idiomas" description="Idiomas em que trabalha">
-            <TagList
-              tags={profile.languages}
-              onAdd={(lang) =>
-                setProfile({ ...profile, languages: [...profile.languages, lang] })
-              }
-              onRemove={(lang) =>
-                setProfile({
-                  ...profile,
-                  languages: profile.languages.filter((l) => l !== lang),
-                })
-              }
-              placeholder="Adicionar idioma..."
-            />
-          </ProfileSectionEditor>
-
-          {/* Specialties */}
-          <ProfileSectionEditor title="Especialidades" description="Áreas de atuação">
-            <TagList
-              tags={profile.specialties}
-              onAdd={(spec) =>
-                setProfile({ ...profile, specialties: [...profile.specialties, spec] })
-              }
-              onRemove={(spec) =>
-                setProfile({
-                  ...profile,
-                  specialties: profile.specialties.filter((s) => s !== spec),
-                })
-              }
-              placeholder="Adicionar especialidade..."
-            />
-          </ProfileSectionEditor>
-        </div>
+      )}
+      <div className="space-y-1">
+        <input
+          ref={input}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="sr-only"
+          aria-label="Escolher fotografia"
+          onChange={(event) => {
+            const file = event.target.files?.[0]
+            if (file) upload.mutate(file)
+            event.target.value = ''
+          }}
+        />
+        <Button variant="outline" size="sm" disabled={upload.isPending} onClick={() => input.current?.click()}>
+          <Camera className="h-4 w-4" />{upload.isPending ? 'A carregar…' : 'Mudar fotografia'}
+        </Button>
+        <p className="text-xs text-muted-foreground">JPG, PNG ou WebP, até 2 MB.</p>
       </div>
     </div>
-  );
+  )
+}
+
+function OverviewForm({ profile }: { profile: MyProfile }) {
+  const row = profile.details.profile
+  const [values, setValues] = useState({
+    bio: row.bio ?? '',
+    years_experience: row.years_experience?.toString() ?? '',
+    modality: row.modality ?? '',
+    city: row.city ?? '',
+    minimum_hourly_rate_aoa: row.minimum_hourly_rate_aoa?.toString() ?? '',
+    accepts_negotiation: row.accepts_negotiation,
+    travel_fee_aoa: row.travel_fee_aoa?.toString() ?? '',
+  })
+  const save = useProfileWrite((repository, accountId, input: typeof values) => repository.updateProfile(accountId, {
+    bio: input.bio.trim() || null,
+    years_experience: numberOrNull(input.years_experience),
+    modality: input.modality || null,
+    city: input.city.trim() || null,
+    minimum_hourly_rate_aoa: numberOrNull(input.minimum_hourly_rate_aoa),
+    accepts_negotiation: input.accepts_negotiation,
+    travel_fee_aoa: numberOrNull(input.travel_fee_aoa),
+  }))
+  const errors = save.isError ? failureOf(save.error).fields : {}
+  const set = <K extends keyof typeof values>(key: K, value: (typeof values)[K]) => setValues((current) => ({ ...current, [key]: value }))
+  const bioLength = values.bio.trim().length
+  const inPerson = values.modality === 'in_person' || values.modality === 'both'
+
+  return (
+    <form className="space-y-6" onSubmit={(event) => { event.preventDefault(); save.mutate(values) }}>
+      <Card>
+        <CardHeader><CardTitle>Sobre ti</CardTitle></CardHeader>
+        <CardContent className="space-y-5">
+          <Photo profile={profile} />
+          <Field
+            id="bio"
+            label="Biografia"
+            error={errors.bio}
+            hint={<span className={bioLength < BIO_MIN ? 'text-warning' : undefined}>{bioLength} caracteres{bioLength < BIO_MIN ? ` (mínimo ${BIO_MIN} para apareceres no directório)` : ''}</span>}
+          >
+            <Textarea id="bio" rows={6} value={values.bio} onChange={(e) => set('bio', e.target.value)} />
+          </Field>
+          <Field id="years_experience" label="Anos de experiência" error={errors.years_experience}>
+            <Input id="years_experience" type="number" min={0} max={70} inputMode="numeric" value={values.years_experience} onChange={(e) => set('years_experience', e.target.value)} className="max-w-32" />
+          </Field>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Onde trabalhas</CardTitle></CardHeader>
+        <CardContent className="grid gap-5 sm:grid-cols-2">
+          <Field id="modality" label="Modalidade" error={errors.modality}>
+            <Select value={values.modality} onValueChange={(value) => set('modality', value)}>
+              <SelectTrigger id="modality"><SelectValue placeholder="Escolhe" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="in_person">Presencial</SelectItem>
+                <SelectItem value="online">Online</SelectItem>
+                <SelectItem value="both">Presencial e online</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field id="city" label="Cidade" error={errors.city} hint={inPerson ? 'Obrigatória para quem trabalha presencialmente.' : undefined}>
+            <Input id="city" value={values.city} onChange={(e) => set('city', e.target.value)} />
+          </Field>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Tarifas</CardTitle></CardHeader>
+        <CardContent className="grid gap-5 sm:grid-cols-2">
+          <Field id="minimum_hourly_rate_aoa" label="Tarifa mínima por hora (Kz)" error={errors.minimum_hourly_rate_aoa} hint="Indicativa; aparece no teu perfil.">
+            <Input id="minimum_hourly_rate_aoa" type="number" min={0} inputMode="numeric" value={values.minimum_hourly_rate_aoa} onChange={(e) => set('minimum_hourly_rate_aoa', e.target.value)} />
+          </Field>
+          <Field id="travel_fee_aoa" label="Taxa de deslocação (Kz)" error={errors.travel_fee_aoa}>
+            <Input id="travel_fee_aoa" type="number" min={0} inputMode="numeric" value={values.travel_fee_aoa} onChange={(e) => set('travel_fee_aoa', e.target.value)} />
+          </Field>
+          <div className="flex items-center justify-between gap-3 sm:col-span-2">
+            <Label htmlFor="accepts_negotiation">Aceito negociar o preço</Label>
+            <Switch id="accepts_negotiation" checked={values.accepts_negotiation} onCheckedChange={(value) => set('accepts_negotiation', value)} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button type="submit" disabled={save.isPending}>{save.isPending ? 'A guardar…' : 'Guardar'}</Button>
+      </div>
+    </form>
+  )
+}
+
+export default function InterpreterProfileOverview() {
+  return (
+    <ProfileShell title="Visão geral" description="O essencial do teu perfil.">
+      {(profile) => <OverviewForm profile={profile} />}
+    </ProfileShell>
+  )
 }

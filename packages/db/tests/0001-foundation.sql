@@ -54,9 +54,12 @@ BEGIN
     CROSS JOIN (VALUES ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE')) AS x (privilege)
    WHERE c.relkind IN ('r', 'p', 'v', 'm')
      AND n.nspname = ANY (util.project_schemas())
-     AND has_table_privilege(r.role, c.oid, x.privilege);
+     AND has_table_privilege(r.role, c.oid, x.privilege)
+     -- H4: the owner deletes its own rows of these tables directly (RLS decides which).
+     AND NOT (r.role = 'authenticated' AND x.privilege = 'DELETE'
+              AND format('%I.%I', n.nspname, c.relname) = ANY (ARRAY['directory.interpreter_languages', 'directory.interpreter_specialties', 'directory.interpreter_services', 'directory.availability_rules', 'directory.availability_exceptions', 'directory.education', 'directory.experiences', 'directory.certifications', 'directory.media_items', 'directory.articles', 'directory.favorites']));
   IF v_open IS NOT NULL THEN RAISE EXCEPTION 'FAIL - tables are born closed: %', v_open; END IF;
-  RAISE NOTICE 'ok - anon and authenticated have no table-level INSERT, UPDATE, DELETE or TRUNCATE';
+  RAISE NOTICE 'ok - anon and authenticated have no table-level INSERT, UPDATE, DELETE or TRUNCATE beyond the listed own-row deletes';
 END $$;
 
 -- Column grants: the complete list of what the session may write. A step that grants a column
@@ -77,7 +80,88 @@ DECLARE v_unexpected text; v_expected text[] := ARRAY['authenticated UPDATE noti
     'authenticated UPDATE identity.interpreter_profiles.facebook_url',
     'authenticated UPDATE identity.organizations.name', 'authenticated UPDATE identity.organizations.sector',
     'authenticated UPDATE identity.organizations.address', 'authenticated UPDATE identity.organizations.city',
-    'authenticated UPDATE identity.organizations.website_url', 'authenticated UPDATE identity.organizations.phone'];
+    'authenticated UPDATE identity.organizations.website_url', 'authenticated UPDATE identity.organizations.phone',
+    -- H4 (data-model.md §3): the interpreter's own rows and the requester's favorites; never a status.
+    'authenticated INSERT directory.interpreter_languages.interpreter_id',
+    'authenticated INSERT directory.interpreter_languages.language_id',
+    'authenticated INSERT directory.interpreter_languages.level',
+    'authenticated UPDATE directory.interpreter_languages.level',
+    'authenticated INSERT directory.interpreter_specialties.interpreter_id',
+    'authenticated INSERT directory.interpreter_specialties.specialty_id',
+    'authenticated INSERT directory.interpreter_services.interpreter_id',
+    'authenticated INSERT directory.interpreter_services.service_id',
+    'authenticated INSERT directory.interpreter_services.price_aoa',
+    'authenticated INSERT directory.interpreter_services.description',
+    'authenticated INSERT directory.interpreter_services.active',
+    'authenticated UPDATE directory.interpreter_services.price_aoa',
+    'authenticated UPDATE directory.interpreter_services.description',
+    'authenticated UPDATE directory.interpreter_services.active',
+    'authenticated INSERT directory.availability_rules.interpreter_id',
+    'authenticated INSERT directory.availability_rules.weekday',
+    'authenticated INSERT directory.availability_rules.start_time',
+    'authenticated INSERT directory.availability_rules.end_time',
+    'authenticated UPDATE directory.availability_rules.weekday',
+    'authenticated UPDATE directory.availability_rules.start_time',
+    'authenticated UPDATE directory.availability_rules.end_time',
+    'authenticated INSERT directory.availability_exceptions.interpreter_id',
+    'authenticated INSERT directory.availability_exceptions.day',
+    'authenticated INSERT directory.availability_exceptions.note',
+    'authenticated UPDATE directory.availability_exceptions.note',
+    'authenticated INSERT directory.education.interpreter_id',
+    'authenticated INSERT directory.education.institution',
+    'authenticated INSERT directory.education.degree', 'authenticated INSERT directory.education.field',
+    'authenticated INSERT directory.education.start_year',
+    'authenticated INSERT directory.education.end_year',
+    'authenticated INSERT directory.education.is_current',
+    'authenticated INSERT directory.education.certificate_url',
+    'authenticated UPDATE directory.education.institution',
+    'authenticated UPDATE directory.education.degree', 'authenticated UPDATE directory.education.field',
+    'authenticated UPDATE directory.education.start_year',
+    'authenticated UPDATE directory.education.end_year',
+    'authenticated UPDATE directory.education.is_current',
+    'authenticated UPDATE directory.education.certificate_url',
+    'authenticated INSERT directory.experiences.interpreter_id',
+    'authenticated INSERT directory.experiences.role',
+    'authenticated INSERT directory.experiences.organization',
+    'authenticated INSERT directory.experiences.start_date',
+    'authenticated INSERT directory.experiences.end_date',
+    'authenticated INSERT directory.experiences.is_current',
+    'authenticated INSERT directory.experiences.description',
+    'authenticated UPDATE directory.experiences.role',
+    'authenticated UPDATE directory.experiences.organization',
+    'authenticated UPDATE directory.experiences.start_date',
+    'authenticated UPDATE directory.experiences.end_date',
+    'authenticated UPDATE directory.experiences.is_current',
+    'authenticated UPDATE directory.experiences.description',
+    'authenticated INSERT directory.certifications.interpreter_id',
+    'authenticated INSERT directory.certifications.name',
+    'authenticated INSERT directory.certifications.issuer',
+    'authenticated INSERT directory.certifications.issued_on',
+    'authenticated INSERT directory.certifications.expires_on',
+    'authenticated INSERT directory.certifications.credential_url',
+    'authenticated UPDATE directory.certifications.name',
+    'authenticated UPDATE directory.certifications.issuer',
+    'authenticated UPDATE directory.certifications.issued_on',
+    'authenticated UPDATE directory.certifications.expires_on',
+    'authenticated UPDATE directory.certifications.credential_url',
+    'authenticated INSERT directory.media_items.interpreter_id',
+    'authenticated INSERT directory.media_items.kind', 'authenticated INSERT directory.media_items.title',
+    'authenticated INSERT directory.media_items.url',
+    'authenticated INSERT directory.media_items.thumbnail_path',
+    'authenticated INSERT directory.media_items.description',
+    'authenticated INSERT directory.media_items.tags', 'authenticated UPDATE directory.media_items.kind',
+    'authenticated UPDATE directory.media_items.title', 'authenticated UPDATE directory.media_items.url',
+    'authenticated UPDATE directory.media_items.thumbnail_path',
+    'authenticated UPDATE directory.media_items.description',
+    'authenticated UPDATE directory.media_items.tags',
+    'authenticated INSERT directory.articles.interpreter_id', 'authenticated INSERT directory.articles.slug',
+    'authenticated INSERT directory.articles.title', 'authenticated INSERT directory.articles.summary',
+    'authenticated INSERT directory.articles.body', 'authenticated INSERT directory.articles.cover_path',
+    'authenticated INSERT directory.articles.tags', 'authenticated UPDATE directory.articles.title',
+    'authenticated UPDATE directory.articles.summary', 'authenticated UPDATE directory.articles.body',
+    'authenticated UPDATE directory.articles.cover_path', 'authenticated UPDATE directory.articles.tags',
+    'authenticated INSERT directory.favorites.requester_account_id',
+    'authenticated INSERT directory.favorites.interpreter_id'];
 BEGIN
   SELECT string_agg(entry, ', ') INTO v_unexpected FROM (
     SELECT format('%s %s %s.%s.%s', pg_get_userbyid(a.grantee), a.privilege_type, n.nspname, c.relname, att.attname) AS entry

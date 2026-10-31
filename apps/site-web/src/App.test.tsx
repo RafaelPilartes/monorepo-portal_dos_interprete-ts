@@ -11,7 +11,7 @@ function LocationProbe() {
 }
 
 function fakeData(services: PublicService[]): SiteData {
-  return { services: { list: async () => ({ data: services, pagination: { limit: null, offset: 0, count: services.length } }), getById: async () => null, getOneByField: async () => null, listenById: () => () => undefined } as unknown as SiteData['services'] }
+  return { services: { list: async () => ({ data: services, pagination: { limit: null, offset: 0, count: services.length } }), getById: async () => null, getOneByField: async () => null, listenById: () => () => undefined } as unknown as SiteData['services'], directory: null }
 }
 
 function renderAt(path: string, data: SiteData | null = null) {

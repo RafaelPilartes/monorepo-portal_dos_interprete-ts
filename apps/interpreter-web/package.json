@@ -23,7 +23,9 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.1",
-    "sonner": "^1.7.4"
+    "sonner": "^1.7.4",
+    "@portal-dos-interpretes/db-types": "workspace:*",
+    "@tanstack/react-query": "^5.83.0"
   },
   "devDependencies": {
     "@portal-dos-interpretes/config": "workspace:*",

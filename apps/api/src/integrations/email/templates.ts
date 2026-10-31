@@ -36,6 +36,11 @@ const TEMPLATES: Partial<Record<string, Template>> = {
     subject: 'A tua conta no Portal dos Intérpretes foi suspensa',
     text: `Olá,\n\nA tua conta no Portal dos Intérpretes foi suspensa pela equipa da plataforma.${text(payload.reason) ? `\n\nMotivo: ${text(payload.reason)}` : ''}\n\nSe achas que é um engano, responde a este email ou contacta o suporte da Academia Grace Mind.`,
   }),
+  // R-DIR-07
+  content_removed: (payload) => ({
+    subject: 'A equipa removeu um conteúdo teu do Portal dos Intérpretes',
+    text: `Olá,\n\nA equipa da plataforma removeu ${text(payload.kind) === 'article' ? 'o teu artigo' : 'o teu vídeo'}${text(payload.title) ? ` «${text(payload.title)}»` : ''}.${text(payload.reason) ? `\n\nMotivo: ${text(payload.reason)}` : ''}\n\nO conteúdo deixou de estar visível para os outros. Se quiseres, podes publicar um novo.`,
+  }),
   // R-PRIV-02
   terms_updated: (payload) => ({
     subject: 'Actualizámos os documentos legais do Portal dos Intérpretes',

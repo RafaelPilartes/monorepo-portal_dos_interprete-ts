@@ -7,13 +7,14 @@ SELECT p.id, p.full_name, p.avatar_path
   FROM identity.profiles AS p
  WHERE auth_helper.is_active() AND p.status <> 'anonymized';
 
--- The interpreters the directory shows (R-ACC-05: a suspended or anonymized account leaves it at
--- once). Minimal until H4, which redefines it with profile completeness (R-DIR-01).
+-- The interpreters the directory shows to an active account (R-DIR-03): complete profile and an
+-- active account; a suspended or anonymized account leaves it at once (R-ACC-05).
 CREATE OR REPLACE VIEW directory.listed_interpreters WITH (security_invoker = false) AS
 SELECT i.account_id, i.slug, p.full_name, p.avatar_path, i.city, i.modality
   FROM identity.interpreter_profiles AS i
   JOIN identity.profiles AS p ON p.id = i.account_id
- WHERE p.status = 'active' AND (SELECT auth_helper.is_active());
+ JOIN directory.profile_status AS ps ON ps.account_id = i.account_id
+ WHERE p.status = 'active' AND cardinality(ps.missing) = 0 AND (SELECT auth_helper.is_active());
 
 -- /requesters and /interpreters of admin-web (accounts-and-organizations.md): accounts with their
 -- email and roles, for the team only.

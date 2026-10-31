@@ -16,6 +16,7 @@ import InterpreterProfile from '@portal-dos-interpretes/features/pages/Interpret
 import InterpreterVideos from '@portal-dos-interpretes/features/pages/InterpreterVideos'
 import { AppFooter } from '@portal-dos-interpretes/ui'
 import NotFound from '@portal-dos-interpretes/ui/components/not-found'
+import { RequesterDirectory } from '@/directory'
 import { navigation } from '@/navigation'
 import OrganizationMembers from '@/pages/organization/OrganizationMembers'
 import OrganizationPage from '@/pages/organization/OrganizationPage'
@@ -34,7 +35,9 @@ import RequesterSettings from '@/pages/dashboard/requester/RequesterSettings'
 function RequesterArea() {
   return (
     <RequireRole role="requester">
-      <PanelLayout navigation={navigation} app="requester" profileHref="/profile" settingsHref="/settings" />
+      <RequesterDirectory>
+        <PanelLayout navigation={navigation} app="requester" profileHref="/profile" settingsHref="/settings" />
+      </RequesterDirectory>
     </RequireRole>
   )
 }

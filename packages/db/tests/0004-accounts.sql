@@ -67,6 +67,13 @@ BEGIN
   IF v_code IS DISTINCT FROM 'ROLE_ALREADY_EXISTS' THEN RAISE EXCEPTION 'FAIL - a role is created once (got %)', v_code; END IF;
   v_interp := identity.become_interpreter('00000000-0000-4000-8000-0000000000b4', 'Bio', 'Benguela');
   IF v_interp.slug <> 'ivo-goncalves-interprete' THEN RAISE EXCEPTION 'FAIL - the slug comes from the name (got %)', v_interp.slug; END IF;
+  -- Since H4 the directory lists complete profiles only (R-DIR-01): Ivo's is completed here.
+  UPDATE identity.interpreter_profiles SET bio = repeat('Intérprete de Língua Gestual Angolana. ', 3), modality = 'online'
+   WHERE account_id = '00000000-0000-4000-8000-0000000000b4';
+  INSERT INTO directory.interpreter_languages (interpreter_id, language_id, level)
+  SELECT '00000000-0000-4000-8000-0000000000b4', id, 'fluent' FROM catalog.languages ORDER BY sort LIMIT 1;
+  INSERT INTO directory.interpreter_services (interpreter_id, service_id, price_aoa)
+  SELECT '00000000-0000-4000-8000-0000000000b4', id, 9000 FROM catalog.services WHERE active ORDER BY sort LIMIT 1;
   -- A second interpreter with the same name gets the next free slug.
   UPDATE identity.profiles SET full_name = 'Ivo Gonçalves Intérprete' WHERE id = '00000000-0000-4000-8000-0000000000b2';
   v_interp := identity.become_interpreter('00000000-0000-4000-8000-0000000000b2', NULL, NULL);

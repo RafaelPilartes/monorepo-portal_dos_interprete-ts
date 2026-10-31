@@ -5,7 +5,7 @@ import { AnimatedSection } from '@portal-dos-interpretes/ui/components/animated-
 import { InterpretersCarousel } from '@/components/InterpretersCarousel'
 import { VideoTestimonials } from '@/components/VideoTestimonials'
 import { AboutSection } from '@/components/AboutSection'
-import { interpreters } from '@portal-dos-interpretes/features/mocks/interpretersMocks'
+import { useHasDirectory } from '@/data/catalog'
 import heroBgImage from '@portal-dos-interpretes/ui/assets/hero-bg.png'
 import heroFgImage from '@portal-dos-interpretes/ui/assets/hero-fg.png'
 import {
@@ -127,6 +127,7 @@ const partners = [
 ]
 
 export default function PortalHome() {
+  const hasDirectory = useHasDirectory()
   return (
     <div className="flex flex-col bg-background selection:bg-primary/20">
       {/* Hero Section */}
@@ -365,11 +366,10 @@ export default function PortalHome() {
       </section>
 
       {/* Featured Interpreters Carousel */}
-      <InterpretersCarousel
-        interpreters={interpreters}
+      {hasDirectory && <InterpretersCarousel
         title="O Talento Nacional"
         subtitle="Conheça alguns dos profissionais de LGA que certificam a nossa qualidade"
-      />
+      />}
 
       {/* Values Section (Upgraded layout) */}
       <section className="section-padding bg-muted/20 border-y border-border/50">

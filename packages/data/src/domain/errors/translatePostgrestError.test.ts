@@ -16,6 +16,12 @@ describe('translatePostgrestError for refused values', () => {
     expect(Object.keys(error.details ?? {})).toEqual(['website_url'])
   })
 
+  it('an empty required value is "Preenche este campo." on its field (H4)', () => {
+    const error = translatePostgrestError({ code: '23502', message: 'null value in column "price_aoa" of relation "interpreter_services" violates not-null constraint' }, 'directory.interpreter_services')
+    expect(error.code).toBe('VALIDATION_FAILED')
+    expect(error.details).toEqual({ price_aoa: 'Preenche este campo.' })
+  })
+
   it('anything else stays INTERNAL_ERROR', () => {
     const log = console.error
     console.error = () => undefined

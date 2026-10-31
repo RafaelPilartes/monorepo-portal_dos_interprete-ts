@@ -3,22 +3,25 @@ import { useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@portal-dos-interpretes/ui/components/button";
 import { InterpreterCard } from "@portal-dos-interpretes/features/components/InterpreterCard";
+import { toCard, useDirectory, useListing } from "@portal-dos-interpretes/features/directory/DirectoryContext";
 import { AnimatedSection } from "@portal-dos-interpretes/ui/components/animated-section";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
-import { InterpreterData } from "@portal-dos-interpretes/features/components/InterpreterCard";
 
 interface InterpretersCarouselProps {
-  interpreters: InterpreterData[];
   title?: string;
   subtitle?: string;
 }
 
-export function InterpretersCarousel({ 
-  interpreters, 
+// A few interpreters of the directory (directory.public_listing). The section hides itself while
+// the directory is empty or cannot be read: it is a showcase, not the directory.
+export function InterpretersCarousel({
   title = "Nossos Intérpretes",
   subtitle = "Conheça alguns dos profissionais qualificados que fazem parte da nossa rede"
 }: InterpretersCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { repository } = useDirectory();
+  const listing = useListing({ limit: 8, offset: 0 });
+  const interpreters = (listing.data?.rows ?? []).map((row) => toCard(row, repository));
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -29,6 +32,8 @@ export function InterpretersCarousel({
       });
     }
   };
+
+  if (interpreters.length === 0) return null;
 
   return (
     <section className="section-padding bg-muted/50 overflow-hidden">

@@ -1,205 +1,120 @@
+import { Link } from 'react-router-dom'
+import { Badge } from '@portal-dos-interpretes/ui/components/badge'
+import { Button } from '@portal-dos-interpretes/ui/components/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@portal-dos-interpretes/ui/components/tooltip'
+import { ArrowRight, Heart, MapPin, ShieldCheck, Star, Video } from 'lucide-react'
 import { interpreterProfilePath } from '../routes'
-import { Link } from "react-router-dom";
-import { Button } from "@portal-dos-interpretes/ui/components/button";
-import { Badge } from "@portal-dos-interpretes/ui/components/badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@portal-dos-interpretes/ui/components/tooltip";
-import { MapPin, Video, Star, ArrowRight, ShieldCheck } from "lucide-react";
 
-export interface InterpreterEducation {
-  degree: string;
-  institution: string;
-  year: string;
+/** What a card shows: the public listing (directory.public_listing, R-DIR-04). */
+export interface InterpreterCardData {
+  slug: string
+  name: string
+  photoUrl: string | null
+  city: string | null
+  modality: string | null
+  languages: readonly string[]
+  specialties: readonly string[]
+  verified: boolean
+  ratingAverage: number | null
+  ratingCount: number
 }
 
-export interface InterpreterCertification {
-  name: string;
-  issuer: string;
-  year: string;
-}
-
-export interface InterpreterVideo {
-  title: string;
-  url: string;
-  type: "apresentacao" | "trabalho" | "palestra" | "aula";
-}
-
-export interface InterpreterPublication {
-  title: string;
-  date: string;
-  excerpt: string;
-}
-
-export interface InterpreterReview {
-  author: string;
-  rating: number;
-  comment: string;
-  date: string;
-}
-
-export interface InterpreterAvailability {
-  weekdays: string[];
-  hours: string;
-  notice: string;
-}
-
-export interface InterpreterData {
-  slug: string;
-  name: string;
-  photo: string;
-  specialty: string;
-  specialties?: string[];
-  modality: "presencial" | "online" | "ambos";
-  rating?: number;
-  verified?: boolean;
-  bio?: string;
-  experience?: string;
-  languages?: string[];
-  areas?: string[];
-  education?: InterpreterEducation[];
-  certifications?: InterpreterCertification[];
-  videos?: InterpreterVideo[];
-  publications?: InterpreterPublication[];
-  reviews?: InterpreterReview[];
-  availability?: InterpreterAvailability;
-  minimumHourlyRate?: number;
-  openToNegotiation?: boolean;
-}
+export const MODALITY_LABELS: Readonly<Record<string, string>> = { online: 'Online', in_person: 'Presencial', both: 'Presencial e online' }
 
 interface InterpreterCardProps {
-  interpreter: InterpreterData;
-  compact?: boolean;
+  interpreter: InterpreterCardData
+  compact?: boolean
   /**
    * Where "see profile" leads. Defaults to the in-app profile route; the public
    * site points it at the requester login (D-05, architecture.md §3).
    */
   profileHref?: (slug: string) => string
+  /** "Favorito" (R-DIR-10), only where the person can mark favorites. */
+  favorite?: { marked: boolean; onToggle: () => void; pending?: boolean } | undefined
 }
 
-export function InterpreterCard({ interpreter, compact = false, profileHref }: InterpreterCardProps) {
-  const href = profileHref ? profileHref(interpreter.slug) : null
-  const modalityLabel = {
-    presencial: "Presencial",
-    online: "Online",
-    ambos: "Híbrido"
-  };
+function Photo({ interpreter, className }: { interpreter: InterpreterCardData; className: string }) {
+  return interpreter.photoUrl ? (
+    <img src={interpreter.photoUrl} alt={interpreter.name} className={className} />
+  ) : (
+    <div aria-hidden="true" className={`${className} flex items-center justify-center bg-muted text-4xl font-semibold text-muted-foreground`}>
+      {interpreter.name.trim().charAt(0).toUpperCase()}
+    </div>
+  )
+}
 
-  const ModalityIcon = interpreter.modality === "online" ? Video : MapPin;
-
-  if (compact) {
-    return (
-      <div className="group relative rounded-2xl overflow-hidden bg-card shadow-md hover:shadow-xl transition-all duration-300 border border-border/50 h-full">
-        <div className="relative aspect-[4/5] overflow-hidden">
-          <img src={interpreter.photo} alt={interpreter.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-          {interpreter.verified && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="absolute top-3 right-3 rounded-full bg-success px-2.5 py-1 flex items-center gap-1 shadow-lg cursor-help">
-                  <ShieldCheck className="h-3 w-3 text-success-foreground" />
-                  <span className="text-xs font-medium text-success-foreground">Verificado</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="left" className="max-w-[200px]">
-                <p className="text-sm">Intérprete com credenciais validadas na Plataforma</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <h3 className="font-semibold text-white text-lg mb-1">{interpreter.name}</h3>
-            <p className="text-white/80 text-sm mb-2">{interpreter.specialty}</p>
-            {interpreter.rating && (
-              <div className="flex items-center gap-1">
-                <Star className="h-4 w-4 text-warning fill-warning" />
-                <span className="text-white text-sm font-medium">{interpreter.rating.toFixed(1)}</span>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="p-4 flex items-center justify-between">
-          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-            <ModalityIcon className="h-4 w-4" />
-            <span>{modalityLabel[interpreter.modality]}</span>
-          </div>
-          <Button variant="ghost" size="sm" className="text-primary hover:text-primary-foreground hover:bg-primary" asChild>
-            {href ? (
-            <a href={href}>Ver Perfil<ArrowRight className="h-3 w-3" /></a>
-          ) : (
-            <Link to={interpreterProfilePath(interpreter.slug)}>Ver Perfil<ArrowRight className="h-3 w-3" /></Link>
-          )}
-          </Button>
-        </div>
-      </div>
-    );
+function Rating({ interpreter }: { interpreter: InterpreterCardData }) {
+  // R-DIR-05: never "0,0"; without reviews the card says so.
+  if (interpreter.ratingAverage === null || interpreter.ratingCount === 0) {
+    return <span className="text-xs text-muted-foreground">Ainda sem avaliações</span>
   }
+  return (
+    <span className="flex items-center gap-1 text-sm">
+      <Star className="h-4 w-4 fill-warning text-warning" aria-hidden="true" />
+      {interpreter.ratingAverage.toFixed(1).replace('.', ',')} ({interpreter.ratingCount})
+    </span>
+  )
+}
+
+export function InterpreterCard({ interpreter, compact = false, profileHref, favorite }: InterpreterCardProps) {
+  const href = profileHref ? profileHref(interpreter.slug) : null
+  const ModalityIcon = interpreter.modality === 'online' ? Video : MapPin
+  const label = compact ? 'Ver Perfil' : 'Ver Perfil Completo'
+  const link = href ? (
+    <a href={href}>{label}<ArrowRight className="h-4 w-4" /></a>
+  ) : (
+    <Link to={interpreterProfilePath(interpreter.slug)}>{label}<ArrowRight className="h-4 w-4" /></Link>
+  )
 
   return (
-    <div className="group rounded-2xl overflow-hidden bg-card shadow-md hover:shadow-xl transition-all duration-300 border border-border/50 hover:-translate-y-1">
-      <div className="relative aspect-[4/3] overflow-hidden">
-        <img src={interpreter.photo} alt={interpreter.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-        <div className="absolute top-3 left-3 right-3 flex justify-between">
-          <div className={`rounded-full px-3 py-1 flex items-center gap-1.5 text-xs font-medium ${interpreter.modality === "online" ? "bg-secondary/90 text-secondary-foreground" : "bg-primary/90 text-primary-foreground"}`}>
-            <ModalityIcon className="h-3 w-3" />
-            {modalityLabel[interpreter.modality]}
-          </div>
-          {interpreter.verified && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="rounded-full bg-success px-2.5 py-1 flex items-center gap-1 shadow-lg cursor-help">
-                  <ShieldCheck className="h-3 w-3 text-success-foreground" />
-                  <span className="text-xs font-medium text-success-foreground">Verificado</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="left" className="max-w-[200px]">
-                <p className="text-sm">Intérprete com credenciais validadas na Plataforma</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-        </div>
-        {interpreter.rating && (
-          <div className="absolute bottom-3 left-3 rounded-full bg-black/60 backdrop-blur-sm px-2.5 py-1 flex items-center gap-1">
-            <Star className="h-4 w-4 text-warning fill-warning" />
-            <span className="text-white text-sm font-semibold">{interpreter.rating.toFixed(1)}</span>
-          </div>
+    <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border/50 bg-card shadow-md transition-all duration-300 hover:shadow-xl">
+      <div className={`relative overflow-hidden ${compact ? 'aspect-[4/5]' : 'aspect-[4/3]'}`}>
+        <Photo interpreter={interpreter} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+        {interpreter.verified && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="absolute right-3 top-3 flex cursor-help items-center gap-1 rounded-full bg-success px-2.5 py-1 shadow-lg">
+                <ShieldCheck className="h-3 w-3 text-success-foreground" />
+                <span className="text-xs font-medium text-success-foreground">Verificado</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="max-w-[200px]">
+              <p className="text-sm">Intérprete com credenciais validadas na Plataforma</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+        {favorite && (
+          <button
+            type="button"
+            onClick={favorite.onToggle}
+            disabled={favorite.pending}
+            aria-pressed={favorite.marked}
+            aria-label={favorite.marked ? `Remover ${interpreter.name} dos favoritos` : `Marcar ${interpreter.name} como favorito`}
+            className="absolute left-3 top-3 rounded-full bg-background/90 p-2 shadow transition-colors hover:bg-background"
+          >
+            <Heart className={`h-4 w-4 ${favorite.marked ? 'fill-destructive text-destructive' : 'text-muted-foreground'}`} />
+          </button>
         )}
       </div>
-      <div className="p-5">
-        <h3 className="font-semibold text-foreground text-lg mb-1">{interpreter.name}</h3>
-        <p className="text-gradient text-sm font-medium mb-2">{interpreter.specialty}</p>
-        
-        {/* Minimum Hourly Rate */}
-        {interpreter.minimumHourlyRate && (
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg font-bold text-primary">
-              {interpreter.minimumHourlyRate.toLocaleString('pt-AO')} Kz/h
-            </span>
-            {interpreter.openToNegotiation && (
-              <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
-                Negociável
-              </Badge>
-            )}
-          </div>
-        )}
-        
-        {interpreter.specialties && (
-          <div className="flex flex-wrap gap-1.5 mb-4">
-            {interpreter.specialties.slice(0, 3).map((spec) => (
-              <Badge key={spec} variant="secondary" className="text-xs py-0.5">{spec}</Badge>
-            ))}
-          </div>
-        )}
-        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-          {interpreter.experience && <span>{interpreter.experience}</span>}
-          {interpreter.languages && <span>{interpreter.languages.slice(0, 2).join(", ")}</span>}
-        </div>
-        <Button className="w-full" asChild>
-          {href ? (
-            <a href={href}>Ver Perfil Completo<ArrowRight className="h-4 w-4" /></a>
-          ) : (
-            <Link to={interpreterProfilePath(interpreter.slug)}>Ver Perfil Completo<ArrowRight className="h-4 w-4" /></Link>
+      <div className="flex flex-1 flex-col gap-2 p-4">
+        <h3 className="text-lg font-semibold text-foreground">{interpreter.name}</h3>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+          {interpreter.modality && (
+            <span className="flex items-center gap-1"><ModalityIcon className="h-4 w-4" aria-hidden="true" />{MODALITY_LABELS[interpreter.modality] ?? interpreter.modality}</span>
           )}
-        </Button>
+          {interpreter.city && <span>{interpreter.city}</span>}
+        </div>
+        {interpreter.languages.length > 0 && <p className="text-sm text-foreground">{interpreter.languages.slice(0, 3).join(', ')}</p>}
+        {!compact && interpreter.specialties.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {interpreter.specialties.slice(0, 3).map((name) => <Badge key={name} variant="secondary" className="py-0.5 text-xs">{name}</Badge>)}
+          </div>
+        )}
+        <div className="mt-auto flex items-center justify-between gap-2 pt-2">
+          <Rating interpreter={interpreter} />
+          <Button size="sm" variant={compact ? 'ghost' : 'default'} asChild>{link}</Button>
+        </div>
       </div>
     </div>
-  );
+  )
 }

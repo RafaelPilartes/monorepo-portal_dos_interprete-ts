@@ -961,6 +961,568 @@ export type Database = {
     };
     "directory": {
         Tables: {
+            "articles": {
+                Row: {
+                    "body": string;
+                    "cover_path": string | null;
+                    "created_at": string;
+                    "id": string;
+                    "interpreter_id": string;
+                    "published_at": string;
+                    "removed_at": string | null;
+                    "removed_by": string | null;
+                    "removed_reason": string | null;
+                    "slug": string;
+                    "status": string;
+                    "summary": string | null;
+                    "tags": (string)[];
+                    "title": string;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "body": string;
+                    "cover_path"?: string | null;
+                    "created_at"?: string;
+                    "id"?: string;
+                    "interpreter_id": string;
+                    "published_at"?: string;
+                    "removed_at"?: string | null;
+                    "removed_by"?: string | null;
+                    "removed_reason"?: string | null;
+                    "slug": string;
+                    "status"?: string;
+                    "summary"?: string | null;
+                    "tags"?: (string)[];
+                    "title": string;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "body"?: string;
+                    "cover_path"?: string | null;
+                    "created_at"?: string;
+                    "id"?: string;
+                    "interpreter_id"?: string;
+                    "published_at"?: string;
+                    "removed_at"?: string | null;
+                    "removed_by"?: string | null;
+                    "removed_reason"?: string | null;
+                    "slug"?: string;
+                    "status"?: string;
+                    "summary"?: string | null;
+                    "tags"?: (string)[];
+                    "title"?: string;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "articles_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "listed_interpreters";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "articles_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "articles_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "articles_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_listing";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    }
+                ];
+            };
+            "availability_exceptions": {
+                Row: {
+                    "created_at": string;
+                    "day": string;
+                    "id": string;
+                    "interpreter_id": string;
+                    "note": string | null;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "created_at"?: string;
+                    "day": string;
+                    "id"?: string;
+                    "interpreter_id": string;
+                    "note"?: string | null;
+                };
+                Update: {
+                    "created_at"?: string;
+                    "day"?: string;
+                    "id"?: string;
+                    "interpreter_id"?: string;
+                    "note"?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "availability_exceptions_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "listed_interpreters";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "availability_exceptions_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "availability_exceptions_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "availability_exceptions_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_listing";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    }
+                ];
+            };
+            "availability_rules": {
+                Row: {
+                    "created_at": string;
+                    "end_time": string;
+                    "id": string;
+                    "interpreter_id": string;
+                    "start_time": string;
+                    "weekday": number;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "created_at"?: string;
+                    "end_time": string;
+                    "id"?: string;
+                    "interpreter_id": string;
+                    "start_time": string;
+                    "weekday": number;
+                };
+                Update: {
+                    "created_at"?: string;
+                    "end_time"?: string;
+                    "id"?: string;
+                    "interpreter_id"?: string;
+                    "start_time"?: string;
+                    "weekday"?: number;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "availability_rules_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "listed_interpreters";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "availability_rules_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "availability_rules_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "availability_rules_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_listing";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    }
+                ];
+            };
+            "certifications": {
+                Row: {
+                    "created_at": string;
+                    "credential_url": string | null;
+                    "expires_on": string | null;
+                    "id": string;
+                    "interpreter_id": string;
+                    "issued_on": string | null;
+                    "issuer": string;
+                    "name": string;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "created_at"?: string;
+                    "credential_url"?: string | null;
+                    "expires_on"?: string | null;
+                    "id"?: string;
+                    "interpreter_id": string;
+                    "issued_on"?: string | null;
+                    "issuer": string;
+                    "name": string;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "created_at"?: string;
+                    "credential_url"?: string | null;
+                    "expires_on"?: string | null;
+                    "id"?: string;
+                    "interpreter_id"?: string;
+                    "issued_on"?: string | null;
+                    "issuer"?: string;
+                    "name"?: string;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "certifications_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "listed_interpreters";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "certifications_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "certifications_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "certifications_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_listing";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    }
+                ];
+            };
+            "education": {
+                Row: {
+                    "certificate_url": string | null;
+                    "created_at": string;
+                    "degree": string;
+                    "end_year": number | null;
+                    "field": string | null;
+                    "id": string;
+                    "institution": string;
+                    "interpreter_id": string;
+                    "is_current": boolean;
+                    "start_year": number | null;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "certificate_url"?: string | null;
+                    "created_at"?: string;
+                    "degree": string;
+                    "end_year"?: number | null;
+                    "field"?: string | null;
+                    "id"?: string;
+                    "institution": string;
+                    "interpreter_id": string;
+                    "is_current"?: boolean;
+                    "start_year"?: number | null;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "certificate_url"?: string | null;
+                    "created_at"?: string;
+                    "degree"?: string;
+                    "end_year"?: number | null;
+                    "field"?: string | null;
+                    "id"?: string;
+                    "institution"?: string;
+                    "interpreter_id"?: string;
+                    "is_current"?: boolean;
+                    "start_year"?: number | null;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "education_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "listed_interpreters";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "education_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "education_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "education_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_listing";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    }
+                ];
+            };
+            "experiences": {
+                Row: {
+                    "created_at": string;
+                    "description": string | null;
+                    "end_date": string | null;
+                    "id": string;
+                    "interpreter_id": string;
+                    "is_current": boolean;
+                    "organization": string;
+                    "role": string;
+                    "start_date": string;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "created_at"?: string;
+                    "description"?: string | null;
+                    "end_date"?: string | null;
+                    "id"?: string;
+                    "interpreter_id": string;
+                    "is_current"?: boolean;
+                    "organization": string;
+                    "role": string;
+                    "start_date": string;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "created_at"?: string;
+                    "description"?: string | null;
+                    "end_date"?: string | null;
+                    "id"?: string;
+                    "interpreter_id"?: string;
+                    "is_current"?: boolean;
+                    "organization"?: string;
+                    "role"?: string;
+                    "start_date"?: string;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "experiences_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "listed_interpreters";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "experiences_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "experiences_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "experiences_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_listing";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    }
+                ];
+            };
+            "favorites": {
+                Row: {
+                    "created_at": string;
+                    "interpreter_id": string;
+                    "requester_account_id": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "created_at"?: string;
+                    "interpreter_id": string;
+                    "requester_account_id": string;
+                };
+                Update: {
+                    "created_at"?: string;
+                    "interpreter_id"?: string;
+                    "requester_account_id"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "favorites_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "listed_interpreters";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "favorites_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "favorites_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "favorites_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_listing";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    }
+                ];
+            };
             "interpreter_languages": {
                 Row: {
                     "created_at": string;
@@ -989,6 +1551,39 @@ export type Database = {
                         ];
                         isOneToOne: false;
                         referencedRelation: "listed_interpreters";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "interpreter_languages_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "interpreter_languages_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "interpreter_languages_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_listing";
                         referencedColumns: [
                             "account_id"
                         ];
@@ -1038,6 +1633,39 @@ export type Database = {
                         referencedColumns: [
                             "account_id"
                         ];
+                    },
+                    {
+                        foreignKeyName: "interpreter_services_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "interpreter_services_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "interpreter_services_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_listing";
+                        referencedColumns: [
+                            "account_id"
+                        ];
                     }
                 ];
             };
@@ -1069,6 +1697,136 @@ export type Database = {
                         referencedColumns: [
                             "account_id"
                         ];
+                    },
+                    {
+                        foreignKeyName: "interpreter_specialties_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "interpreter_specialties_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "interpreter_specialties_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_listing";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    }
+                ];
+            };
+            "media_items": {
+                Row: {
+                    "created_at": string;
+                    "description": string | null;
+                    "id": string;
+                    "interpreter_id": string;
+                    "kind": string;
+                    "removed_at": string | null;
+                    "removed_by": string | null;
+                    "removed_reason": string | null;
+                    "status": string;
+                    "tags": (string)[];
+                    "thumbnail_path": string | null;
+                    "title": string;
+                    "updated_at": string;
+                    "url": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "created_at"?: string;
+                    "description"?: string | null;
+                    "id"?: string;
+                    "interpreter_id": string;
+                    "kind"?: string;
+                    "removed_at"?: string | null;
+                    "removed_by"?: string | null;
+                    "removed_reason"?: string | null;
+                    "status"?: string;
+                    "tags"?: (string)[];
+                    "thumbnail_path"?: string | null;
+                    "title": string;
+                    "updated_at"?: string;
+                    "url": string;
+                };
+                Update: {
+                    "created_at"?: string;
+                    "description"?: string | null;
+                    "id"?: string;
+                    "interpreter_id"?: string;
+                    "kind"?: string;
+                    "removed_at"?: string | null;
+                    "removed_by"?: string | null;
+                    "removed_reason"?: string | null;
+                    "status"?: string;
+                    "tags"?: (string)[];
+                    "thumbnail_path"?: string | null;
+                    "title"?: string;
+                    "updated_at"?: string;
+                    "url"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "media_items_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "listed_interpreters";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "media_items_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "media_items_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "profile_status";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "media_items_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "public_listing";
+                        referencedColumns: [
+                            "account_id"
+                        ];
                     }
                 ];
             };
@@ -1087,9 +1845,86 @@ export type Database = {
                 Relationships: [
                 ];
             };
+            "my_profile_status": {
+                Row: {
+                    "account_id": string;
+                    "is_complete": boolean | null;
+                    "missing": (string)[] | null;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "account_id"?: string | null;
+                    "is_complete"?: never;
+                    "missing"?: never;
+                };
+                Update: {
+                    "account_id"?: string | null;
+                    "is_complete"?: never;
+                    "missing"?: never;
+                };
+                Relationships: [
+                ];
+            };
+            "profile_status": {
+                Row: {
+                    "account_id": string;
+                    "missing": (string)[] | null;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "account_id"?: string | null;
+                    "missing"?: never;
+                };
+                Update: {
+                    "account_id"?: string | null;
+                    "missing"?: never;
+                };
+                Relationships: [
+                ];
+            };
+            "public_listing": {
+                Row: {
+                    "account_id": string;
+                    "avatar_path": string | null;
+                    "city": string | null;
+                    "full_name": string;
+                    "is_verified": boolean | null;
+                    "language_ids": (string)[] | null;
+                    "language_names": (string)[] | null;
+                    "modality": string | null;
+                    "rating_average": number | null;
+                    "rating_count": number | null;
+                    "slug": string;
+                    "specialty_ids": (string)[] | null;
+                    "specialty_names": (string)[] | null;
+                };
+                ComputedFields: never;
+                Relationships: [
+                ];
+            };
         };
         Functions: {
-            [_ in never]: never;
+            "is_profile_complete": {
+                Args: {
+                    "p_account": string;
+                };
+                Returns: boolean;
+            };
+            "profile_missing": {
+                Args: {
+                    "p_account": string;
+                };
+                Returns: (string)[];
+            };
+            "remove_content": {
+                Args: {
+                    "p_actor": string;
+                    "p_id": string;
+                    "p_kind": string;
+                    "p_reason": string;
+                };
+                Returns: undefined;
+            };
         };
         Enums: {
             [_ in never]: never;

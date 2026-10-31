@@ -318,7 +318,8 @@ ALLOWED_DEPENDENCIES: dict[str, set[str]] = {
     "interpreter-web": {"ui", "i18n", "core", "db-types", "data", "auth", "features"},
     "admin-web": {"ui", "i18n", "core", "db-types", "data", "auth", "features"},
     "api": {"core", "i18n", "db-types"},
-    "features": {"ui", "data", "i18n", "core"},
+    # features -> db-types: the directory screens read typed rows (AD-033).
+    "features": {"ui", "data", "i18n", "core", "db-types"},
     "data": {"db-types", "core"},
     # auth -> data: the session comes through the data layer's SessionDAO; auth -> core: error messages (AD-019).
     "auth": {"ui", "i18n", "db-types", "data", "core"},

@@ -1,221 +1,77 @@
-import { useState } from "react";
-import { PageHeader } from "@portal-dos-interpretes/ui/components/page-header";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@portal-dos-interpretes/ui/components/card";
-import { Button } from "@portal-dos-interpretes/ui/components/button";
-import { Input } from "@portal-dos-interpretes/ui/components/input";
-import { Label } from "@portal-dos-interpretes/ui/components/label";
-import { Textarea } from "@portal-dos-interpretes/ui/components/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "@portal-dos-interpretes/ui/components/avatar";
-import { Badge } from "@portal-dos-interpretes/ui/components/badge";
-import { Switch } from "@portal-dos-interpretes/ui/components/switch";
-import { Camera, Save, Plus, X, CheckCircle } from "lucide-react";
-import { toast } from "sonner";
+import { Link } from 'react-router-dom'
+import { Button } from '@portal-dos-interpretes/ui/components/button'
+import { Card, CardContent } from '@portal-dos-interpretes/ui/components/card'
+import { Briefcase, CheckCircle2, ChevronRight, CircleAlert, Eye, FileText, GraduationCap, Phone, Star, User } from 'lucide-react'
+import { ProfileShell } from '@/components/profile/ProfileShell'
 
-const initialProfile = {
-  name: "Maria Santos",
-  email: "maria.santos@email.com",
-  phone: "+244 923 456 789",
-  location: "Luanda, Angola",
-  bio: "Intérprete profissional de Língua Gestual Angolana com mais de 10 anos de experiência em contextos médicos, jurídicos e corporativos. Certificada pelo Instituto Nacional de Surdos.",
-  languages: ["Língua Gestual Angolana", "Português", "Inglês"],
-  specialties: ["Saúde", "Jurídico", "Corporativo", "Educação"],
-  photo: "/placeholder.svg",
-  verified: true,
-  publicProfile: true,
-};
+// /profile (interpreter-profile-and-directory.md): whether the profile shows in the directory and,
+// if not, what is missing, read from directory.my_profile_status (R-DIR-01), with a link to each
+// section.
+
+const MISSING: Readonly<Record<string, { text: string; href: string }>> = {
+  bio: { text: 'uma biografia com pelo menos 80 caracteres', href: '/profile/overview' },
+  modality: { text: 'a modalidade (presencial, online ou as duas)', href: '/profile/overview' },
+  city: { text: 'a cidade, porque trabalhas presencialmente', href: '/profile/overview' },
+  languages: { text: 'pelo menos uma língua', href: '/profile/services' },
+  services: { text: 'pelo menos um serviço activo com preço', href: '/profile/services' },
+}
+
+const SECTIONS = [
+  { href: '/profile/overview', icon: User, title: 'Visão geral', text: 'Fotografia, biografia, modalidade, cidade e tarifas.' },
+  { href: '/profile/services', icon: Briefcase, title: 'Línguas e serviços', text: 'Línguas com nível, especialidades e os teus preços.' },
+  { href: '/profile/experience', icon: GraduationCap, title: 'Percurso', text: 'Formação, experiência e certificações.' },
+  { href: '/profile/content', icon: FileText, title: 'Conteúdo', text: 'Vídeos e artigos.' },
+  { href: '/profile/contact', icon: Phone, title: 'Contactos', text: 'Telefone, WhatsApp, site e redes.' },
+  { href: '/profile/reviews', icon: Star, title: 'Avaliações', text: 'O que dizem de ti.' },
+]
 
 export default function InterpreterProfile() {
-  const [profile, setProfile] = useState(initialProfile);
-  const [newLanguage, setNewLanguage] = useState("");
-  const [newSpecialty, setNewSpecialty] = useState("");
-
-  const handleSave = () => {
-    toast.success("Perfil atualizado com sucesso!");
-  };
-
-  const addLanguage = () => {
-    if (newLanguage.trim() && !profile.languages.includes(newLanguage.trim())) {
-      setProfile({ ...profile, languages: [...profile.languages, newLanguage.trim()] });
-      setNewLanguage("");
-    }
-  };
-
-  const removeLanguage = (lang: string) => {
-    setProfile({ ...profile, languages: profile.languages.filter((l) => l !== lang) });
-  };
-
-  const addSpecialty = () => {
-    if (newSpecialty.trim() && !profile.specialties.includes(newSpecialty.trim())) {
-      setProfile({ ...profile, specialties: [...profile.specialties, newSpecialty.trim()] });
-      setNewSpecialty("");
-    }
-  };
-
-  const removeSpecialty = (spec: string) => {
-    setProfile({ ...profile, specialties: profile.specialties.filter((s) => s !== spec) });
-  };
-
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Meu Perfil"
-        description="Gerencie as suas informações profissionais"
-        action={
-          <Button onClick={handleSave}>
-            <Save className="h-4 w-4 mr-2" />
-            Guardar Alterações
-          </Button>
-        }
-      />
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Photo and Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Foto de Perfil</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center gap-4">
-            <div className="relative">
-              <Avatar className="h-32 w-32">
-                <AvatarImage src={profile.photo} alt={profile.name} />
-                <AvatarFallback className="text-4xl">{profile.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <Button size="icon" variant="secondary" className="absolute bottom-0 right-0 rounded-full">
-                <Camera className="h-4 w-4" />
+    <ProfileShell title="O meu perfil" description="O que os solicitantes e os colegas veem de ti no directório." back={false}>
+      {({ details, missing, complete }) => (
+        <>
+          <Card className={complete ? 'border-success/40' : 'border-warning/50'}>
+            <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex gap-3">
+                {complete
+                  ? <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" aria-hidden="true" />
+                  : <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />}
+                <div className="space-y-2">
+                  <p className="font-medium">{complete ? 'Visível no directório' : 'Ainda não visível no directório'}</p>
+                  {complete ? (
+                    <p className="text-sm text-muted-foreground">Quem procura intérpretes encontra-te e pode ver o teu perfil completo.</p>
+                  ) : (
+                    <>
+                      <p className="text-sm text-muted-foreground">Falta:</p>
+                      <ul className="space-y-1 text-sm">
+                        {missing.map((key) => {
+                          const item = MISSING[key]
+                          return item ? <li key={key}><Link to={item.href} className="text-primary hover:underline">{item.text}</Link></li> : null
+                        })}
+                      </ul>
+                    </>
+                  )}
+                </div>
+              </div>
+              <Button variant="outline" asChild>
+                <Link to={`/interpreters/${details.profile.slug}`}><Eye className="h-4 w-4" />Ver como os outros me veem</Link>
               </Button>
-            </div>
-            {profile.verified && (
-              <Badge className="gap-1">
-                <CheckCircle className="h-3 w-3" />
-                Verificado
-              </Badge>
-            )}
-            <div className="flex items-center gap-2 w-full">
-              <Switch
-                checked={profile.publicProfile}
-                onCheckedChange={(checked) => setProfile({ ...profile, publicProfile: checked })}
-              />
-              <Label>Perfil público</Label>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Personal Info */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Informações Pessoais</CardTitle>
-            <CardDescription>Os seus dados de contacto</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome Completo</Label>
-                <Input
-                  id="name"
-                  value={profile.name}
-                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={profile.email}
-                  onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input
-                  id="phone"
-                  value={profile.phone}
-                  onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="location">Localização</Label>
-                <Input
-                  id="location"
-                  value={profile.location}
-                  onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bio">Biografia</Label>
-              <Textarea
-                id="bio"
-                value={profile.bio}
-                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                rows={4}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Languages */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Idiomas</CardTitle>
-            <CardDescription>Idiomas em que trabalha</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              {profile.languages.map((lang) => (
-                <Badge key={lang} variant="secondary" className="gap-1">
-                  {lang}
-                  <button onClick={() => removeLanguage(lang)} className="hover:text-destructive">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Novo idioma..."
-                value={newLanguage}
-                onChange={(e) => setNewLanguage(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addLanguage()}
-              />
-              <Button size="icon" onClick={addLanguage}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Specialties */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Especialidades</CardTitle>
-            <CardDescription>Áreas de atuação</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              {profile.specialties.map((spec) => (
-                <Badge key={spec} variant="outline" className="gap-1">
-                  {spec}
-                  <button onClick={() => removeSpecialty(spec)} className="hover:text-destructive">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Nova especialidade..."
-                value={newSpecialty}
-                onChange={(e) => setNewSpecialty(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addSpecialty()}
-              />
-              <Button size="icon" onClick={addSpecialty}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
+            </CardContent>
+          </Card>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {SECTIONS.map(({ href, icon: Icon, title, text }) => (
+              <Link key={href} to={href} className="group flex items-start gap-3 rounded-lg border bg-card p-4 transition-colors hover:bg-muted/50">
+                <Icon className="mt-0.5 h-5 w-5 text-primary" aria-hidden="true" />
+                <div className="flex-1">
+                  <p className="font-medium">{title}</p>
+                  <p className="text-sm text-muted-foreground">{text}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground" aria-hidden="true" />
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
+    </ProfileShell>
+  )
 }

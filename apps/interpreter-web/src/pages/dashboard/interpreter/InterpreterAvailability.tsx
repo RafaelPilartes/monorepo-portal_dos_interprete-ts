@@ -1,210 +1,119 @@
-import { useState } from "react";
-import { PageHeader } from "@portal-dos-interpretes/ui/components/page-header";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@portal-dos-interpretes/ui/components/card";
-import { Button } from "@portal-dos-interpretes/ui/components/button";
-import { Switch } from "@portal-dos-interpretes/ui/components/switch";
-import { Label } from "@portal-dos-interpretes/ui/components/label";
-import { Input } from "@portal-dos-interpretes/ui/components/input";
-import { Badge } from "@portal-dos-interpretes/ui/components/badge";
-import { Calendar } from "@portal-dos-interpretes/ui/components/calendar";
-import { Save } from "lucide-react";
-import { toast } from "sonner";
-import { AvailabilityEditorModal } from "@/components/dashboard/modals/AvailabilityEditorModal";
+import { useState } from 'react'
+import { hhmm, WEEKDAYS } from '@portal-dos-interpretes/features/directory/labels'
+import { formatDate, luandaDay } from '@portal-dos-interpretes/i18n'
+import { Alert, AlertDescription } from '@portal-dos-interpretes/ui/components/alert'
+import { Button } from '@portal-dos-interpretes/ui/components/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@portal-dos-interpretes/ui/components/card'
+import { Input } from '@portal-dos-interpretes/ui/components/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@portal-dos-interpretes/ui/components/select'
+import { Info, Trash2 } from 'lucide-react'
+import { Field, ProfileShell, type MyProfile } from '@/components/profile/ProfileShell'
+import { failureOf, useProfileWrite } from '@/viewModels/profile.viewmodel'
 
-const weekDays = [
-  { id: "monday", label: "Segunda-feira" },
-  { id: "tuesday", label: "Terça-feira" },
-  { id: "wednesday", label: "Quarta-feira" },
-  { id: "thursday", label: "Quinta-feira" },
-  { id: "friday", label: "Sexta-feira" },
-  { id: "saturday", label: "Sábado" },
-  { id: "sunday", label: "Domingo" },
-];
+// /availability (R-DIR-08): weekly hours in Luanda time and blocked days. Indicative: a request
+// outside them is allowed, with a warning; what really blocks is an overlap (R-REQ-05).
 
-const initialSchedule = {
-  monday: { enabled: true, slots: [{ start: "08:00", end: "12:00" }, { start: "14:00", end: "18:00" }] },
-  tuesday: { enabled: true, slots: [{ start: "08:00", end: "12:00" }, { start: "14:00", end: "18:00" }] },
-  wednesday: { enabled: true, slots: [{ start: "08:00", end: "12:00" }, { start: "14:00", end: "18:00" }] },
-  thursday: { enabled: true, slots: [{ start: "08:00", end: "12:00" }, { start: "14:00", end: "18:00" }] },
-  friday: { enabled: true, slots: [{ start: "08:00", end: "12:00" }, { start: "14:00", end: "17:00" }] },
-  saturday: { enabled: false, slots: [] },
-  sunday: { enabled: false, slots: [] },
-};
+// Monday first, as people read a week.
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]
 
-export default function InterpreterAvailability() {
-  const [schedule, setSchedule] = useState(initialSchedule);
-  const [blockedDates, setBlockedDates] = useState<Date[]>([]);
-  const [showEditorModal, setShowEditorModal] = useState(false);
-  const [editingDay, setEditingDay] = useState<string | null>(null);
-
-  const toggleDay = (dayId: string) => {
-    setSchedule({
-      ...schedule,
-      [dayId]: {
-        ...schedule[dayId as keyof typeof schedule],
-        enabled: !schedule[dayId as keyof typeof schedule].enabled,
-      },
-    });
-  };
-
-  const handleSave = () => {
-    toast.success("Disponibilidade atualizada com sucesso!");
-  };
-
-  const openEditor = (dayId: string) => {
-    setEditingDay(dayId);
-    setShowEditorModal(true);
-  };
+function WeeklyRules({ profile }: { profile: MyProfile }) {
+  const [form, setForm] = useState({ weekday: '1', start: '09:00', end: '17:00' })
+  const add = useProfileWrite((repository, accountId, input: typeof form) =>
+    repository.insertOwn('availability_rules', { interpreter_id: accountId, weekday: Number(input.weekday), start_time: input.start, end_time: input.end }), 'Horário acrescentado.')
+  const remove = useProfileWrite((repository, _accountId, id: string) => repository.deleteOwn('availability_rules', id), 'Horário removido.')
+  const failure = add.isError ? failureOf(add.error) : null
+  const rules = profile.details.availability
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Disponibilidade"
-        description="Configure os seus horários de trabalho"
-        action={
-          <Button onClick={handleSave}>
-            <Save className="h-4 w-4 mr-2" />
-            Guardar Alterações
-          </Button>
-        }
-      />
+    <Card>
+      <CardHeader>
+        <CardTitle>Horário semanal</CardTitle>
+        <CardDescription>Em hora de Luanda. Podes ter mais de um intervalo no mesmo dia.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {rules.length === 0 ? <p className="text-sm text-muted-foreground">Ainda não indicaste o teu horário.</p> : (
+          <ul className="divide-y">
+            {WEEK_ORDER.flatMap((day) => rules.filter((rule) => rule.weekday === day)).map((rule) => (
+              <li key={rule.id} className="flex items-center gap-3 py-2 text-sm">
+                <span className="w-24 font-medium">{WEEKDAYS[rule.weekday]}</span>
+                <span className="flex-1 tabular-nums">{hhmm(rule.start_time)}–{hhmm(rule.end_time)}</span>
+                <Button variant="ghost" size="icon" aria-label={`Remover ${WEEKDAYS[rule.weekday]} ${hhmm(rule.start_time)}`} disabled={remove.isPending} onClick={() => remove.mutate(rule.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form className="flex flex-wrap items-end gap-3" onSubmit={(event) => { event.preventDefault(); add.mutate(form) }}>
+          <Field id="rule-weekday" label="Dia">
+            <Select value={form.weekday} onValueChange={(value) => setForm((current) => ({ ...current, weekday: value }))}>
+              <SelectTrigger id="rule-weekday" className="w-36"><SelectValue /></SelectTrigger>
+              <SelectContent>{WEEK_ORDER.map((day) => <SelectItem key={day} value={String(day)}>{WEEKDAYS[day]}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field id="rule-start" label="Das"><Input id="rule-start" type="time" className="w-32" value={form.start} onChange={(e) => setForm((current) => ({ ...current, start: e.target.value }))} /></Field>
+          <Field id="rule-end" label="Às"><Input id="rule-end" type="time" className="w-32" value={form.end} onChange={(e) => setForm((current) => ({ ...current, end: e.target.value }))} /></Field>
+          <Button type="submit" variant="outline" disabled={add.isPending}>Acrescentar</Button>
+        </form>
+        {failure && <p role="alert" className="text-sm text-destructive">{Object.keys(failure.fields).length > 0 ? 'A hora de fim tem de ser depois da hora de início.' : failure.message}</p>}
+      </CardContent>
+    </Card>
+  )
+}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Weekly Schedule */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Horário Semanal</CardTitle>
-            <CardDescription>Defina os seus horários de disponibilidade para cada dia da semana</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {weekDays.map((day) => {
-              const daySchedule = schedule[day.id as keyof typeof schedule];
-              return (
-                <div key={day.id} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      checked={daySchedule.enabled}
-                      onCheckedChange={() => toggleDay(day.id)}
-                    />
-                    <Label className={!daySchedule.enabled ? "text-muted-foreground" : ""}>
-                      {day.label}
-                    </Label>
-                  </div>
-                  {daySchedule.enabled && (
-                    <div className="flex items-center gap-2">
-                      {daySchedule.slots.map((slot, index) => (
-                        <Badge key={index} variant="secondary">
-                          {slot.start} - {slot.end}
-                        </Badge>
-                      ))}
-                      <Button variant="ghost" size="sm" onClick={() => openEditor(day.id)}>
-                        Editar
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
+function BlockedDays({ profile }: { profile: MyProfile }) {
+  const today = luandaDay(new Date())
+  const [form, setForm] = useState({ day: '', note: '' })
+  const add = useProfileWrite((repository, accountId, input: typeof form) =>
+    repository.insertOwn('availability_exceptions', { interpreter_id: accountId, day: input.day, note: input.note.trim() || null }), 'Dia bloqueado.')
+  const remove = useProfileWrite((repository, _accountId, id: string) => repository.deleteOwn('availability_exceptions', id), 'Dia desbloqueado.')
+  const failure = add.isError ? failureOf(add.error) : null
+  const upcoming = profile.exceptions.filter((row) => row.day >= today)
 
-        {/* Blocked Dates */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Datas Bloqueadas</CardTitle>
-            <CardDescription>Selecione datas em que não estará disponível</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Calendar
-              mode="multiple"
-              selected={blockedDates}
-              onSelect={(dates) => setBlockedDates(dates || [])}
-              className="rounded-md border"
-              disabled={(date) => date < new Date()}
-            />
-            {blockedDates.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <Label>Datas selecionadas:</Label>
-                <div className="flex flex-wrap gap-2">
-                  {blockedDates.map((date, index) => (
-                    <Badge key={index} variant="outline" className="gap-1">
-                      {date.toLocaleDateString("pt-PT")}
-                      <button
-                        onClick={() => setBlockedDates(blockedDates.filter((_, i) => i !== index))}
-                        className="ml-1 hover:text-destructive"
-                      >
-                        ×
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Dias bloqueados</CardTitle>
+        <CardDescription>Férias, compromissos ou outros dias em que não trabalhas.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {upcoming.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum dia bloqueado.</p> : (
+          <ul className="divide-y">
+            {upcoming.map((row) => (
+              <li key={row.id} className="flex items-center gap-3 py-2 text-sm">
+                <span className="w-28 font-medium tabular-nums">{formatDate(row.day)}</span>
+                <span className="flex-1 text-muted-foreground">{row.note}</span>
+                <Button variant="ghost" size="icon" aria-label={`Desbloquear ${formatDate(row.day)}`} disabled={remove.isPending} onClick={() => remove.mutate(row.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form className="flex flex-wrap items-end gap-3" onSubmit={(event) => { event.preventDefault(); if (form.day) add.mutate(form, { onSuccess: () => setForm({ day: '', note: '' }) }) }}>
+          <Field id="blocked-day" label="Dia"><Input id="blocked-day" type="date" min={today} className="w-44" value={form.day} onChange={(e) => setForm((current) => ({ ...current, day: e.target.value }))} /></Field>
+          <Field id="blocked-note" label="Nota (opcional)"><Input id="blocked-note" className="w-56" value={form.note} onChange={(e) => setForm((current) => ({ ...current, note: e.target.value }))} /></Field>
+          <Button type="submit" variant="outline" disabled={!form.day || add.isPending}>Bloquear</Button>
+        </form>
+        {failure && <p role="alert" className="text-sm text-destructive">{failure.fields.day ?? failure.message}</p>}
+      </CardContent>
+    </Card>
+  )
+}
 
-        {/* Service Preferences */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Preferências de Serviço</CardTitle>
-            <CardDescription>Configure as suas preferências para novos pedidos</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Tempo mínimo de antecedência</Label>
-                <div className="flex items-center gap-2">
-                  <Input type="number" defaultValue={24} min={1} className="w-20" />
-                  <span className="text-sm text-muted-foreground">horas</span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Tempo mínimo entre a solicitação e o início do serviço
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>Duração máxima por serviço</Label>
-                <div className="flex items-center gap-2">
-                  <Input type="number" defaultValue={8} min={1} max={12} className="w-20" />
-                  <span className="text-sm text-muted-foreground">horas</span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Duração máxima que aceita para um único serviço
-                </p>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg border">
-                <div>
-                  <Label>Aceitar serviços online</Label>
-                  <p className="text-xs text-muted-foreground">Videochamadas (Zoom, Meet, etc.)</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg border">
-                <div>
-                  <Label>Aceitar serviços presenciais</Label>
-                  <p className="text-xs text-muted-foreground">Serviços no local do cliente</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <AvailabilityEditorModal
-        isOpen={showEditorModal}
-        onClose={() => setShowEditorModal(false)}
-        day={editingDay ? weekDays.find(d => d.id === editingDay)?.label || "" : ""}
-        slots={editingDay ? schedule[editingDay as keyof typeof schedule]?.slots || [] : []}
-        onSave={(slots) => {
-          if (editingDay) {
-            setSchedule({
-              ...schedule,
-              [editingDay]: { ...schedule[editingDay as keyof typeof schedule], slots },
-            });
-          }
-          setShowEditorModal(false);
-        }}
-      />
-    </div>
-  );
+export default function InterpreterAvailability() {
+  return (
+    <ProfileShell title="Disponibilidade" description="Quando costumas estar disponível." back={false}>
+      {(profile) => (
+        <div className="space-y-6">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>A disponibilidade é indicativa: podes receber pedidos fora dela, com aviso. O que impede de verdade é teres outro serviço à mesma hora.</AlertDescription>
+          </Alert>
+          <WeeklyRules profile={profile} />
+          <BlockedDays profile={profile} />
+        </div>
+      )}
+    </ProfileShell>
+  )
 }
