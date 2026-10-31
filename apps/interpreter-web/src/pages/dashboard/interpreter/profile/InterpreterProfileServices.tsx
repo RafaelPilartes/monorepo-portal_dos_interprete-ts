@@ -27,9 +27,8 @@ function Languages({ profile, catalog }: { profile: MyProfile; catalog: Catalog 
   const change = useProfileWrite((repository, accountId, input: { languageId: string; level: string }) =>
     repository.updateLanguageLevel(accountId, input.languageId, input.level))
   const remove = useProfileWrite((repository, accountId, id: string) => repository.deleteLink('interpreter_languages', accountId, id), 'Língua removida.')
-  const mine = profile.links.languages
-  const names = new Map(catalog.languages.map((row) => [row.id, row]))
-  const available = catalog.languages.filter((row) => row.active && !mine.some((link) => link.language_id === row.id))
+  const mine = profile.details.items.filter((row) => row.kind === 'language')
+  const available = catalog.languages.filter((row) => row.active && !mine.some((link) => link.item_id === row.id))
 
   return (
     <Card>
@@ -41,15 +40,15 @@ function Languages({ profile, catalog }: { profile: MyProfile; catalog: Catalog 
         {mine.length === 0 ? <p className="text-sm text-muted-foreground">Ainda não acrescentaste línguas.</p> : (
           <ul className="divide-y">
             {mine.map((link) => {
-              const language = names.get(link.language_id)
+              const id = link.item_id ?? ''
               return (
-                <li key={link.language_id} className="flex flex-wrap items-center gap-3 py-2">
-                  <span className="flex-1 font-medium">{language?.name ?? 'Língua'}{language && !language.active && <Badge variant="outline" className="ml-2">desactivada no catálogo</Badge>}</span>
-                  <Select value={link.level} onValueChange={(value) => change.mutate({ languageId: link.language_id, level: value })}>
-                    <SelectTrigger className="w-40" aria-label={`Nível de ${language?.name ?? 'língua'}`}><SelectValue /></SelectTrigger>
+                <li key={id} className="flex flex-wrap items-center gap-3 py-2">
+                  <span className="flex-1 font-medium">{link.name}{!link.catalog_active && <Badge variant="outline" className="ml-2">desactivada no catálogo</Badge>}</span>
+                  <Select value={link.level ?? 'fluent'} onValueChange={(value) => change.mutate({ languageId: id, level: value })}>
+                    <SelectTrigger className="w-40" aria-label={`Nível de ${link.name}`}><SelectValue /></SelectTrigger>
                     <SelectContent>{Object.entries(LANGUAGE_LEVELS).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent>
                   </Select>
-                  <Button variant="ghost" size="icon" aria-label={`Remover ${language?.name ?? 'língua'}`} disabled={remove.isPending} onClick={() => remove.mutate(link.language_id)}>
+                  <Button variant="ghost" size="icon" aria-label={`Remover ${link.name}`} disabled={remove.isPending} onClick={() => remove.mutate(id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </li>
@@ -89,7 +88,13 @@ function Specialties({ profile, catalog }: { profile: MyProfile; catalog: Catalo
   const toggle = useProfileWrite((repository, accountId, input: { id: string; on: boolean }) => input.on
     ? repository.insertOwn('interpreter_specialties', { interpreter_id: accountId, specialty_id: input.id })
     : repository.deleteLink('interpreter_specialties', accountId, input.id))
-  const mine = new Set(profile.links.specialties.map((row) => row.specialty_id))
+  const linked = profile.details.items.filter((row) => row.kind === 'specialty')
+  const mine = new Set(linked.map((row) => row.item_id))
+  // Every active specialty, plus the disabled ones still linked (so they can be removed).
+  const choices = [
+    ...catalog.specialties.filter((row) => row.active).map((row) => ({ id: row.id, name: row.name })),
+    ...linked.filter((row) => !row.catalog_active).map((row) => ({ id: row.item_id ?? '', name: `${row.name ?? ''} (desactivada no catálogo)` })),
+  ]
   return (
     <Card>
       <CardHeader>
@@ -97,7 +102,7 @@ function Specialties({ profile, catalog }: { profile: MyProfile; catalog: Catalo
         <CardDescription>As áreas em que trabalhas.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap gap-2">
-        {catalog.specialties.filter((row) => row.active || mine.has(row.id)).map((row) => {
+        {choices.map((row) => {
           const on = mine.has(row.id)
           return (
             <Button key={row.id} type="button" size="sm" variant={on ? 'default' : 'outline'} aria-pressed={on} disabled={toggle.isPending}
@@ -111,27 +116,30 @@ function Specialties({ profile, catalog }: { profile: MyProfile; catalog: Catalo
   )
 }
 
-function ServiceRow({ link, title, mode }: { link: MyProfile['links']['services'][number]; title: string; mode: string }) {
+function ServiceRow({ link }: { link: MyProfile['details']['items'][number] }) {
+  const id = link.link_id ?? ''
+  const title = link.name ?? ''
+  const mode = link.pricing_mode ?? 'hourly'
   const [price, setPrice] = useState(String(link.price_aoa))
-  const update = useProfileWrite((repository, _accountId, values: Record<string, unknown>) => repository.updateOwn('interpreter_services', link.id, values))
-  const remove = useProfileWrite((repository, _accountId, id: string) => repository.deleteOwn('interpreter_services', id), 'Serviço removido.')
+  const update = useProfileWrite((repository, _accountId, values: Record<string, unknown>) => repository.updateOwn('interpreter_services', id, values), 'Alterações guardadas.', ['price_aoa'])
+  const remove = useProfileWrite((repository, _accountId, linkId: string) => repository.deleteOwn('interpreter_services', linkId), 'Serviço removido.')
   const errors = update.isError ? failureOf(update.error).fields : {}
   const changed = price.trim() !== String(link.price_aoa)
   return (
     <li className="flex flex-wrap items-end gap-3 py-3">
       <div className="min-w-40 flex-1">
-        <p className="font-medium">{title}</p>
+        <p className="font-medium">{title}{!link.catalog_active && <Badge variant="outline" className="ml-2">desactivado no catálogo</Badge>}</p>
         <p className="text-sm text-muted-foreground">{formatAoa(Number(link.price_aoa))} {PRICING_SUFFIX[mode]}</p>
       </div>
-      <Field id={`price-${link.id}`} label={`Preço (Kz ${PRICING_SUFFIX[mode]})`} error={errors.price_aoa}>
-        <Input id={`price-${link.id}`} type="number" min={1} inputMode="numeric" className="w-36" value={price} onChange={(e) => setPrice(e.target.value)} />
+      <Field id={`price-${id}`} label={`Preço (Kz ${PRICING_SUFFIX[mode]})`} error={errors.price_aoa}>
+        <Input id={`price-${id}`} type="number" min={1} inputMode="numeric" className="w-36" value={price} onChange={(e) => setPrice(e.target.value)} />
       </Field>
       {changed && <Button size="sm" disabled={update.isPending} onClick={() => update.mutate({ price_aoa: numberOrNull(price) })}>Guardar preço</Button>}
       <div className="flex items-center gap-2 pb-2">
-        <Switch id={`active-${link.id}`} checked={link.active} aria-label={`${title} activo`} onCheckedChange={(value) => update.mutate({ active: value })} />
-        <span className="text-sm">{link.active ? 'Activo' : 'Inactivo'}</span>
+        <Switch id={`active-${id}`} checked={link.link_active === true} aria-label={`${title} activo`} onCheckedChange={(value) => update.mutate({ active: value })} />
+        <span className="text-sm">{link.link_active ? 'Activo' : 'Inactivo'}</span>
       </div>
-      <Button variant="ghost" size="icon" aria-label={`Remover ${title}`} disabled={remove.isPending} onClick={() => remove.mutate(link.id)}>
+      <Button variant="ghost" size="icon" aria-label={`Remover ${title}`} disabled={remove.isPending} onClick={() => remove.mutate(id)}>
         <Trash2 className="h-4 w-4" />
       </Button>
     </li>
@@ -142,12 +150,11 @@ function Services({ profile, catalog }: { profile: MyProfile; catalog: Catalog }
   const [serviceId, setServiceId] = useState('')
   const [price, setPrice] = useState('')
   const add = useProfileWrite((repository, accountId, input: { serviceId: string; price: number | null }) =>
-    repository.insertOwn('interpreter_services', { interpreter_id: accountId, service_id: input.serviceId, price_aoa: input.price }), 'Serviço acrescentado.')
+    repository.insertOwn('interpreter_services', { interpreter_id: accountId, service_id: input.serviceId, price_aoa: input.price }), 'Serviço acrescentado.', ['price_aoa'])
   const errors = add.isError ? failureOf(add.error).fields : {}
-  const services = new Map(catalog.services.map((row) => [row.id, row]))
-  const mine = profile.links.services
-  const available = catalog.services.filter((row) => row.active && !mine.some((link) => link.service_id === row.id))
-  const chosen = services.get(serviceId)
+  const mine = profile.details.items.filter((row) => row.kind === 'service')
+  const available = catalog.services.filter((row) => row.active && !mine.some((link) => link.item_id === row.id))
+  const chosen = catalog.services.find((row) => row.id === serviceId)
 
   return (
     <Card>
@@ -158,10 +165,7 @@ function Services({ profile, catalog }: { profile: MyProfile; catalog: Catalog }
       <CardContent className="space-y-4">
         {mine.length === 0 ? <p className="text-sm text-muted-foreground">Ainda não acrescentaste serviços.</p> : (
           <ul className="divide-y">
-            {mine.map((link) => {
-              const service = services.get(link.service_id)
-              return <ServiceRow key={link.id} link={link} title={service?.title ?? 'Serviço'} mode={service?.pricing_mode ?? 'hourly'} />
-            })}
+            {mine.map((link) => <ServiceRow key={link.link_id} link={link} />)}
           </ul>
         )}
         {available.length > 0 && (

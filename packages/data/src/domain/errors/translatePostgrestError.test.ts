@@ -22,6 +22,11 @@ describe('translatePostgrestError for refused values', () => {
     expect(error.details).toEqual({ price_aoa: 'Preenche este campo.' })
   })
 
+  it('a check across two columns names the second one (H4 review)', () => {
+    const error = translatePostgrestError({ code: '23514', message: 'new row for relation "experiences" violates check constraint "experiences_check"' }, 'directory.experiences')
+    expect(error.details).toEqual({ end_date: 'A data de fim não pode ser antes da data de início.' })
+  })
+
   it('anything else stays INTERNAL_ERROR', () => {
     const log = console.error
     console.error = () => undefined

@@ -2,6 +2,15 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.13.0 — 2026-10-31 — Passo H4 (perfil do intérprete e directório)
+
+- O intérprete preenche o perfil a sério: fotografia, biografia, modalidade, línguas, serviços e preços, percurso, contactos, vídeos, artigos e disponibilidade.
+- O perfil diz o que falta para aparecer no directório; com tudo preenchido, o intérprete aparece no site e na área de quem pede.
+- No site, o directório tem pesquisa e filtros; abrir um perfil leva ao login e volta ao mesmo perfil.
+- Quem pede vê o perfil completo, com contactos e preços, e guarda intérpretes nos favoritos.
+- A equipa pode remover um vídeo ou artigo com um motivo; o autor é avisado.
+- Relatório: `docs/plan/step-reports/H4.md`.
+
 ## 0.12.0 — 2026-10-30 — Passo H3 (catálogos)
 
 - A equipa gere línguas, especialidades e serviços no painel, com o preço de tabela e o modo de preço de cada serviço.

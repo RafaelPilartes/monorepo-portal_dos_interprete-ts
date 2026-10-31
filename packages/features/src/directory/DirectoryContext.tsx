@@ -1,6 +1,8 @@
 import { createContext, useContext, type ReactNode } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import type { InterpreterCardData } from '../components/InterpreterCard'
+import { errorMessage } from '../lib/errorText'
 import type { DirectoryRepository, ListingQuery, ListingRow } from './data'
 
 // The directory for any app: the repository (built by the app from its Supabase client) and, in
@@ -77,6 +79,7 @@ export function useFavoriteToggle() {
   const toggle = useMutation({
     mutationFn: ({ interpreterId, favorite }: { interpreterId: string; favorite: boolean }) =>
       repository.setFavorite(accountId ?? '', interpreterId, favorite),
+    onError: (error) => toast.error(errorMessage(error)),
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: directoryKeys.favoriteIds })
       void queryClient.invalidateQueries({ queryKey: directoryKeys.favorites })

@@ -113,9 +113,15 @@ CREATE POLICY favorites_own ON directory.favorites FOR ALL TO authenticated
   USING (requester_account_id = (SELECT auth_helper.account_id()))
   WITH CHECK (requester_account_id = (SELECT auth_helper.account_id()) AND (SELECT auth_helper.is_requester()));
 
--- Storage: the photo (avatars) and the article covers (interpreter-media) under a folder named by
--- the account; anyone reads (public buckets), only the owner writes.
+-- Storage: the photo (avatars, any account) and the article covers (interpreter-media,
+-- interpreters only) under a folder named by the account; anyone reads (public buckets), only the
+-- owner writes.
 DROP POLICY IF EXISTS avatars_write_own ON storage.objects;
 CREATE POLICY avatars_write_own ON storage.objects FOR ALL TO authenticated
-  USING (bucket_id IN ('avatars', 'interpreter-media') AND (storage.foldername(name))[1] = (SELECT auth_helper.account_id())::text)
-  WITH CHECK (bucket_id IN ('avatars', 'interpreter-media') AND (storage.foldername(name))[1] = (SELECT auth_helper.account_id())::text);
+  USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = (SELECT auth_helper.account_id())::text)
+  WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = (SELECT auth_helper.account_id())::text);
+DROP POLICY IF EXISTS interpreter_media_write_own ON storage.objects;
+CREATE POLICY interpreter_media_write_own ON storage.objects FOR ALL TO authenticated
+  USING (bucket_id = 'interpreter-media' AND (storage.foldername(name))[1] = (SELECT auth_helper.account_id())::text)
+  WITH CHECK (bucket_id = 'interpreter-media' AND (storage.foldername(name))[1] = (SELECT auth_helper.account_id())::text
+              AND (SELECT auth_helper.is_interpreter()));

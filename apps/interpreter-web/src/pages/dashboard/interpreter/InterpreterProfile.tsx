@@ -8,8 +8,8 @@ import { ProfileShell } from '@/components/profile/ProfileShell'
 // if not, what is missing, read from directory.my_profile_status (R-DIR-01), with a link to each
 // section.
 
-const MISSING: Readonly<Record<string, { text: string; href: string }>> = {
-  bio: { text: 'uma biografia com pelo menos 80 caracteres', href: '/profile/overview' },
+const MISSING: Readonly<Record<string, { text: (bioMin: number) => string; href: string } | { text: string; href: string }>> = {
+  bio: { text: (bioMin: number) => `uma biografia com pelo menos ${bioMin} caracteres`, href: '/profile/overview' },
   modality: { text: 'a modalidade (presencial, online ou as duas)', href: '/profile/overview' },
   city: { text: 'a cidade, porque trabalhas presencialmente', href: '/profile/overview' },
   languages: { text: 'pelo menos uma língua', href: '/profile/services' },
@@ -28,7 +28,7 @@ const SECTIONS = [
 export default function InterpreterProfile() {
   return (
     <ProfileShell title="O meu perfil" description="O que os solicitantes e os colegas veem de ti no directório." back={false}>
-      {({ details, missing, complete }) => (
+      {({ details, missing, complete, bioMinLength }) => (
         <>
           <Card className={complete ? 'border-success/40' : 'border-warning/50'}>
             <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-start sm:justify-between">
@@ -46,7 +46,7 @@ export default function InterpreterProfile() {
                       <ul className="space-y-1 text-sm">
                         {missing.map((key) => {
                           const item = MISSING[key]
-                          return item ? <li key={key}><Link to={item.href} className="text-primary hover:underline">{item.text}</Link></li> : null
+                          return item ? <li key={key}><Link to={item.href} className="text-primary hover:underline">{typeof item.text === 'function' ? item.text(bioMinLength) : item.text}</Link></li> : null
                         })}
                       </ul>
                     </>

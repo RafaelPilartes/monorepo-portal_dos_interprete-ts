@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useDirectory } from '@portal-dos-interpretes/features/directory/DirectoryContext'
-import { FileRefused, type AvailabilityExceptionRow, type DirectoryRepository } from '@portal-dos-interpretes/features/directory/data'
+import { FileRefused, type DirectoryRepository } from '@portal-dos-interpretes/features/directory/data'
 import { errorDetails, errorMessage } from '@portal-dos-interpretes/features/lib/errorText'
 import { errorFor } from '@portal-dos-interpretes/core/errors'
 import { toast } from 'sonner'
@@ -19,14 +19,9 @@ export function useMyProfile() {
     enabled: accountId !== null,
     queryFn: async () => {
       const id = accountId ?? ''
-      const [details, status, links, exceptions] = await Promise.all([
-        repository.details({ accountId: id }),
-        repository.myStatus(),
-        repository.ownLinks(id),
-        repository.ownRows<AvailabilityExceptionRow>('availability_exceptions', id, 'day'),
-      ])
+      const [details, status] = await Promise.all([repository.details({ accountId: id }), repository.myStatus()])
       if (!details) throw new Error('interpreter profile not found for the signed-in account')
-      return { details, missing: status?.missing ?? [], complete: status?.is_complete === true, links, exceptions }
+      return { details, missing: status?.missing ?? [], complete: status?.is_complete === true, bioMinLength: status?.bio_min_length ?? 0 }
     },
   })
 }
@@ -37,8 +32,15 @@ export function failureOf(error: unknown): { message: string; fields: Record<str
   return { message: errorMessage(error), fields: errorDetails(error) }
 }
 
-/** A write on the own profile; re-reads the profile after it, says how it went. */
-export function useProfileWrite<Input>(write: (repository: DirectoryRepository, accountId: string, input: Input) => Promise<unknown>, success = 'Alterações guardadas.') {
+/**
+ * A write on the own profile; re-reads the profile after it, says how it went. A refusal on a
+ * field the form shows stays on that field; anything else is a toast, so nothing fails unseen.
+ */
+export function useProfileWrite<Input>(
+  write: (repository: DirectoryRepository, accountId: string, input: Input) => Promise<unknown>,
+  success = 'Alterações guardadas.',
+  shownFields: readonly string[] = [],
+) {
   const { repository, accountId } = useDirectory()
   const queryClient = useQueryClient()
   return useMutation({
@@ -46,7 +48,9 @@ export function useProfileWrite<Input>(write: (repository: DirectoryRepository, 
     onSuccess: () => toast.success(success),
     onError: (error) => {
       const failure = failureOf(error)
-      if (Object.keys(failure.fields).length === 0) toast.error(failure.message)
+      if (!Object.keys(failure.fields).some((field) => shownFields.includes(field))) {
+        toast.error(Object.values(failure.fields)[0] ?? failure.message)
+      }
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: myProfileKey })

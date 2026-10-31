@@ -24,7 +24,8 @@ function ContactForm({ profile }: { profile: MyProfile }) {
   const [values, setValues] = useState<Record<Key, string>>(() =>
     Object.fromEntries(FIELDS.map(({ key }) => [key, row[key] ?? ''])) as Record<Key, string>)
   const save = useProfileWrite((repository, accountId, input: Record<Key, string>) =>
-    repository.updateProfile(accountId, Object.fromEntries(FIELDS.map(({ key }) => [key, input[key].trim() || null]))))
+    repository.updateProfile(accountId, Object.fromEntries(FIELDS.map(({ key }) => [key, input[key].trim() || null]))),
+    'Alterações guardadas.', FIELDS.map(({ key }) => key))
   const errors = save.isError ? failureOf(save.error).fields : {}
 
   return (

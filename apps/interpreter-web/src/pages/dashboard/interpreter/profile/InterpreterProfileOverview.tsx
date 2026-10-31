@@ -11,9 +11,8 @@ import { Field, numberOrNull, ProfileShell, type MyProfile } from '@/components/
 import { failureOf, useProfileWrite } from '@/viewModels/profile.viewmodel'
 
 // /profile/overview: photo, biography (with its counter), years of experience, modality, city,
-// minimum hourly rate, negotiation, travel fee (D-17). The database checks the values.
-
-const BIO_MIN = 80
+// minimum hourly rate, negotiation, travel fee (D-17). The database checks the values and gives
+// the biography's minimum (directory.my_profile_status).
 
 function Photo({ profile }: { profile: MyProfile }) {
   const input = useRef<HTMLInputElement>(null)
@@ -68,10 +67,11 @@ function OverviewForm({ profile }: { profile: MyProfile }) {
     minimum_hourly_rate_aoa: numberOrNull(input.minimum_hourly_rate_aoa),
     accepts_negotiation: input.accepts_negotiation,
     travel_fee_aoa: numberOrNull(input.travel_fee_aoa),
-  }))
+  }), 'Alterações guardadas.', ['bio', 'years_experience', 'modality', 'city', 'minimum_hourly_rate_aoa', 'travel_fee_aoa'])
   const errors = save.isError ? failureOf(save.error).fields : {}
   const set = <K extends keyof typeof values>(key: K, value: (typeof values)[K]) => setValues((current) => ({ ...current, [key]: value }))
   const bioLength = values.bio.trim().length
+  const bioMin = profile.bioMinLength
   const inPerson = values.modality === 'in_person' || values.modality === 'both'
 
   return (
@@ -84,7 +84,7 @@ function OverviewForm({ profile }: { profile: MyProfile }) {
             id="bio"
             label="Biografia"
             error={errors.bio}
-            hint={<span className={bioLength < BIO_MIN ? 'text-warning' : undefined}>{bioLength} caracteres{bioLength < BIO_MIN ? ` (mínimo ${BIO_MIN} para apareceres no directório)` : ''}</span>}
+            hint={<span className={bioLength < bioMin ? 'text-warning' : undefined}>{bioLength} caracteres{bioLength < bioMin ? ` (mínimo ${bioMin} para apareceres no directório)` : ''}</span>}
           >
             <Textarea id="bio" rows={6} value={values.bio} onChange={(e) => set('bio', e.target.value)} />
           </Field>

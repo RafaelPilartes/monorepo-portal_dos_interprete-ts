@@ -188,6 +188,12 @@ export function InterpreterProfileView({ details }: { details: InterpreterDetail
                 ))}
               </ul>
             )}
+            {details.blockedDays.length > 0 && (
+              <div className="space-y-1">
+                <p className="font-medium">Dias indisponíveis</p>
+                <p className="text-muted-foreground">{details.blockedDays.slice(0, 6).map((row) => formatDate(row.day)).join(', ')}{details.blockedDays.length > 6 ? '…' : ''}</p>
+              </div>
+            )}
             <p className="text-xs text-muted-foreground">A disponibilidade é indicativa: confirma a data no pedido.</p>
           </Section>
         </div>

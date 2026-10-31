@@ -47,8 +47,8 @@ export function Field({ id, label, hint, error, children }: { id: string; label:
   )
 }
 
-/** "" → null, "12 000" → 12000; anything else is left for the database to refuse. */
+/** "" → null; "12 000" and "12.000" → 12000 (whole kwanzas); anything else is left for the database to refuse. */
 export function numberOrNull(value: string): number | null {
-  const clean = value.replace(/\s/g, '')
+  const clean = value.replace(/[\s.]/g, '')
   return clean === '' ? null : Number(clean)
 }

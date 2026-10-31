@@ -1021,6 +1021,17 @@ export type Database = {
                             "interpreter_id"
                         ];
                         isOneToOne: false;
+                        referencedRelation: "listed_ids";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "articles_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
                         referencedRelation: "listed_interpreters";
                         referencedColumns: [
                             "account_id"
@@ -1085,6 +1096,17 @@ export type Database = {
                     "note"?: string | null;
                 };
                 Relationships: [
+                    {
+                        foreignKeyName: "availability_exceptions_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "listed_ids";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
                     {
                         foreignKeyName: "availability_exceptions_interpreter_id_fkey";
                         columns: [
@@ -1158,6 +1180,17 @@ export type Database = {
                     "weekday"?: number;
                 };
                 Relationships: [
+                    {
+                        foreignKeyName: "availability_rules_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "listed_ids";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
                     {
                         foreignKeyName: "availability_rules_interpreter_id_fkey";
                         columns: [
@@ -1240,6 +1273,17 @@ export type Database = {
                     "updated_at"?: string;
                 };
                 Relationships: [
+                    {
+                        foreignKeyName: "certifications_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "listed_ids";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
                     {
                         foreignKeyName: "certifications_interpreter_id_fkey";
                         columns: [
@@ -1334,6 +1378,17 @@ export type Database = {
                             "interpreter_id"
                         ];
                         isOneToOne: false;
+                        referencedRelation: "listed_ids";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "education_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
                         referencedRelation: "listed_interpreters";
                         referencedColumns: [
                             "account_id"
@@ -1419,6 +1474,17 @@ export type Database = {
                             "interpreter_id"
                         ];
                         isOneToOne: false;
+                        referencedRelation: "listed_ids";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "experiences_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
                         referencedRelation: "listed_interpreters";
                         referencedColumns: [
                             "account_id"
@@ -1477,6 +1543,17 @@ export type Database = {
                     "requester_account_id"?: string;
                 };
                 Relationships: [
+                    {
+                        foreignKeyName: "favorites_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "listed_ids";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
                     {
                         foreignKeyName: "favorites_interpreter_id_fkey";
                         columns: [
@@ -1544,6 +1621,17 @@ export type Database = {
                     "level"?: string;
                 };
                 Relationships: [
+                    {
+                        foreignKeyName: "interpreter_languages_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "listed_ids";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
                     {
                         foreignKeyName: "interpreter_languages_interpreter_id_fkey";
                         columns: [
@@ -1629,6 +1717,17 @@ export type Database = {
                             "interpreter_id"
                         ];
                         isOneToOne: false;
+                        referencedRelation: "listed_ids";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "interpreter_services_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
                         referencedRelation: "listed_interpreters";
                         referencedColumns: [
                             "account_id"
@@ -1687,6 +1786,17 @@ export type Database = {
                     "specialty_id"?: string;
                 };
                 Relationships: [
+                    {
+                        foreignKeyName: "interpreter_specialties_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "listed_ids";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
                     {
                         foreignKeyName: "interpreter_specialties_interpreter_id_fkey";
                         columns: [
@@ -1790,6 +1900,17 @@ export type Database = {
                             "interpreter_id"
                         ];
                         isOneToOne: false;
+                        referencedRelation: "listed_ids";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "media_items_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: false;
                         referencedRelation: "listed_interpreters";
                         referencedColumns: [
                             "account_id"
@@ -1832,6 +1953,14 @@ export type Database = {
             };
         };
         Views: {
+            "listed_ids": {
+                Row: {
+                    "account_id": string;
+                };
+                ComputedFields: never;
+                Relationships: [
+                ];
+            };
             "listed_interpreters": {
                 Row: {
                     "account_id": string;
@@ -1848,20 +1977,39 @@ export type Database = {
             "my_profile_status": {
                 Row: {
                     "account_id": string;
+                    "bio_min_length": number | null;
                     "is_complete": boolean | null;
                     "missing": (string)[] | null;
                 };
                 ComputedFields: never;
-                Insert: {
-                    "account_id"?: string | null;
-                    "is_complete"?: never;
-                    "missing"?: never;
+                Relationships: [
+                ];
+            };
+            "profile_items": {
+                Row: {
+                    "catalog_active": boolean | null;
+                    "description": string | null;
+                    "interpreter_id": string | null;
+                    "is_sign_language": boolean | null;
+                    "item_id": string | null;
+                    "kind": string | null;
+                    "level": string | null;
+                    "link_active": boolean | null;
+                    "link_id": string | null;
+                    "name": string | null;
+                    "price_aoa": number | null;
+                    "pricing_mode": string | null;
+                    "sort": number | null;
                 };
-                Update: {
-                    "account_id"?: string | null;
-                    "is_complete"?: never;
-                    "missing"?: never;
+                ComputedFields: never;
+                Relationships: [
+                ];
+            };
+            "profile_rules": {
+                Row: {
+                    "bio_min_length": number | null;
                 };
+                ComputedFields: never;
                 Relationships: [
                 ];
             };
@@ -1871,14 +2019,6 @@ export type Database = {
                     "missing": (string)[] | null;
                 };
                 ComputedFields: never;
-                Insert: {
-                    "account_id"?: string | null;
-                    "missing"?: never;
-                };
-                Update: {
-                    "account_id"?: string | null;
-                    "missing"?: never;
-                };
                 Relationships: [
                 ];
             };

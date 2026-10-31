@@ -276,5 +276,12 @@
   3. **Quem lê o perfil (`R-DIR-04`)** decide-se numa função só, `auth_helper.can_read_interpreter`, usada por todas as políticas do perfil e das suas partes.
   4. **Escritas do próprio** directas, com concessões de coluna; o teste da fundação passa a listar essas colunas e as tabelas onde a sessão pode apagar as próprias linhas.
   5. **Fora do H4:** `directory.is_eligible_for` (`R-DIR-09`, critério 4) precisa dos pedidos e passa para o H5. A média das avaliações (`R-DIR-05`), os cancelamentos tardios (`R-DIR-06`) e o selo chegam com as suas tabelas; até lá `public_listing` tem `is_verified = false`, `rating_average = NULL` e `rating_count = 0`, e o perfil mostra "Ainda sem avaliações". "Denunciar" chega com as denúncias da comunidade; "Pedir este intérprete" com o assistente do H5.
-  6. **Fotografia e capas** carregam-se directamente para os buckets públicos `avatars` e `interpreter-media`, numa pasta com o id da conta (política de Storage: só o dono escreve).
+  6. **Fotografia e capas** carregam-se directamente para os buckets públicos `avatars` (qualquer conta) e `interpreter-media` (só intérpretes), numa pasta com o id da conta (política de Storage: só o dono escreve).
+  7. **`R-DIR-03` escrito uma vez**, na vista `directory.listed_ids` (perfil completo e conta `active`), lida pelas vistas do directório e por `auth_helper.can_read_interpreter`. Documentos legais por aceitar **não** escondem um perfil do directório: impedem o acesso da própria conta (`R-PRIV-02`), não a sua listagem.
+  8. **Itens desactivados no catálogo** continuam no perfil com o nome (vista `directory.profile_items`, que lê o catálogo como dona). O perfil público mostra a língua e a especialidade, mas não oferece um serviço desactivado no catálogo; o ecrã do intérprete marca-os "desactivado no catálogo".
+  9. **O mínimo da biografia** (80 caracteres, `R-DIR-01`) vive numa vista (`directory.profile_rules`) e o ecrã lê-o de `my_profile_status`; o ecrã não guarda cópia do número.
+  10. **Páginas de conteúdo por intérprete** (`/interpreters/:slug/videos`, `/articles`, `/articles/:articleSlug`), como em `architecture.md` §3; não há lista global de vídeos e artigos.
+  11. **Dias da semana** guardados como `extract(dow)`: 0 = domingo … 6 = sábado. O ecrã mostra a semana a começar à segunda.
+  12. **`features` passa a depender de `db-types`** (`architecture.md` §2 e `verify.py` actualizados): os ecrãs do directório leem linhas tipadas.
+  13. Os intérpretes de exemplo (`features/mocks/interpretersMocks.ts`) ficam só para o assistente de pedido, que o H5 substitui.
 - **Marcas:** [RISCO] dados pessoais (os contactos do intérprete ficam visíveis a qualquer conta activa, como decide `D-51`).

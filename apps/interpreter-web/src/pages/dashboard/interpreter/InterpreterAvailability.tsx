@@ -19,7 +19,7 @@ const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]
 function WeeklyRules({ profile }: { profile: MyProfile }) {
   const [form, setForm] = useState({ weekday: '1', start: '09:00', end: '17:00' })
   const add = useProfileWrite((repository, accountId, input: typeof form) =>
-    repository.insertOwn('availability_rules', { interpreter_id: accountId, weekday: Number(input.weekday), start_time: input.start, end_time: input.end }), 'Horário acrescentado.')
+    repository.insertOwn('availability_rules', { interpreter_id: accountId, weekday: Number(input.weekday), start_time: input.start, end_time: input.end }), 'Horário acrescentado.', ['end_time'])
   const remove = useProfileWrite((repository, _accountId, id: string) => repository.deleteOwn('availability_rules', id), 'Horário removido.')
   const failure = add.isError ? failureOf(add.error) : null
   const rules = profile.details.availability
@@ -55,7 +55,7 @@ function WeeklyRules({ profile }: { profile: MyProfile }) {
           <Field id="rule-end" label="Às"><Input id="rule-end" type="time" className="w-32" value={form.end} onChange={(e) => setForm((current) => ({ ...current, end: e.target.value }))} /></Field>
           <Button type="submit" variant="outline" disabled={add.isPending}>Acrescentar</Button>
         </form>
-        {failure && <p role="alert" className="text-sm text-destructive">{Object.keys(failure.fields).length > 0 ? 'A hora de fim tem de ser depois da hora de início.' : failure.message}</p>}
+        {failure?.fields.end_time && <p role="alert" className="text-sm text-destructive">{failure.fields.end_time}</p>}
       </CardContent>
     </Card>
   )
@@ -65,10 +65,10 @@ function BlockedDays({ profile }: { profile: MyProfile }) {
   const today = luandaDay(new Date())
   const [form, setForm] = useState({ day: '', note: '' })
   const add = useProfileWrite((repository, accountId, input: typeof form) =>
-    repository.insertOwn('availability_exceptions', { interpreter_id: accountId, day: input.day, note: input.note.trim() || null }), 'Dia bloqueado.')
+    repository.insertOwn('availability_exceptions', { interpreter_id: accountId, day: input.day, note: input.note.trim() || null }), 'Dia bloqueado.', ['day'])
   const remove = useProfileWrite((repository, _accountId, id: string) => repository.deleteOwn('availability_exceptions', id), 'Dia desbloqueado.')
   const failure = add.isError ? failureOf(add.error) : null
-  const upcoming = profile.exceptions.filter((row) => row.day >= today)
+  const upcoming = profile.details.blockedDays
 
   return (
     <Card>
@@ -95,7 +95,7 @@ function BlockedDays({ profile }: { profile: MyProfile }) {
           <Field id="blocked-note" label="Nota (opcional)"><Input id="blocked-note" className="w-56" value={form.note} onChange={(e) => setForm((current) => ({ ...current, note: e.target.value }))} /></Field>
           <Button type="submit" variant="outline" disabled={!form.day || add.isPending}>Bloquear</Button>
         </form>
-        {failure && <p role="alert" className="text-sm text-destructive">{failure.fields.day ?? failure.message}</p>}
+        {failure?.fields.day && <p role="alert" className="text-sm text-destructive">{failure.fields.day}</p>}
       </CardContent>
     </Card>
   )

@@ -29,7 +29,7 @@ GRANT INSERT (interpreter_id, slug, title, summary, body, cover_path, tags),
   UPDATE (title, summary, body, cover_path, tags), DELETE ON directory.articles TO authenticated;
 GRANT INSERT (requester_account_id, interpreter_id), DELETE ON directory.favorites TO authenticated;
 
-GRANT SELECT ON directory.my_profile_status TO authenticated;
+GRANT SELECT ON directory.my_profile_status, directory.profile_items TO authenticated;
 GRANT SELECT ON directory.profile_status TO service_role;
 
 -- The rule functions run for the API; the policies' helper is in auth_helper (authenticated).

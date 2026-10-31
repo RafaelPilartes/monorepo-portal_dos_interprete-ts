@@ -13,8 +13,8 @@ CREATE OR REPLACE VIEW directory.listed_interpreters WITH (security_invoker = fa
 SELECT i.account_id, i.slug, p.full_name, p.avatar_path, i.city, i.modality
   FROM identity.interpreter_profiles AS i
   JOIN identity.profiles AS p ON p.id = i.account_id
- JOIN directory.profile_status AS ps ON ps.account_id = i.account_id
- WHERE p.status = 'active' AND cardinality(ps.missing) = 0 AND (SELECT auth_helper.is_active());
+  JOIN directory.listed_ids AS l ON l.account_id = i.account_id
+ WHERE (SELECT auth_helper.is_active());
 
 -- /requesters and /interpreters of admin-web (accounts-and-organizations.md): accounts with their
 -- email and roles, for the team only.

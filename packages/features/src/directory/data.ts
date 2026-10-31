@@ -1,4 +1,4 @@
-import { translatePostgrestError, type createSupabaseClient } from '@portal-dos-interpretes/data'
+import { DataError, translatePostgrestError, type createSupabaseClient } from '@portal-dos-interpretes/data'
 import type { Tables } from '@portal-dos-interpretes/db-types'
 
 // The directory's reads and the interpreter's own writes (interpreter-profile-and-directory.md,
@@ -24,6 +24,7 @@ export type MediaItemRow = Tables<{ schema: 'directory' }, 'media_items'>
 export type ArticleRow = Tables<{ schema: 'directory' }, 'articles'>
 export type FavoriteRow = Tables<{ schema: 'directory' }, 'favorites'>
 export type ProfileStatusRow = Tables<{ schema: 'directory' }, 'my_profile_status'>
+export type ProfileItemRow = Tables<{ schema: 'directory' }, 'profile_items'>
 
 /** The tables an interpreter writes its own rows in (data-model.md §3, "coluna — o próprio"). */
 export type OwnTable = 'availability_rules' | 'availability_exceptions' | 'education' | 'experiences' | 'certifications' | 'media_items' | 'articles'
@@ -45,7 +46,11 @@ export interface InterpreterDetails {
   avatarUrl: string | null
   languages: { id: string; name: string; level: string; isSignLanguage: boolean }[]
   specialties: { id: string; name: string }[]
+  /** The services on offer: active on the profile and in the catalog. */
   services: { id: string; title: string; pricingMode: string; priceAoa: number; description: string | null }[]
+  /** Every language, specialty and service of the profile, items disabled in the catalog included. */
+  items: ProfileItemRow[]
+  blockedDays: AvailabilityExceptionRow[]
   education: EducationRow[]
   experiences: ExperienceRow[]
   certifications: CertificationRow[]
@@ -65,6 +70,23 @@ export class DirectoryRepository {
     const { data, error } = await request
     if (error) throw translatePostgrestError(error, where)
     return (data ?? []) as T[]
+  }
+
+  /**
+   * A write on the own rows must touch one: zero means RLS no longer lets it (the team removed
+   * the item, or it is gone), and the screen must not say it worked.
+   */
+  private async changed(request: PromiseLike<{ data: unknown; error: { code: string; message: string; hint?: string | null } | null }>, where: string): Promise<void> {
+    const rows = await this.rows<unknown>(request, where)
+    if (rows.length === 0) throw new DataError('STATE_CHANGED')
+  }
+
+  private async upload(bucket: 'avatars' | 'interpreter-media', path: string, file: File, refused: string): Promise<void> {
+    const { error } = await this.client.storage.from(bucket).upload(path, file, { contentType: file.type })
+    if (!error) return
+    // Only a size or type refusal is the file's fault (the bucket's limits, AD-022).
+    if (/size|mime|type|payload too large/i.test(error.message)) throw new FileRefused(refused, { cause: error })
+    throw new DataError('INTERNAL_ERROR', { cause: error })
   }
 
   /** The public URL of a file in a public bucket (avatars, interpreter-media), or null. */
@@ -105,41 +127,36 @@ export class DirectoryRepository {
     const id = (profile as InterpreterProfileRow).account_id
     const own = <T>(table: string, order: string, ascending = false) =>
       this.rows<T>(this.from('directory', table).select('*').eq('interpreter_id', id).order(order, { ascending }), `directory.${table}`)
-    const [person, catalog, languages, specialties, services, education, experiences, certifications, videos, articles, availability] = await Promise.all([
+    const [person, items, education, experiences, certifications, videos, articles, availability, blockedDays] = await Promise.all([
       this.rows<{ full_name: string; avatar_path: string | null }>(this.from('identity', 'public_profiles').select('full_name, avatar_path').eq('id', id), 'identity.public_profiles'),
-      this.catalog(),
-      own<InterpreterLanguageRow>('interpreter_languages', 'created_at', true),
-      own<InterpreterSpecialtyRow>('interpreter_specialties', 'created_at', true),
-      own<InterpreterServiceRow>('interpreter_services', 'created_at', true),
+      this.profileItems(id),
       own<EducationRow>('education', 'start_year'),
       own<ExperienceRow>('experiences', 'start_date'),
       own<CertificationRow>('certifications', 'issued_on'),
       own<MediaItemRow>('media_items', 'created_at'),
       own<ArticleRow>('articles', 'published_at'),
       own<AvailabilityRuleRow>('availability_rules', 'start_time', true),
+      this.rows<AvailabilityExceptionRow>(this.from('directory', 'availability_exceptions').select('*').eq('interpreter_id', id)
+        .gte('day', new Date().toISOString().slice(0, 10)).order('day'), 'directory.availability_exceptions'),
     ])
-    const language = new Map(catalog.languages.map((row) => [row.id, row]))
-    const specialty = new Map(catalog.specialties.map((row) => [row.id, row]))
-    const service = new Map(catalog.services.map((row) => [row.id, row]))
+    const of = (kind: string) => items.filter((row) => row.kind === kind)
     return {
       profile: profile as InterpreterProfileRow,
       fullName: person[0]?.full_name ?? '',
       avatarUrl: this.publicUrl('avatars', person[0]?.avatar_path),
-      languages: languages.flatMap((row) => {
-        const item = language.get(row.language_id)
-        return item ? [{ id: item.id, name: item.name, level: row.level, isSignLanguage: item.is_sign_language }] : []
-      }),
-      specialties: specialties.flatMap((row) => {
-        const item = specialty.get(row.specialty_id)
-        return item ? [{ id: item.id, name: item.name }] : []
-      }),
-      services: services.flatMap((row) => {
-        const item = service.get(row.service_id)
-        return item && row.active ? [{ id: row.id, title: item.title, pricingMode: item.pricing_mode, priceAoa: Number(row.price_aoa), description: row.description }] : []
-      }),
-      education, experiences, certifications, videos, articles,
+      languages: of('language').map((row) => ({ id: row.item_id ?? '', name: row.name ?? '', level: row.level ?? '', isSignLanguage: row.is_sign_language === true })),
+      specialties: of('specialty').map((row) => ({ id: row.item_id ?? '', name: row.name ?? '' })),
+      services: of('service').filter((row) => row.link_active && row.catalog_active).map((row) => ({
+        id: row.link_id ?? '', title: row.name ?? '', pricingMode: row.pricing_mode ?? 'hourly', priceAoa: Number(row.price_aoa), description: row.description,
+      })),
+      items, education, experiences, certifications, videos, articles, blockedDays,
       availability: [...availability].sort((a, b) => a.weekday - b.weekday || a.start_time.localeCompare(b.start_time)),
     }
+  }
+
+  /** The catalog items of one interpreter, with names, disabled ones included (directory.profile_items). */
+  async profileItems(interpreterId: string): Promise<ProfileItemRow[]> {
+    return this.rows<ProfileItemRow>(this.from('directory', 'profile_items').select('*').eq('interpreter_id', interpreterId).order('sort'), 'directory.profile_items')
   }
 
   async article(interpreterSlug: string, articleSlug: string): Promise<{ article: ArticleRow; author: string; authorSlug: string } | null> {
@@ -177,23 +194,19 @@ export class DirectoryRepository {
   }
 
   async updateProfile(accountId: string, values: Partial<InterpreterProfileRow>): Promise<void> {
-    const { error } = await this.from('identity', 'interpreter_profiles').update(values).eq('account_id', accountId)
-    if (error) throw translatePostgrestError(error, 'identity.interpreter_profiles')
+    await this.changed(this.from('identity', 'interpreter_profiles').update(values).eq('account_id', accountId).select('account_id'), 'identity.interpreter_profiles')
   }
 
   async updateAvatar(accountId: string, file: File): Promise<string> {
     const path = `${accountId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '-')}`
-    const { error } = await this.client.storage.from('avatars').upload(path, file, { contentType: file.type })
-    if (error) throw new FileRefused('a fotografia tem de ser JPG, PNG ou WebP, até 2 MB', { cause: error })
-    const { error: rowError } = await this.from('identity', 'profiles').update({ avatar_path: path }).eq('id', accountId)
-    if (rowError) throw translatePostgrestError(rowError, 'identity.profiles')
+    await this.upload('avatars', path, file, 'a fotografia tem de ser JPG, PNG ou WebP, até 2 MB')
+    await this.changed(this.from('identity', 'profiles').update({ avatar_path: path }).eq('id', accountId).select('id'), 'identity.profiles')
     return path
   }
 
   async uploadCover(accountId: string, file: File): Promise<string> {
     const path = `${accountId}/covers/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '-')}`
-    const { error } = await this.client.storage.from('interpreter-media').upload(path, file, { contentType: file.type })
-    if (error) throw new FileRefused('a capa tem de ser JPG, PNG ou WebP, até 5 MB', { cause: error })
+    await this.upload('interpreter-media', path, file, 'a capa tem de ser JPG, PNG ou WebP, até 5 MB')
     return path
   }
 
@@ -203,18 +216,15 @@ export class DirectoryRepository {
   }
 
   async updateOwn(table: OwnTable | 'interpreter_services', id: string, values: Record<string, unknown>): Promise<void> {
-    const { error } = await this.from('directory', table).update(values).eq('id', id)
-    if (error) throw translatePostgrestError(error, `directory.${table}`)
+    await this.changed(this.from('directory', table).update(values).eq('id', id).select('id'), `directory.${table}`)
   }
 
   async updateLanguageLevel(accountId: string, languageId: string, level: string): Promise<void> {
-    const { error } = await this.from('directory', 'interpreter_languages').update({ level }).eq('interpreter_id', accountId).eq('language_id', languageId)
-    if (error) throw translatePostgrestError(error, 'directory.interpreter_languages')
+    await this.changed(this.from('directory', 'interpreter_languages').update({ level }).eq('interpreter_id', accountId).eq('language_id', languageId).select('language_id'), 'directory.interpreter_languages')
   }
 
   async deleteOwn(table: OwnTable | 'interpreter_services', id: string): Promise<void> {
-    const { error } = await this.from('directory', table).delete().eq('id', id)
-    if (error) throw translatePostgrestError(error, `directory.${table}`)
+    await this.changed(this.from('directory', table).delete().eq('id', id).select('id'), `directory.${table}`)
   }
 
   async deleteLink(table: 'interpreter_languages' | 'interpreter_specialties', accountId: string, itemId: string): Promise<void> {
@@ -225,14 +235,6 @@ export class DirectoryRepository {
 
   async ownRows<T>(table: OwnTable | 'availability_exceptions', accountId: string, order: string): Promise<T[]> {
     return this.rows<T>(this.from('directory', table).select('*').eq('interpreter_id', accountId).order(order), `directory.${table}`)
-  }
-
-  async ownLinks(accountId: string): Promise<{ languages: InterpreterLanguageRow[]; specialties: InterpreterSpecialtyRow[]; services: InterpreterServiceRow[] }> {
-    const own = <T>(table: string) => this.rows<T>(this.from('directory', table).select('*').eq('interpreter_id', accountId), `directory.${table}`)
-    const [languages, specialties, services] = await Promise.all([
-      own<InterpreterLanguageRow>('interpreter_languages'), own<InterpreterSpecialtyRow>('interpreter_specialties'), own<InterpreterServiceRow>('interpreter_services'),
-    ])
-    return { languages, specialties, services }
   }
 }
 

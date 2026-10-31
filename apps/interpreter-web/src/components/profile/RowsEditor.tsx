@@ -54,7 +54,7 @@ export function RowsEditor<Row extends { id: string }>({ table, title, descripti
   const [editing, setEditing] = useState<{ id: string | null; values: Values } | null>(null)
   const save = useProfileWrite((repository, accountId, input: { id: string | null; values: Values }) => input.id
     ? repository.updateOwn(table, input.id, toRow(fields, input.values))
-    : repository.insertOwn(table, { interpreter_id: accountId, ...toRow(fields, input.values) }))
+    : repository.insertOwn(table, { interpreter_id: accountId, ...toRow(fields, input.values) }), 'Alterações guardadas.', fields.map(({ key }) => key))
   const remove = useProfileWrite((repository, _accountId, id: string) => repository.deleteOwn(table, id), 'Removido.')
   const errors = save.isError ? failureOf(save.error).fields : {}
   const set = (key: string, value: string | boolean) => setEditing((current) => current && { ...current, values: { ...current.values, [key]: value } })

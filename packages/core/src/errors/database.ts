@@ -58,6 +58,11 @@ export const DOMAIN_FIELDS: Readonly<Record<string, { field: string; message: st
 export const CHECK_FIELDS: Readonly<Record<string, { field: string; message: string }>> = {
   languages_code_check: { field: 'code', message: 'Usa de 2 a 8 letras minúsculas (ex.: pt, lga).' },
   services_platform_price_aoa_check: { field: 'platform_price_aoa', message: 'O preço de tabela tem de ser maior que zero.' },
+  // H4: the checks across two columns, on the second one.
+  education_check: { field: 'end_year', message: 'O ano de fim não pode ser antes do ano de início.' },
+  experiences_check: { field: 'end_date', message: 'A data de fim não pode ser antes da data de início.' },
+  certifications_check: { field: 'expires_on', message: 'A validade não pode ser antes da data de emissão.' },
+  availability_rules_check: { field: 'end_time', message: 'A hora de fim tem de ser depois da hora de início.' },
 }
 
 const FIELD_HINT = /^([a-z_]+):([a-z_]+)$/

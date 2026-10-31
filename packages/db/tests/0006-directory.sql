@@ -152,6 +152,31 @@ BEGIN
 END $$;
 RESET ROLE;
 
+-- Review of H4: a language disabled in the catalog stays on the profile; documents still to accept
+-- do not hide a listed profile from its card (R-DIR-03 written once, directory.listed_ids).
+UPDATE catalog.languages SET active = false
+ WHERE id = (SELECT language_id FROM directory.interpreter_languages WHERE interpreter_id = '00000000-0000-4000-8000-0000000000d1');
+INSERT INTO identity.legal_documents (kind, version, body, published_at)
+SELECT kind, version + 1, body, now() FROM identity.legal_documents WHERE kind = 'terms' ORDER BY version DESC LIMIT 1;
+-- Rui accepts the new version, Dina does not.
+INSERT INTO identity.consents (account_id, legal_document_id)
+SELECT '00000000-0000-4000-8000-0000000000d2', d.id FROM auth_helper.pending_legal_documents('00000000-0000-4000-8000-0000000000d2') AS d;
+DO $$ BEGIN PERFORM set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000d2", "role": "authenticated"}', true); END $$;
+SET LOCAL ROLE authenticated;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM directory.profile_items WHERE interpreter_id = '00000000-0000-4000-8000-0000000000d1'
+                   AND kind = 'language' AND NOT catalog_active) THEN
+    RAISE EXCEPTION 'FAIL - a language disabled in the catalog stays on the profile';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM directory.public_listing WHERE account_id = '00000000-0000-4000-8000-0000000000d1')
+     OR NOT EXISTS (SELECT 1 FROM identity.interpreter_profiles WHERE account_id = '00000000-0000-4000-8000-0000000000d1') THEN
+    RAISE EXCEPTION 'FAIL - an interpreter with documents to accept stays listed and readable';
+  END IF;
+  RAISE NOTICE 'ok - disabled catalog items stay on the profile; documents to accept do not hide a listed profile (review of H4)';
+END $$;
+RESET ROLE;
+
 -- Criterion 3: a suspended interpreter leaves every directory view.
 DO $$ BEGIN PERFORM identity.suspend_account('00000000-0000-4000-8000-0000000000d3', '00000000-0000-4000-8000-0000000000d1', 'Fraude comprovada'); END $$;
 DO $$ BEGIN PERFORM set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000d2", "role": "authenticated"}', true); END $$;
