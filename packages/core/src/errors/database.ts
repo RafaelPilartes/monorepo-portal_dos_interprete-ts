@@ -18,6 +18,23 @@ export interface DatabaseErrorInput {
 export interface DatabaseErrorAnswer {
   code: ErrorCode
   details?: Record<string, string>
+  /** The values a rule's message needs (START_TOO_SOON's minimum), from HINT "params:{json}". */
+  params?: Record<string, string | number>
+}
+
+const PARAMS_HINT = 'params:'
+
+/** The message values a SQL function sent with its refusal (RAISE ... HINT = 'params:{json}'), or undefined. */
+export function paramsOfHint(hint: string | undefined): Record<string, string | number> | undefined {
+  if (!hint?.startsWith(PARAMS_HINT)) return undefined
+  try {
+    const parsed: unknown = JSON.parse(hint.slice(PARAMS_HINT.length))
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return undefined
+    return Object.fromEntries(Object.entries(parsed).filter((entry): entry is [string, string | number] =>
+      typeof entry[1] === 'string' || typeof entry[1] === 'number'))
+  } catch {
+    return undefined
+  }
 }
 
 /** Constraint name → catalog code; feature steps add their unique and check constraints here. */
@@ -40,6 +57,8 @@ export const FIELD_REASONS: Readonly<Record<string, string>> = {
   pricing_mode_locked: 'O modo de preço não muda depois de usado. Cria um serviço novo e desactiva este.',
   required: 'Preenche este campo.',
   invalid: 'Valor inválido.',
+  not_available: 'Este tipo de pedido ainda não está disponível.',
+  already_invited: 'Este intérprete já foi convidado para este pedido.',
 }
 
 /** Shared domains (util.*) → their own catalog code, whose field the catalog names. */

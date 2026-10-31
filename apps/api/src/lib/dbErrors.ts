@@ -1,6 +1,7 @@
 import {
   answerForValueError,
   CONSTRAINT_CODES,
+  paramsOfHint,
   isErrorCode,
   type DatabaseErrorAnswer,
   type ErrorCode,
@@ -29,7 +30,10 @@ export type { DatabaseErrorAnswer }
 
 /** A database error as the API answers it: the code and, for a bad value, the field. */
 export function answerForDatabaseError(error: DatabaseErrorLike & { column?: string; table?: string }, fieldMessage: string): DatabaseErrorAnswer {
-  return answerForValueError(error, fieldMessage) ?? { code: codeForDatabaseError(error) }
+  const value = answerForValueError(error, fieldMessage)
+  if (value) return value
+  const params = error.code === 'P0001' ? paramsOfHint(error.hint) : undefined
+  return params ? { code: codeForDatabaseError(error), params } : { code: codeForDatabaseError(error) }
 }
 
 export function codeForDatabaseError(error: DatabaseErrorLike): ErrorCode {

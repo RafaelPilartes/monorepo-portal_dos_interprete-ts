@@ -866,6 +866,66 @@ def check_db_error_map(ctx: Context) -> list[Violation]:
     return violations
 
 
+# --- check: no-price-arithmetic (since H5) -----------------------------------------------------
+
+# requests-core.md criterion 3 (R-REQ-02): the screens never compute a price or a total; they ask
+# booking.preview_request_total (POST /requests/preview) and show the result.
+PRICE_ARITHMETIC = re.compile(
+    r"\b\w*(?:[Pp]rice|[Aa]oa|[Ff]ee|[Tt]otal|[Aa]mount)\w*\b\s*[*+](?![+=])"
+    r"|(?<![+*])[*+]\s*[\w.!?\[\]]*?(?:[Pp]rice|[Aa]oa|[Ff]ee|[Tt]otal|[Aa]mount)\w*\b"
+)
+
+
+# Mock screens still summing their example data, each removed by the step that wires it (AD-034):
+# the earnings (H10) and the verification history (H12). Nothing may be added to this list.
+PRICE_ARITHMETIC_MOCKS = {
+    "apps/interpreter-web/src/pages/dashboard/interpreter/InterpreterEarnings.tsx",
+    "apps/admin-web/src/pages/dashboard/admin/AdminVerificationHistory.tsx",
+}
+
+
+def check_no_price_arithmetic(ctx: Context) -> list[Violation]:
+    """No app multiplies or adds prices, fees or totals (requests-core.md criterion 3)."""
+    violations = []
+    for path in code_files(ctx.root):
+        rel = relative(ctx.root, path)
+        if rel in PRICE_ARITHMETIC_MOCKS:
+            continue
+        if not rel.startswith("apps/") or rel.startswith("apps/api/") or ".test." in rel or not rel.endswith((".ts", ".tsx")):
+            continue
+        code, _ = mask_source(path.read_text())
+        for match in PRICE_ARITHMETIC.finditer(code):
+            violations.append(Violation(rel, line_of(code, match.start()), "price arithmetic in a screen: ask booking.preview_request_total"))
+    return violations
+
+
+# --- check: request-status-writes (since H5) ----------------------------------------------------
+
+# requests-core.md criterion 8 (R-REQ-04): the status of a request is written only by
+# refresh_request_status and by the explicit transitions of data-model.md §5.
+REQUEST_STATUS_WRITERS = {
+    "booking.refresh_request_status", "booking.expire_unstaffed_requests", "booking.cancel_request",
+    "booking.approve_managed_request", "booking.reject_managed_request", "booking.accept_quote",
+    "identity.suspend_account", "identity.suspend_organization", "booking.on_payment_event",
+}
+SQL_FUNCTION = re.compile(r"\bCREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+([\w.]+)", re.I)
+REQUEST_STATUS_UPDATE = re.compile(r"\bUPDATE\s+booking\.requests\b[^;]*?\bSET\b[^;]*?\bstatus\s*=", re.I | re.S)
+
+
+def check_request_status_writes(ctx: Context) -> list[Violation]:
+    """UPDATE booking.requests SET status only inside the functions data-model.md §5 names."""
+    violations = []
+    for path in sql_files(ctx.root, "functions"):
+        text = strip_sql_comments(path.read_text(encoding="utf-8"))
+        starts = [(m.start(), m.group(1).lower()) for m in SQL_FUNCTION.finditer(text)]
+        for match in REQUEST_STATUS_UPDATE.finditer(text):
+            owner = next((name for start, name in reversed(starts) if start < match.start()), "")
+            if owner not in REQUEST_STATUS_WRITERS:
+                violations.append(Violation(relative(ctx.root, path), line_of(text, match.start()),
+                                            f"request status written by {owner or 'a statement outside a function'}"))
+    return violations
+
+
 CHECKS: dict[str, Callable[[Context], list[Violation]]] = {
     "no-direct-data-access": check_no_direct_data_access,
     "no-cross-app-import": check_no_cross_app_import,
@@ -887,6 +947,8 @@ CHECKS: dict[str, Callable[[Context], list[Violation]]] = {
     "api-error-shape": check_api_error_shape,
     "no-function-star": check_no_function_star,
     "db-error-map": check_db_error_map,
+    "no-price-arithmetic": check_no_price_arithmetic,
+    "request-status-writes": check_request_status_writes,
 }
 
 

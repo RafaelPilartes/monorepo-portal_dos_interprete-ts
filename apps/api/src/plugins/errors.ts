@@ -40,7 +40,7 @@ export function registerErrorHandling(server: FastifyInstance): void {
       // Rule refusals (P0001) and refused values are expected; every other database error is logged.
       if (answer.code === 'INTERNAL_ERROR') request.log.error({ err: error }, 'database error')
       else if (error.code !== 'P0001') request.log.info({ err: error, mappedTo: answer.code }, 'database refused a value')
-      return sendApiError(reply, answer.code, undefined, answer.details)
+      return sendApiError(reply, answer.code, answer.params, answer.details)
     }
     const status = (error as FastifyError).statusCode
     if (status === 429) return sendApiError(reply, 'RATE_LIMITED')

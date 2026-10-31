@@ -17,6 +17,7 @@ import { registerFileRoutes } from './routes/files.js'
 import { registerMeRoute } from './routes/me.js'
 import { registerHealthRoute } from './routes/health.js'
 import { registerOrganizationRoutes } from './routes/organizations.js'
+import { registerRequestRoutes } from './routes/requests.js'
 
 export interface ServerOptions {
   /** Short git commit of the build; "unknown" when not provided. */
@@ -71,6 +72,7 @@ export async function buildServer(options: ServerOptions = {}): Promise<FastifyI
     registerContentRoutes(server, { db: options.db })
     registerMeRoute(server, { db: options.db })
     registerOrganizationRoutes(server, { db: options.db })
+    registerRequestRoutes(server, { db: options.db })
     if (options.authServer && options.appUrls) {
       registerAccountRoutes(server, { db: options.db, authServer: options.authServer, appUrls: options.appUrls })
     }
