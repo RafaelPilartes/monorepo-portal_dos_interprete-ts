@@ -42,6 +42,7 @@ export default defineConfig({
     { name: 'admin', testMatch: /(admin-routes|h1-.*|h3-.*)\.spec\.ts$/, dependencies: ['admin-login'], use: { storageState: ADMIN_STATE } },
     { name: 'panels', testMatch: /(requester|interpreter)-routes\.spec\.ts$/, dependencies: ['panel-login'], use: { storageState: PANEL_STATE } },
     { name: 'h2', testMatch: /h2-.*\.spec\.ts$/, dependencies: ['admin-login'], use: { storageState: ADMIN_STATE } },
+    { name: 'h4', testMatch: /h4-.*\.spec\.ts$/ },
   ],
   webServer: [
     {
