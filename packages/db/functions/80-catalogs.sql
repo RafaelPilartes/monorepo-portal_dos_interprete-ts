@@ -13,7 +13,13 @@ SELECT 'specialty', s.specialty_id, count(*)::integer
   FROM directory.interpreter_specialties AS s GROUP BY s.specialty_id
 UNION ALL
 SELECT 'service', s.service_id, count(*)::integer
-  FROM directory.interpreter_services AS s GROUP BY s.service_id;
+  FROM directory.interpreter_services AS s GROUP BY s.service_id
+UNION ALL
+SELECT 'service', r.service_id, count(*)::integer
+  FROM booking.requests AS r GROUP BY r.service_id
+UNION ALL
+SELECT 'language', l.language_id, count(*)::integer
+  FROM booking.request_languages AS l GROUP BY l.language_id;
 
 CREATE OR REPLACE FUNCTION catalog.usage_count(p_kind text, p_id uuid) RETURNS integer
   LANGUAGE sql STABLE SECURITY DEFINER

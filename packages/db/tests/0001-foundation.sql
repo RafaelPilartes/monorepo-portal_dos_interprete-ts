@@ -161,7 +161,12 @@ DECLARE v_unexpected text; v_expected text[] := ARRAY['authenticated UPDATE noti
     'authenticated UPDATE directory.articles.summary', 'authenticated UPDATE directory.articles.body',
     'authenticated UPDATE directory.articles.cover_path', 'authenticated UPDATE directory.articles.tags',
     'authenticated INSERT directory.favorites.requester_account_id',
-    'authenticated INSERT directory.favorites.interpreter_id'];
+    'authenticated INSERT directory.favorites.interpreter_id',
+    -- H5 (data-model.md §5): chat messages and read marks.
+    'authenticated INSERT booking.messages.thread_id', 'authenticated INSERT booking.messages.sender_account',
+    'authenticated INSERT booking.messages.body', 'authenticated INSERT booking.thread_reads.thread_id',
+    'authenticated INSERT booking.thread_reads.account_id', 'authenticated INSERT booking.thread_reads.last_read_at',
+    'authenticated UPDATE booking.thread_reads.last_read_at'];
 BEGIN
   SELECT string_agg(entry, ', ') INTO v_unexpected FROM (
     SELECT format('%s %s %s.%s.%s', pg_get_userbyid(a.grantee), a.privilege_type, n.nspname, c.relname, att.attname) AS entry

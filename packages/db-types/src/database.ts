@@ -148,13 +148,1104 @@ export type Database = {
     };
     "booking": {
         Tables: {
-            [_ in never]: never;
+            "messages": {
+                Row: {
+                    "attachment_path": string | null;
+                    "body": string;
+                    "created_at": string;
+                    "id": string;
+                    "sender_account": string;
+                    "sender_role": string;
+                    "thread_id": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "attachment_path"?: string | null;
+                    "body": string;
+                    "created_at"?: string;
+                    "id"?: string;
+                    "sender_account": string;
+                    "sender_role": string;
+                    "thread_id": string;
+                };
+                Update: {
+                    "attachment_path"?: string | null;
+                    "body"?: string;
+                    "created_at"?: string;
+                    "id"?: string;
+                    "sender_account"?: string;
+                    "sender_role"?: string;
+                    "thread_id"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "messages_thread_id_fkey";
+                        columns: [
+                            "thread_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "assignment_details";
+                        referencedColumns: [
+                            "thread_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "messages_thread_id_fkey";
+                        columns: [
+                            "thread_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "threads";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "request_assignments": {
+                Row: {
+                    "agreed_price_aoa": number | null;
+                    "agreed_travel_fee_aoa": number | null;
+                    "cancel_reason": string | null;
+                    "cancelled_by_role": string | null;
+                    "completed_at": string | null;
+                    "completed_via": string | null;
+                    "created_at": string;
+                    "decline_reason": string | null;
+                    "delivered_at": string | null;
+                    "id": string;
+                    "interpreter_id": string;
+                    "interpreter_share_aoa": number | null;
+                    "invite_expires_at": string | null;
+                    "late_cancellation": boolean;
+                    "offered_price_aoa": number | null;
+                    "offered_travel_fee_aoa": number | null;
+                    "origin": string;
+                    "period": unknown;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "agreed_price_aoa"?: number | null;
+                    "agreed_travel_fee_aoa"?: number | null;
+                    "cancel_reason"?: string | null;
+                    "cancelled_by_role"?: string | null;
+                    "completed_at"?: string | null;
+                    "completed_via"?: string | null;
+                    "created_at"?: string;
+                    "decline_reason"?: string | null;
+                    "delivered_at"?: string | null;
+                    "id"?: string;
+                    "interpreter_id": string;
+                    "interpreter_share_aoa"?: number | null;
+                    "invite_expires_at"?: string | null;
+                    "late_cancellation"?: boolean;
+                    "offered_price_aoa"?: number | null;
+                    "offered_travel_fee_aoa"?: number | null;
+                    "origin": string;
+                    "period"?: unknown;
+                    "request_id": string;
+                    "responded_at"?: string | null;
+                    "status": string;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "agreed_price_aoa"?: number | null;
+                    "agreed_travel_fee_aoa"?: number | null;
+                    "cancel_reason"?: string | null;
+                    "cancelled_by_role"?: string | null;
+                    "completed_at"?: string | null;
+                    "completed_via"?: string | null;
+                    "created_at"?: string;
+                    "decline_reason"?: string | null;
+                    "delivered_at"?: string | null;
+                    "id"?: string;
+                    "interpreter_id"?: string;
+                    "interpreter_share_aoa"?: number | null;
+                    "invite_expires_at"?: string | null;
+                    "late_cancellation"?: boolean;
+                    "offered_price_aoa"?: number | null;
+                    "offered_travel_fee_aoa"?: number | null;
+                    "origin"?: string;
+                    "period"?: unknown;
+                    "request_id"?: string;
+                    "responded_at"?: string | null;
+                    "status"?: string;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "request_assignments_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "request_assignments_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "requests";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "request_events": {
+                Row: {
+                    "actor_account": string | null;
+                    "actor_role": string;
+                    "assignment_id": string | null;
+                    "at": string;
+                    "from_status": string | null;
+                    "id": number;
+                    "reason": string | null;
+                    "request_id": string;
+                    "to_status": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "actor_account"?: string | null;
+                    "actor_role": string;
+                    "assignment_id"?: string | null;
+                    "at"?: string;
+                    "from_status"?: string | null;
+                    "id"?: never;
+                    "reason"?: string | null;
+                    "request_id": string;
+                    "to_status": string;
+                };
+                Update: {
+                    "actor_account"?: string | null;
+                    "actor_role"?: string;
+                    "assignment_id"?: string | null;
+                    "at"?: string;
+                    "from_status"?: string | null;
+                    "id"?: never;
+                    "reason"?: string | null;
+                    "request_id"?: string;
+                    "to_status"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "request_events_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "assignment_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "request_events_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "request_events_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "request_events_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "request_events_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "requests";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "request_languages": {
+                Row: {
+                    "language_id": string;
+                    "request_id": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "language_id": string;
+                    "request_id": string;
+                };
+                Update: {
+                    "language_id"?: string;
+                    "request_id"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "request_languages_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "request_languages_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "requests";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "requests": {
+                Row: {
+                    "address": string | null;
+                    "approved_at": string | null;
+                    "approved_by": string | null;
+                    "beneficiary_contact": string | null;
+                    "beneficiary_name": string | null;
+                    "budget_per_interpreter_aoa": number | null;
+                    "cancel_reason": string | null;
+                    "cancelled_at": string | null;
+                    "cancelled_by": string | null;
+                    "cancelled_by_role": string | null;
+                    "city": string | null;
+                    "code": string;
+                    "config_version_id": string;
+                    "created_at": string;
+                    "created_by": string;
+                    "duration_minutes": number;
+                    "ends_at": string;
+                    "id": string;
+                    "interpreters_needed": number;
+                    "is_urgent": boolean;
+                    "kind": string;
+                    "managed_unit_price_aoa": number | null;
+                    "meeting_link": string | null;
+                    "modality": string;
+                    "notes": string | null;
+                    "open_mode": string | null;
+                    "organization_id": string | null;
+                    "service_id": string;
+                    "starts_at": string;
+                    "status": string;
+                    "understaffed_warned_at": string | null;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "address"?: string | null;
+                    "approved_at"?: string | null;
+                    "approved_by"?: string | null;
+                    "beneficiary_contact"?: string | null;
+                    "beneficiary_name"?: string | null;
+                    "budget_per_interpreter_aoa"?: number | null;
+                    "cancel_reason"?: string | null;
+                    "cancelled_at"?: string | null;
+                    "cancelled_by"?: string | null;
+                    "cancelled_by_role"?: string | null;
+                    "city"?: string | null;
+                    "code": string;
+                    "config_version_id": string;
+                    "created_at"?: string;
+                    "created_by": string;
+                    "duration_minutes": number;
+                    "ends_at": string;
+                    "id"?: string;
+                    "interpreters_needed": number;
+                    "is_urgent": boolean;
+                    "kind": string;
+                    "managed_unit_price_aoa"?: number | null;
+                    "meeting_link"?: string | null;
+                    "modality": string;
+                    "notes"?: string | null;
+                    "open_mode"?: string | null;
+                    "organization_id"?: string | null;
+                    "service_id": string;
+                    "starts_at": string;
+                    "status": string;
+                    "understaffed_warned_at"?: string | null;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "address"?: string | null;
+                    "approved_at"?: string | null;
+                    "approved_by"?: string | null;
+                    "beneficiary_contact"?: string | null;
+                    "beneficiary_name"?: string | null;
+                    "budget_per_interpreter_aoa"?: number | null;
+                    "cancel_reason"?: string | null;
+                    "cancelled_at"?: string | null;
+                    "cancelled_by"?: string | null;
+                    "cancelled_by_role"?: string | null;
+                    "city"?: string | null;
+                    "code"?: string;
+                    "config_version_id"?: string;
+                    "created_at"?: string;
+                    "created_by"?: string;
+                    "duration_minutes"?: number;
+                    "ends_at"?: string;
+                    "id"?: string;
+                    "interpreters_needed"?: number;
+                    "is_urgent"?: boolean;
+                    "kind"?: string;
+                    "managed_unit_price_aoa"?: number | null;
+                    "meeting_link"?: string | null;
+                    "modality"?: string;
+                    "notes"?: string | null;
+                    "open_mode"?: string | null;
+                    "organization_id"?: string | null;
+                    "service_id"?: string;
+                    "starts_at"?: string;
+                    "status"?: string;
+                    "understaffed_warned_at"?: string | null;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                ];
+            };
+            "thread_reads": {
+                Row: {
+                    "account_id": string;
+                    "last_read_at": string;
+                    "thread_id": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "account_id": string;
+                    "last_read_at"?: string;
+                    "thread_id": string;
+                };
+                Update: {
+                    "account_id"?: string;
+                    "last_read_at"?: string;
+                    "thread_id"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "thread_reads_thread_id_fkey";
+                        columns: [
+                            "thread_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "assignment_details";
+                        referencedColumns: [
+                            "thread_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "thread_reads_thread_id_fkey";
+                        columns: [
+                            "thread_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "threads";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "threads": {
+                Row: {
+                    "assignment_id": string | null;
+                    "closes_at": string | null;
+                    "created_at": string;
+                    "id": string;
+                    "kind": string;
+                    "request_id": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "assignment_id"?: string | null;
+                    "closes_at"?: string | null;
+                    "created_at"?: string;
+                    "id"?: string;
+                    "kind": string;
+                    "request_id": string;
+                };
+                Update: {
+                    "assignment_id"?: string | null;
+                    "closes_at"?: string | null;
+                    "created_at"?: string;
+                    "id"?: string;
+                    "kind"?: string;
+                    "request_id"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "threads_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "assignment_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "threads_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "threads_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "threads_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "threads_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "requests";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
         };
         Views: {
-            [_ in never]: never;
+            "assignment_details": {
+                Row: {
+                    "agreed_price_aoa": number | null;
+                    "agreed_travel_fee_aoa": number | null;
+                    "cancel_reason": string | null;
+                    "created_at": string;
+                    "decline_reason": string | null;
+                    "id": string;
+                    "interpreter_avatar_path": string | null;
+                    "interpreter_id": string;
+                    "interpreter_name": string;
+                    "interpreter_slug": string;
+                    "invite_expires_at": string | null;
+                    "offered_price_aoa": number | null;
+                    "offered_travel_fee_aoa": number | null;
+                    "origin": string;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "status": string;
+                    "thread_id": string | null;
+                };
+                ComputedFields: never;
+                Relationships: [
+                    {
+                        foreignKeyName: "request_assignments_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "request_assignments_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "requests";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "my_assignments": {
+                Row: {
+                    "agreed_price_aoa": number | null;
+                    "agreed_travel_fee_aoa": number | null;
+                    "city": string | null;
+                    "code": string;
+                    "created_at": string;
+                    "duration_minutes": number;
+                    "id": string;
+                    "invite_expires_at": string | null;
+                    "is_urgent": boolean;
+                    "kind": string;
+                    "modality": string;
+                    "offered_price_aoa": number | null;
+                    "offered_travel_fee_aoa": number | null;
+                    "pricing_mode": string;
+                    "request_id": string;
+                    "request_status": string;
+                    "service_title": string;
+                    "starts_at": string;
+                    "status": string;
+                };
+                ComputedFields: never;
+                Relationships: [
+                    {
+                        foreignKeyName: "request_assignments_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "request_assignments_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "requests";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "request_details": {
+                Row: {
+                    "accepted_count": number | null;
+                    "address": string | null;
+                    "beneficiary_contact": string | null;
+                    "beneficiary_name": string | null;
+                    "can_manage": boolean | null;
+                    "city": string | null;
+                    "code": string;
+                    "config_version_id": string;
+                    "created_at": string;
+                    "created_by": string;
+                    "created_by_name": string | null;
+                    "duration_minutes": number;
+                    "ends_at": string;
+                    "id": string;
+                    "interpreters_needed": number;
+                    "is_urgent": boolean;
+                    "kind": string;
+                    "language_names": (string)[] | null;
+                    "meeting_link": string | null;
+                    "modality": string;
+                    "notes": string | null;
+                    "open_mode": string | null;
+                    "organization_id": string | null;
+                    "organization_name": string | null;
+                    "pricing_mode": string;
+                    "service_id": string;
+                    "service_title": string;
+                    "starts_at": string;
+                    "status": string;
+                };
+                ComputedFields: never;
+                Relationships: [
+                ];
+            };
+            "request_timeline": {
+                Row: {
+                    "actor_name": string | null;
+                    "actor_role": string;
+                    "assignment_id": string | null;
+                    "at": string;
+                    "from_status": string | null;
+                    "id": number;
+                    "interpreter_name": string | null;
+                    "reason": string | null;
+                    "request_id": string;
+                    "to_status": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "actor_name"?: never;
+                    "actor_role"?: string | null;
+                    "assignment_id"?: string | null;
+                    "at"?: string | null;
+                    "from_status"?: string | null;
+                    "id"?: number | null;
+                    "interpreter_name"?: never;
+                    "reason"?: string | null;
+                    "request_id"?: string | null;
+                    "to_status"?: string | null;
+                };
+                Update: {
+                    "actor_name"?: never;
+                    "actor_role"?: string | null;
+                    "assignment_id"?: string | null;
+                    "at"?: string | null;
+                    "from_status"?: string | null;
+                    "id"?: number | null;
+                    "interpreter_name"?: never;
+                    "reason"?: string | null;
+                    "request_id"?: string | null;
+                    "to_status"?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "request_events_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "assignment_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "request_events_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "request_events_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "request_events_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "request_events_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "requests";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
         };
         Functions: {
-            [_ in never]: never;
+            "accept_assignment": {
+                Args: {
+                    "p_actor": string;
+                    "p_assignment": string;
+                };
+                Returns: {
+                    "agreed_price_aoa": number | null;
+                    "agreed_travel_fee_aoa": number | null;
+                    "cancel_reason": string | null;
+                    "cancelled_by_role": string | null;
+                    "completed_at": string | null;
+                    "completed_via": string | null;
+                    "created_at": string;
+                    "decline_reason": string | null;
+                    "delivered_at": string | null;
+                    "id": string;
+                    "interpreter_id": string;
+                    "interpreter_share_aoa": number | null;
+                    "invite_expires_at": string | null;
+                    "late_cancellation": boolean;
+                    "offered_price_aoa": number | null;
+                    "offered_travel_fee_aoa": number | null;
+                    "origin": string;
+                    "period": unknown;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "request_assignments";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "add_invite": {
+                Args: {
+                    "p_actor": string;
+                    "p_interpreter": string;
+                    "p_request": Omit<Database["booking"]['Tables']["requests"]['Row'], Database["booking"]['Tables']["requests"]['ComputedFields']>;
+                };
+                Returns: {
+                    "agreed_price_aoa": number | null;
+                    "agreed_travel_fee_aoa": number | null;
+                    "cancel_reason": string | null;
+                    "cancelled_by_role": string | null;
+                    "completed_at": string | null;
+                    "completed_via": string | null;
+                    "created_at": string;
+                    "decline_reason": string | null;
+                    "delivered_at": string | null;
+                    "id": string;
+                    "interpreter_id": string;
+                    "interpreter_share_aoa": number | null;
+                    "invite_expires_at": string | null;
+                    "late_cancellation": boolean;
+                    "offered_price_aoa": number | null;
+                    "offered_travel_fee_aoa": number | null;
+                    "origin": string;
+                    "period": unknown;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "request_assignments";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "can_manage_request": {
+                Args: {
+                    "p_account": string;
+                    "p_request": string;
+                };
+                Returns: boolean;
+            };
+            "create_request": {
+                Args: {
+                    "p_actor": string;
+                    "p_input": Json;
+                };
+                Returns: {
+                    "address": string | null;
+                    "approved_at": string | null;
+                    "approved_by": string | null;
+                    "beneficiary_contact": string | null;
+                    "beneficiary_name": string | null;
+                    "budget_per_interpreter_aoa": number | null;
+                    "cancel_reason": string | null;
+                    "cancelled_at": string | null;
+                    "cancelled_by": string | null;
+                    "cancelled_by_role": string | null;
+                    "city": string | null;
+                    "code": string;
+                    "config_version_id": string;
+                    "created_at": string;
+                    "created_by": string;
+                    "duration_minutes": number;
+                    "ends_at": string;
+                    "id": string;
+                    "interpreters_needed": number;
+                    "is_urgent": boolean;
+                    "kind": string;
+                    "managed_unit_price_aoa": number | null;
+                    "meeting_link": string | null;
+                    "modality": string;
+                    "notes": string | null;
+                    "open_mode": string | null;
+                    "organization_id": string | null;
+                    "service_id": string;
+                    "starts_at": string;
+                    "status": string;
+                    "understaffed_warned_at": string | null;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "requests";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "decline_assignment": {
+                Args: {
+                    "p_actor": string;
+                    "p_assignment": string;
+                    "p_reason": string;
+                };
+                Returns: {
+                    "agreed_price_aoa": number | null;
+                    "agreed_travel_fee_aoa": number | null;
+                    "cancel_reason": string | null;
+                    "cancelled_by_role": string | null;
+                    "completed_at": string | null;
+                    "completed_via": string | null;
+                    "created_at": string;
+                    "decline_reason": string | null;
+                    "delivered_at": string | null;
+                    "id": string;
+                    "interpreter_id": string;
+                    "interpreter_share_aoa": number | null;
+                    "invite_expires_at": string | null;
+                    "late_cancellation": boolean;
+                    "offered_price_aoa": number | null;
+                    "offered_travel_fee_aoa": number | null;
+                    "origin": string;
+                    "period": unknown;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "request_assignments";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "ensure_thread": {
+                Args: {
+                    "p_assignment": string;
+                    "p_request": string;
+                };
+                Returns: string;
+            };
+            "expire_invites": {
+                Args: Record<PropertyKey, never>;
+                Returns: number;
+            };
+            "expire_unstaffed_requests": {
+                Args: Record<PropertyKey, never>;
+                Returns: number;
+            };
+            "invite_interpreter": {
+                Args: {
+                    "p_actor": string;
+                    "p_interpreter": string;
+                    "p_request": string;
+                };
+                Returns: {
+                    "agreed_price_aoa": number | null;
+                    "agreed_travel_fee_aoa": number | null;
+                    "cancel_reason": string | null;
+                    "cancelled_by_role": string | null;
+                    "completed_at": string | null;
+                    "completed_via": string | null;
+                    "created_at": string;
+                    "decline_reason": string | null;
+                    "delivered_at": string | null;
+                    "id": string;
+                    "interpreter_id": string;
+                    "interpreter_share_aoa": number | null;
+                    "invite_expires_at": string | null;
+                    "late_cancellation": boolean;
+                    "offered_price_aoa": number | null;
+                    "offered_travel_fee_aoa": number | null;
+                    "origin": string;
+                    "period": unknown;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "request_assignments";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "log_event": {
+                Args: {
+                    "p_actor": string;
+                    "p_assignment": string;
+                    "p_from": string;
+                    "p_reason"?: string;
+                    "p_request": string;
+                    "p_role": string;
+                    "p_to": string;
+                };
+                Returns: undefined;
+            };
+            "notify_request": {
+                Args: {
+                    "p_accounts": (string)[];
+                    "p_app": string;
+                    "p_extra"?: Json;
+                    "p_kind": string;
+                    "p_request": string;
+                };
+                Returns: undefined;
+            };
+            "preview_request_total": {
+                Args: {
+                    "p_input": Json;
+                };
+                Returns: Json;
+            };
+            "reduce_interpreters_needed": {
+                Args: {
+                    "p_actor": string;
+                    "p_needed": number;
+                    "p_request": string;
+                };
+                Returns: {
+                    "address": string | null;
+                    "approved_at": string | null;
+                    "approved_by": string | null;
+                    "beneficiary_contact": string | null;
+                    "beneficiary_name": string | null;
+                    "budget_per_interpreter_aoa": number | null;
+                    "cancel_reason": string | null;
+                    "cancelled_at": string | null;
+                    "cancelled_by": string | null;
+                    "cancelled_by_role": string | null;
+                    "city": string | null;
+                    "code": string;
+                    "config_version_id": string;
+                    "created_at": string;
+                    "created_by": string;
+                    "duration_minutes": number;
+                    "ends_at": string;
+                    "id": string;
+                    "interpreters_needed": number;
+                    "is_urgent": boolean;
+                    "kind": string;
+                    "managed_unit_price_aoa": number | null;
+                    "meeting_link": string | null;
+                    "modality": string;
+                    "notes": string | null;
+                    "open_mode": string | null;
+                    "organization_id": string | null;
+                    "service_id": string;
+                    "starts_at": string;
+                    "status": string;
+                    "understaffed_warned_at": string | null;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "requests";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "refresh_request_status": {
+                Args: {
+                    "p_actor"?: string;
+                    "p_request": string;
+                    "p_role"?: string;
+                };
+                Returns: string;
+            };
+            "update_meeting_link": {
+                Args: {
+                    "p_actor": string;
+                    "p_link": string;
+                    "p_request": string;
+                };
+                Returns: {
+                    "address": string | null;
+                    "approved_at": string | null;
+                    "approved_by": string | null;
+                    "beneficiary_contact": string | null;
+                    "beneficiary_name": string | null;
+                    "budget_per_interpreter_aoa": number | null;
+                    "cancel_reason": string | null;
+                    "cancelled_at": string | null;
+                    "cancelled_by": string | null;
+                    "cancelled_by_role": string | null;
+                    "city": string | null;
+                    "code": string;
+                    "config_version_id": string;
+                    "created_at": string;
+                    "created_by": string;
+                    "duration_minutes": number;
+                    "ends_at": string;
+                    "id": string;
+                    "interpreters_needed": number;
+                    "is_urgent": boolean;
+                    "kind": string;
+                    "managed_unit_price_aoa": number | null;
+                    "meeting_link": string | null;
+                    "modality": string;
+                    "notes": string | null;
+                    "open_mode": string | null;
+                    "organization_id": string | null;
+                    "service_id": string;
+                    "starts_at": string;
+                    "status": string;
+                    "understaffed_warned_at": string | null;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "requests";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "warn_understaffed": {
+                Args: Record<PropertyKey, never>;
+                Returns: number;
+            };
         };
         Enums: {
             [_ in never]: never;
@@ -351,6 +1442,15 @@ export type Database = {
                     "p_kind": string;
                 };
                 Returns: undefined;
+            };
+            "quote_service": {
+                Args: {
+                    "p_config": string;
+                    "p_duration": number;
+                    "p_service": string;
+                    "p_unit_price": number;
+                };
+                Returns: number;
             };
             "save_language": {
                 Args: {
@@ -2044,6 +3144,13 @@ export type Database = {
             };
         };
         Functions: {
+            "is_eligible_for": {
+                Args: {
+                    "p_interpreter": string;
+                    "p_request": string;
+                };
+                Returns: Record<string, unknown>;
+            };
             "is_profile_complete": {
                 Args: {
                     "p_account": string;
