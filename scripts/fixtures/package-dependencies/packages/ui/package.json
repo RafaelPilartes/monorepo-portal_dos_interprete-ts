@@ -1,0 +1,6 @@
+{
+  "name": "@portal-dos-interpretes/ui",
+  "dependencies": {
+    "@portal-dos-interpretes/features": "workspace:*"
+  }
+}

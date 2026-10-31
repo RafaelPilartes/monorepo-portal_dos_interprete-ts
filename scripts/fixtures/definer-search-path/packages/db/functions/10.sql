@@ -1,0 +1,10 @@
+CREATE OR REPLACE FUNCTION util.no_path() RETURNS int
+  LANGUAGE sql SECURITY DEFINER
+AS $$ SELECT 1 $$;
+
+CREATE OR REPLACE FUNCTION util.wrong_path() RETURNS int
+  LANGUAGE sql SECURITY DEFINER
+  SET search_path = public
+AS $$ SELECT 1 $$;
+
+CREATE FUNCTION util.options_after() RETURNS int AS $body$ SELECT 1 $body$ LANGUAGE sql SECURITY DEFINER;

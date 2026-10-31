@@ -1,0 +1,4 @@
+README.md
+.env.example
+apps/api/src/config/env.ts
+docs/environment.md

@@ -51,6 +51,18 @@ O inventário de 2026-10-15 já existe em `docs/inventory/` (00 a 04). Este pass
 
 **Feito quando:** `pnpm install && pnpm build && pnpm typecheck && pnpm lint` passam; `pnpm dev` arranca as cinco; `curl localhost:<porta>/health` responde; `docker build -f apps/api/Dockerfile .` termina.
 
+### Melhorias da execução (passo C, 2026-10-25)
+
+Respostas dadas pelo Claude Code às perguntas da skill `brainstorming`, pelas regras de `claude-code-rules.md` §3. Nenhuma muda uma decisão.
+
+- **Nome dos pacotes:** `@portal-dos-interpretes/<nome>`, como `architecture.md` §2; o `@portal/api` do `MASTER-PLAN.md` (passo G) lê-se como `@portal-dos-interpretes/api` (AD-007).
+- **O código de hoje durante C–D:** a SPA antiga passa, sem mudar uma linha, para `legacy/` (pacote `@portal-dos-interpretes/legacy-spa` do workspace), para a raiz poder ser a raiz do monorepo. Continua a arrancar e a compilar como hoje, serve de comparação nos passos D, e apaga-se no D4 ("`src/` antigo apaga-se só quando a última app migrar"). As verificações estruturais e o ESLint estrito não se aplicam a `legacy/` (AD-008).
+- **Versões das ferramentas:** as do código de hoje onde o código vai mudar de sítio (React 18, Vite 5, Tailwind 3, shadcn/ui), para "mover, não reescrever" ser possível; Fastify 5 e Vitest na API e nos pacotes; TypeScript 5.
+- **Versão e commit no rodapé:** injectados pelo Vite (`__APP_VERSION__`, `__APP_COMMIT__`) a partir do `package.json` da raiz e de `git rev-parse --short HEAD`.
+- **`verify.py` no passo C:** as quatro verificações "Desde C" (fetch/Supabase fora de `packages/data/src/dao/`, app a importar app, `.env` versionado, identificadores em inglês), cada uma com um ficheiro de violação deliberada em `scripts/fixtures/` que tem de apanhar (`verify.py --self-test`).
+- **Portas:** AD-006. **Host do Vite:** AD-004.
+- **`docker build`:** a imagem base `node:22-alpine` vem do Docker Hub, que nesta VM dá 429 intermitente; o passo tenta de novo e regista o resultado (`environment.md` §4).
+
 ## D — Mover o código app a app
 
 **Objectivo:** os ecrãs de hoje a funcionar nas apps novas, **exactamente como funcionam hoje** (com mocks), antes de ligar qualquer dado real.
@@ -79,6 +91,15 @@ Uma app por subpasso, por esta ordem: `site-web`, `admin-web`, `requester-web`, 
 
 **Feito quando:** nenhuma app tem uma cópia de um componente que existe num pacote (verificação em `verify.py`); os testes de `core` e `i18n` passam.
 
+### Melhorias da execução (passo E, 2026-10-25)
+
+- **Catálogo de erros:** gerado de `api.md` §2 para `packages/core/src/errors/catalog.ts` por `scripts/error_catalog.py`; `verify.py` (`error-catalog`) falha se divergirem. É o "um sítio só" de `architecture.md` §6; `apps/api/src/lib/dbErrors.ts` (passo G) traduz para estes códigos.
+- **`formatAoa`:** separa os milhares e o "Kz" com espaço inquebrável, para "14 040 Kz" nunca partir a meio; recusa cêntimos (D-37).
+- **`ui → i18n`** (AD-018) e **`auth → data, core`** (AD-019): registados na regra de dependências.
+- **`packages/data`:** um só tipo de erro (`DataError`, com o código do catálogo); `P0001` com um código do catálogo passa; permissão negada é `FORBIDDEN`; o resto é `INTERNAL_ERROR`, com o texto real só no registo.
+- **Componentes partilhados duplicados:** `verify.py` (`no-duplicated-component`) compara nomes e conteúdo entre as apps e `packages/ui`/`packages/features`.
+- O `@import` da fonte no `styles.css` passou para o topo (antes era ignorado pelo browser).
+
 ## F — Base de dados local
 
 **Objectivo:** a máquina que aplica, verifica e reconstrói a base, com o esqueleto comum. **As tabelas de cada funcionalidade entram no passo dela.**
@@ -97,6 +118,22 @@ Uma app por subpasso, por esta ordem: `site-web`, `admin-web`, `requester-web`, 
 
 **Feito quando:** `pnpm db:verify` passa de raiz; `reset-local.sh` reconstrói a base; parar o processo a meio com Ctrl+C deixa zero contentores do projecto (`docker ps -a --filter name=supabase`).
 
+### Melhorias da execução (passo F, 2026-10-25)
+
+- **Arranque em duas fases:** `supabase start --ignore-health-check`, as seis fases, e só depois a espera por todos os serviços saudáveis (o PostgREST precisa dos schemas que as migrations criam). Docker Hub com limite de pedidos: 5 tentativas com espera crescente.
+- **Sem cliente Postgres no anfitrião:** os scripts correm `psql` e `pg_dump` dentro do contentor da base.
+- **`db:verify` prova a sua própria comparação:** cria uma função de teste, confirma que a fotografia do catálogo muda, apaga-a, e só então compara a primeira aplicação com a reaplicação (inclui privilégios, políticas, tarefas `pg_cron` e buckets).
+- **`migrate.sh` valida antes de aplicar:** recusa se uma migration aplicada mudou ou desapareceu, e se qualquer migration por aplicar não abrir com `BEGIN;`/fechar com `COMMIT;` — antes de aplicar a primeira.
+- **Catálogo de avisos gerado:** `scripts/notify_kinds.py` gera `functions/35-notify-kinds.sql` (reaplicável, AD-024) de `notifications.md`; `verify.py` (`notify-kinds`) falha se divergirem.
+- **Relógio dos testes numa tabela** (`util.test_clock`), que só o dono escreve; a auditoria grava a hora real.
+- **`public` fora da API** e sem exposição automática de tabelas novas (AD-025).
+- **Uma lista de schemas:** `util.project_schemas()` em SQL; `verify.py` (`schema-lists`) compara-a com as migrations, `lib.sh` e `config.toml`.
+- **`db:verify` prova sozinho a recusa** de uma migration aplicada que mudou (cópia alterada da pasta).
+- **Prova do Ctrl+C:** `packages/db/scripts/interrupt-test.py`.
+- **`verify.py` desde F:** `migration-transaction`, `table-rls`, `definer-search-path`, `fk-index`, `domain-patterns` (`R-CFG-05`, também o email), `notify-kinds`, `rule-clock` (`util.now()` nas funções de regras, `data-model.md` §12) e `schema-lists`.
+- **Tipos formatados:** a saída da CLI passa pelo impressor do TypeScript, para o ficheiro commitado ser legível e as diferenças pequenas.
+- **Comandos novos:** `pnpm db:reset`, `db:types`, `db:status`.
+
 ## G — API
 
 **Objectivo:** a API pronta a receber rotas de funcionalidade.
@@ -110,6 +147,14 @@ Uma app por subpasso, por esta ordem: `site-web`, `admin-web`, `requester-web`, 
 7. Testes com `fastify.inject` contra a base local: autenticação, erros, health, worker do email.
 
 **Feito quando:** os testes passam; um pedido sem token dá `401 UNAUTHENTICATED`; um erro forçado na base chega ao cliente como `INTERNAL_ERROR` sem texto técnico; um email enfileirado aparece no servidor de email local.
+
+### Melhorias da execução (passo G, 2026-10-25)
+
+- **A API empacotada** (`tsup`): os pacotes do workspace entram no bundle; versão e migration do build por `define` (AD-026, AD-027).
+- **Rotas fechadas por omissão:** sem `config.access`, uma rota exige conta activa com termos aceites.
+- **Fila de email com prazo de reserva:** um email que fique em `sending` volta à fila 15 minutos depois.
+- **Prova com o binário real:** `node dist/index.js` e a imagem Docker arrancam, recusam configuração em falta com a lista de nomes em português, e respondem a `/health`.
+- **`verify.py` desde G:** `api-error-shape` (nenhuma rota escreve `field`/`message` à mão), `bucket-limits` (os limites dos ficheiros na API iguais aos de `supabase/config.toml`), e `fetch` só em `apps/api/src/integrations/`.
 
 ---
 

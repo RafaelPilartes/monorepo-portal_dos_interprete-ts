@@ -1,0 +1,18 @@
+{
+  "name": "@portal-dos-interpretes/e2e",
+  "version": "0.13.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "e2e": "playwright test",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@portal-dos-interpretes/config": "workspace:*",
+    "@types/node": "^22.16.5",
+    "eslint": "^9.32.0",
+    "typescript": "~5.9.3"
+  }
+}

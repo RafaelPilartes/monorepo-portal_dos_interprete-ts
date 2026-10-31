@@ -2,24 +2,20 @@
 
 Plataforma da Academia Grace Mind que junta quem precisa de um intérprete com quem o pode fazer — Língua Gestual Angolana em primeiro lugar, também línguas faladas. O intérprete tem perfil, serviços, preços e avaliações; quem precisa encontra, pede, combina o preço e marca.
 
-**`docs/_source/product-explainer.md` é a fonte de verdade do produto.** Quando o código e esse documento discordarem, ou o código tem um defeito, ou há uma decisão a tomar — e a decisão fica registada, nunca assumida. As perguntas em aberto estão no §8 desse documento, com códigos P1–P14.
+**`docs/_source/product-explainer.md` descreve o produto; as decisões estão em `docs/plan/decisions.md` (códigos `D-xx`) e as regras em `docs/plan/specs/` (códigos `R-…`).** As perguntas P1–P14 do §8 do explainer já foram decididas em `decisions.md` (2026-10-18); as pendentes do cliente estão em `decisions.md` §10, com o comportamento provisório.
+
+**Modo contínuo (desde 2026-10-25):** a execução segue `docs/plan/MASTER-PLAN.md` com as regras de `docs/plan/claude-code-rules.md`. Esse ficheiro manda sobre *como* se trabalha; `decisions.md` manda sobre *o que* o produto faz. O estado da corrida está em `HANDOFF.md` e `docs/plan/run-log.md`.
 
 ---
 
 ## Estado actual
 
-Inventário completo em `docs/inventory/` (00–04). Em factos curtos:
+Monorepo pnpm + Turborepo desde o passo C; os ecrãs da SPA antiga foram movidos para as quatro apps nos passos D1–D4 e a SPA antiga foi apagada (fica no git até `aca929a`). O estado da corrida está em `HANDOFF.md`; o que mudou, passo a passo, em `CHANGELOG.md` e `docs/plan/step-reports/`.
 
-- **SPA única vinda do Lovable** — Vite 5 + React 18 + TS + shadcn/ui. Sem backend, sem API, sem edge functions. `00-overview.md` §§1–2
-- **Sem autenticação ligada.** A cadeia Supabase existe (`SupabaseAuthDAO` → `AuthUseCase` → `auth.viewmodel`) e `auth.viewmodel.ts` não é importado por ficheiro nenhum. O login é `setTimeout` + toast. `00-overview.md` §5, `04-gaps.md` item 5 (autenticação não ligada)
-- **Sem guards de rota.** `/dashboard/admin` abre a qualquer visitante. O papel escolhe-se escrevendo o URL. `04-gaps.md` item 6 (zero guards de rota)
-- **Zero migrations.** Não há `supabase/migrations/` nem `config.toml`; o schema vive em 3 `.sql` soltos, e o principal nunca correu com sucesso de uma só vez. `01-database.md` §6, `04-gaps.md` itens 3 (zero migrations) e 4 (o `.sql` não corre de uma só vez)
-- **Projecto Supabase remoto inacessível** à data de 2026-10-15 (ref em `VITE_SUPABASE_URL`). O conector não tem permissão sobre ele. `00-overview.md` §9
-- **Estado do RLS desconhecido**, com a `anon key` no bundle do browser. Localmente: 0 RLS e 0 policies em 37 tabelas. `01-database.md` §10, `04-gaps.md` item 2 (RLS desconhecido)
-- **1 das 68 páginas usa dados reais** (`AdminTeam.tsx`). 38 DAOs, 37 usecases e 37 viewmodels construídos, quase nenhum consumido. `02-screens.md` §§0 e 8
-- **Schema por decidir.** O modelo actual é um rascunho, com 18 divergências face ao que o código espera. `01-database.md` §5.2
-
-**Nada se aplica à base de dados enquanto o modelo de domínio não estiver decidido.** P1 (empresa: uma conta ou uma equipa) e P4 (dinheiro) travam a montagem — `product-explainer.md` §8.
+- **Os ecrãs ainda mostram mocks.** Cada passo H liga os seus ecrãs à base nova e apaga os mocks que substitui. Até lá há avisos de sucesso sem nada por trás (AD-014, AD-016).
+- **Sem autenticação ligada** até ao H1 (equipa) e H2 (contas); as rotas não têm guardas até lá.
+- **Uma migration** (`0001-foundation`, passo F): a base nova constrói-se **só localmente**, por ficheiros em `packages/db/` (ADR-004 (schema recomeçado de raiz)), com `pnpm db:up` / `db:down` / `db:verify`. O projecto Supabase remoto antigo não se toca.
+- O inventário da SPA de partida (2026-10-15) continua em `docs/inventory/` (00–05) como referência histórica.
 
 ---
 
@@ -50,15 +46,17 @@ Quando o schema voltar a mudar: **só por ficheiros do repositório**, aplicados
 
 ## Git
 
-**Posso, sem pedir:**
-- `commit`, **sem linha `Co-Authored-By`**
-- mensagem **por ficheiro** (`git commit -F`), nunca `-m` com texto que o shell interprete — backticks, `$` e `!` executam antes de o git os ver
-- adicionar **só os ficheiros que toquei**. Nunca `git add .` nem `git add -A`: há 182 ficheiros com diferenças de fim de linha (LF→CRLF) que não são para commitar
+As regras de Git são as de `docs/plan/claude-code-rules.md` §7 (decisão do Rafael, 2026-10-25, ao ligar o modo contínuo).
 
-**Preciso de autorização, de cada vez:**
-- `push`
+**Posso, sem pedir:**
+- `commit` em `dev`, **sem linha `Co-Authored-By`**, mensagem em inglês (Conventional Commits)
+- mensagem **por ficheiro** (`git commit -F`), nunca `-m` com texto que o shell interprete — backticks, `$` e `!` executam antes de o git os ver
+- adicionar **só os ficheiros que toquei**, revendo `git status`; nunca `git add -A` às cegas
+- `push` de `dev` para `origin` (https://github.com/RafaelPilartes/monorepo-portal_dos_interprete-ts), e das tags de versão
+
+**Nunca:**
 - `merge` para `main`
-- reescrever história já enviada: `--amend` depois do push, `rebase`, `reset`, `push --force`, **incluindo `--force-with-lease`**
+- reescrever história já enviada: `--amend` depois do push, `rebase`, `reset --hard`, `push --force`, **incluindo `--force-with-lease`**
 - qualquer escrita em produção
 
 O rollback fica escrito antes de qualquer deploy.
@@ -88,16 +86,16 @@ O rollback fica escrito antes de qualquer deploy.
 
 ## Nunca inventar
 
-**Nenhuma regra de negócio, preço ou fluxo que não esteja em `docs/_source/product-explainer.md` ou em `docs/decisions/`.**
+**Nenhuma regra de negócio, preço ou fluxo que não esteja em `docs/plan/decisions.md`, `docs/plan/specs/` ou `docs/_source/product-explainer.md`.**
 
-O que não está escrito fica **"por confirmar"**, para o Rafael confirmar. Uma decisão de produto em falta é um ponto de paragem, não um palpite — e **nada que dependa de um item em aberto é implementado**.
+No modo contínuo não se pára para perguntar: o que a documentação não cobre decide-se pela opção reversível mais segura e regista-se em `docs/plan/auto-decisions.md` (`claude-code-rules.md` §3). Pendentes do cliente usam o comportamento provisório de `decisions.md` §10. Valores legais (textos legais, impostos, NIF, IBAN reais) nunca se inventam.
 
 ---
 
 ## Início e fim de tarefa
 
-- **No início de uma tarefa que continua trabalho anterior: ler `HANDOFF.md`.**
-- **No fim de cada fase: actualizá-lo** — o que ficou feito, o que ficou em aberto, e o que o Rafael tem de ver no ecrã.
+- **No início de cada sessão:** ler `docs/plan/claude-code-rules.md`, `docs/plan/MASTER-PLAN.md` e `HANDOFF.md`; confirmar o estado real com `git status`, `git log -5 --oneline` e a última tag.
+- **No fim de cada passo:** reescrever `HANDOFF.md` (formato de `claude-code-rules.md` §10) e acrescentar uma linha a `docs/plan/run-log.md`.
 
 ---
 
@@ -105,13 +103,22 @@ O que não está escrito fica **"por confirmar"**, para o Rafael confirmar. Uma 
 
 | Documento | O que tem |
 |---|---|
-| `docs/_source/product-explainer.md` | o que o produto deve fazer (fonte de verdade) + P1–P14 em aberto |
+| `docs/plan/MASTER-PLAN.md` | a ordem de execução, passo a passo (A–G, H1–H19, Z) |
+| `docs/plan/claude-code-rules.md` | como se trabalha no modo contínuo |
+| `docs/plan/decisions.md` | as decisões `D-xx` (fonte das decisões) |
+| `docs/plan/specs/` | as regras `R-…` por funcionalidade |
+| `docs/plan/architecture.md`, `data-model.md`, `api.md` | arquitectura, modelo de dados, API |
+| `docs/plan/auto-decisions.md` | decisões tomadas durante a execução (`AD-NNN`) |
+| `docs/plan/environment.md` | o que a VM da sessão permite (Docker, rede, tags) |
+| `docs/_source/product-explainer.md` | o que o produto deve fazer; §8 aponta para `decisions.md` |
 | `docs/_source/working-with-rafael.md` | como trabalhamos: fases completas, quem faz o quê, convenções, git |
 | `docs/inventory/00-overview.md` | repo, stack, git, Supabase, auth, deploy |
 | `docs/inventory/01-database.md` | schema local tabela a tabela, diagrama ER, schema esperado pelo código |
 | `docs/inventory/02-screens.md` | 68 páginas, 61 rotas, dados, formulários, estados |
 | `docs/inventory/03-flows.md` | papéis, jornadas, máquinas de estado |
 | `docs/inventory/04-gaps.md` | lacunas numeradas com evidência e gravidade + dúvidas D1–D13 |
-| `HANDOFF.md` | estado da última sessão e próxima tarefa |
+| `docs/inventory/05-route-map.md` | cada página antiga e a app nova a que pertence |
+| `docs/inventory/handoff-2026-10-16.md` | o HANDOFF do inventário, arquivado |
+| `HANDOFF.md` | estado da corrida e próximo passo |
 
-`docs/decisions/` ainda não existe. Quando a primeira decisão consequente for tomada, fica lá registada com o porquê.
+`docs/decisions/` guarda os ADR (`ADR-001`…`ADR-007`, criados no passo C). As decisões de produto estão em `docs/plan/decisions.md`.

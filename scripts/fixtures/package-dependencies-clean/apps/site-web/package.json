@@ -1,0 +1,4 @@
+{
+  "name": "@portal-dos-interpretes/site-web",
+  "dependencies": { "@portal-dos-interpretes/ui": "workspace:*", "@portal-dos-interpretes/features": "workspace:*" }
+}

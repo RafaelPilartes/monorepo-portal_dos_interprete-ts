@@ -1,0 +1,23 @@
+{
+  "name": "@portal-dos-interpretes/db",
+  "version": "0.13.0",
+  "private": true,
+  "type": "module",
+  "description": "Executable schema: migrations, functions, policies, seed, schedule, scripts, tests.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@portal-dos-interpretes/config": "workspace:*",
+    "@types/node": "^22.16.5",
+    "eslint": "^9.32.0",
+    "pg": "^8.23.1",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.7"
+  }
+}

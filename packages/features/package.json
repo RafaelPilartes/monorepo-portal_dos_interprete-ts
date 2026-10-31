@@ -1,0 +1,52 @@
+{
+  "name": "@portal-dos-interpretes/features",
+  "version": "0.13.0",
+  "private": true,
+  "type": "module",
+  "description": "Domain screens shared by more than one app.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./pages/*": "./src/pages/*.tsx",
+    "./components/*": "./src/components/*.tsx",
+    "./mocks/*": "./src/mocks/*.ts",
+    "./routes": "./src/routes.ts",
+    "./app/*": "./src/app/*.tsx",
+    "./lib/*": "./src/lib/*.ts",
+    "./directory/*": "./src/directory/*.tsx",
+    "./directory/data": "./src/directory/data.ts",
+    "./directory/labels": "./src/directory/labels.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@portal-dos-interpretes/config": "workspace:*",
+    "eslint": "^9.32.0",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "@testing-library/react": "^16.3.0",
+    "jsdom": "^26.1.0",
+    "vite": "^5.4.21"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "dependencies": {
+    "@portal-dos-interpretes/core": "workspace:*",
+    "@portal-dos-interpretes/data": "workspace:*",
+    "@portal-dos-interpretes/i18n": "workspace:*",
+    "@portal-dos-interpretes/ui": "workspace:*",
+    "@tanstack/react-query": "^5.83.0",
+    "lucide-react": "^0.462.0",
+    "react-router-dom": "^6.30.1",
+    "@portal-dos-interpretes/db-types": "workspace:*",
+    "sonner": "^1.7.4"
+  }
+}

@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Pre-push gates (claude-code-rules.md §7). Activated by `pnpm install` (core.hooksPath).
+# --no-verify only in an emergency, and said in the commit message.
+set -euo pipefail
+
+# The gates run on the working tree, so it must equal what is being pushed.
+if [ -n "$(git status --porcelain)" ]; then
+  echo "pre-push: the working tree has uncommitted or untracked changes; commit or stash them first." >&2
+  exit 1
+fi
+
+zero=0000000000000000000000000000000000000000
+touches_db=false
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue
+  base=""
+  if [ "$remote_sha" != "$zero" ] && git cat-file -e "${remote_sha}^{commit}" 2>/dev/null; then
+    base="$remote_sha"
+  elif git rev-parse -q --verify origin/main >/dev/null; then
+    base="$(git merge-base origin/main "$local_sha" || true)"
+  fi
+  if [ -z "$base" ]; then
+    # Unknown range: assume the database may have changed (fail safe, not silent).
+    echo "pre-push: cannot compute the pushed range for ${remote_ref}; treating the database as changed." >&2
+    touches_db=true
+    continue
+  fi
+  # The database, its configuration, and the API (whose db tests run inside db:verify).
+  changed="$(git diff --name-only "$base" "$local_sha" -- packages/db/ supabase/ apps/api/)"
+  if [ -n "$changed" ]; then
+    touches_db=true
+  fi
+done
+
+pnpm lint
+pnpm typecheck
+pnpm test
+python3 scripts/verify.py
+# db:verify exists from step F on (packages/db/scripts/verify.sh).
+if [ "$touches_db" = true ] && [ -f packages/db/scripts/verify.sh ]; then
+  pnpm db:verify
+fi
