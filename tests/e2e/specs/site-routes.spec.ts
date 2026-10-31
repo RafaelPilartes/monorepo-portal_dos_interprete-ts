@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { createConfirmedUser, sqlLocal } from '../local'
 import { type SmokeRoute, visitAndCapture } from './smoke'
 
 const SITE = process.env.SITE_URL ?? 'http://localhost:5170'
@@ -29,6 +30,20 @@ test('site /home redirects to /', async ({ page }) => {
 
 test('site unknown path shows the Portuguese 404 without errors', async ({ page }) => {
   await visitAndCapture(page, SITE, 'D1', { path: '/does-not-exist', name: 'not-found', expectText: 'Página não encontrada' })
+})
+
+// Test setup for the card tests: one interpreter with a complete profile (R-DIR-01), so the
+// directory is not empty on a fresh database (the profile screens are in h4-directory.spec.ts).
+test.beforeAll(async () => {
+  const user = await createConfirmedUser('Ana Cartão')
+  sqlLocal(`SELECT identity.become_interpreter('${user.id}', NULL, NULL);
+            UPDATE identity.interpreter_profiles SET modality = 'online',
+                   bio = repeat('Intérprete de Língua Gestual Angolana em contextos de saúde. ', 2)
+             WHERE account_id = '${user.id}';
+            INSERT INTO directory.interpreter_languages (interpreter_id, language_id, level)
+            SELECT '${user.id}', id, 'fluent' FROM catalog.languages WHERE active ORDER BY sort LIMIT 1;
+            INSERT INTO directory.interpreter_services (interpreter_id, service_id, price_aoa)
+            SELECT '${user.id}', id, 10000 FROM catalog.services WHERE active ORDER BY sort LIMIT 1;`)
 })
 
 test('site interpreter card leads to the requester login with returnTo', async ({ page }) => {
