@@ -1592,6 +1592,12 @@ export type Database = {
                     isSetofReturn: false;
                 };
             };
+            "void_open_proposals": {
+                Args: {
+                    "p_assignment": string;
+                };
+                Returns: undefined;
+            };
             "warn_understaffed": {
                 Args: Record<PropertyKey, never>;
                 Returns: number;
