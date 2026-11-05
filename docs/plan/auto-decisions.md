@@ -312,4 +312,6 @@
   3. **A proposta é o total do serviço por intérprete**, sem a deslocação (`R-NEG-05`); o campo diz "Novo valor, em kwanzas, sem a deslocação" e mostra o preço actual por baixo.
   4. **As propostas lêem-se a cada 10 segundos**, como as mensagens (AD-034.6), em vez de Realtime.
   5. **O campo do valor não tem limite do navegador**: a recusa (`INVALID_AMOUNT`) vem da base e aparece no campo, com o texto do catálogo.
+  6. **A equipa não lê as propostas dos fios solicitante–intérprete directamente** (revisão do H6): como as mensagens, lê-as pela API quando precisar (`R-PRIV-05`); `data-model.md` §5 dizia "participantes do fio, equipa", e vale esta leitura.
+  7. **Uma atribuição que deixa de estar convidada** (aceite, recusada, expirada, cancelada) anula a proposta aberta do fio; depois do prazo do convite a negociação fecha mesmo antes de a tarefa de expiração correr.
 - **Marcas:** [RISCO] dinheiro (o preço só fica fixo na aceitação do pedido, `D-14`; uma proposta aceite muda só o preço proposto).

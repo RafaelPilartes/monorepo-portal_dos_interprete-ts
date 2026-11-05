@@ -2,6 +2,13 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.15.0 — 2026-11-05 — Passo H6 (negociação de preço)
+
+- No chat de um pedido, quem pede e o intérprete convidado podem propor outro preço; a proposta anterior fica riscada.
+- A outra parte aceita ou recusa; uma proposta aceite passa a ser o preço proposto, e o preço só fica fechado quando o intérprete aceita o pedido.
+- Um intérprete que não aceita negociar não recebe propostas; depois de aceite o pedido, a negociação fecha.
+- Relatório: `docs/plan/step-reports/H6.md`.
+
 ## 0.14.0 — 2026-10-31 — Passo H5 (pedidos, pedido directo, chat e sino)
 
 - Quem pede escolhe o intérprete num assistente de sete passos; o total aparece na revisão, calculado pelo servidor.

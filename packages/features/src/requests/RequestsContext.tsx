@@ -45,6 +45,8 @@ export function useRequestDetail(id: string) {
   const { repository } = useRequests()
   return useQuery({
     queryKey: requestKeys.one(id),
+    // While it waits for interpreters the other side may act (accept, answer a proposal).
+    refetchInterval: (query) => (query.state.data?.request.status === 'awaiting_interpreters' ? 15_000 : false),
     queryFn: async () => {
       const request = await repository.request(id)
       if (!request) return null

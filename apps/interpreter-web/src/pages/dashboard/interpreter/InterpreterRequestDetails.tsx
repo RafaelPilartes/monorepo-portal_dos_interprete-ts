@@ -90,7 +90,7 @@ export default function InterpreterRequestDetails() {
           {mine.thread_id && (
             <RequestChat threadId={mine.thread_id} title={`Conversa com ${request.created_by_name ?? 'o solicitante'}`}
               negotiation={{ role: 'interpreter', assignmentStatus: mine.status ?? '', offeredPrice: mine.offered_price_aoa,
-                travelFee: mine.offered_travel_fee_aoa, interpreterNegotiates: true }} />
+                travelFee: mine.offered_travel_fee_aoa, interpreterNegotiates: true, answerBy: mine.invite_expires_at }} />
           )}
         </div>
         <RequestTimeline rows={timeline} />

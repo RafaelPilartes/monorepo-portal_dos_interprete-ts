@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@portal-dos-interprete
 import { Textarea } from '@portal-dos-interpretes/ui/components/textarea'
 import { CalendarClock, Clock, Languages, Link2, MapPin, Send, User } from 'lucide-react'
 import { DataError } from '@portal-dos-interpretes/data'
-import { errorMessage } from '../lib/errorText'
+import { errorDetails, errorMessage } from '../lib/errorText'
 import type { ProposalRow, RequestRow, TimelineRow } from './data'
 import { requestKeys, useRequests } from './RequestsContext'
 
@@ -97,21 +97,24 @@ export interface Negotiation {
   travelFee: number | null
   /** R-NEG-04: the requester may not propose to an interpreter who does not negotiate. */
   interpreterNegotiates: boolean
+  /** The invite's deadline: past it the negotiation is closed. */
+  answerBy?: string | null | undefined
 }
 
 const PROPOSAL_STATUS: Readonly<Record<string, string>> = {
   open: 'À espera de resposta', accepted: 'Aceite', rejected: 'Recusada', void: 'Substituída por uma nova proposta',
 }
 
-function ProposalCard({ proposal, mine, canAnswer, onAnswer, busy, travelFee }: {
-  proposal: ProposalRow; mine: boolean; canAnswer: boolean; busy: boolean; travelFee: number | null
+function ProposalCard({ proposal, mine, byMe, canAnswer, onAnswer, busy, travelFee }: {
+  /** mine: made by the viewer's side (an organisation admin answers no proposal of its creator); byMe: by the viewer. */
+  proposal: ProposalRow; mine: boolean; byMe: boolean; canAnswer: boolean; busy: boolean; travelFee: number | null
   onAnswer: (accept: boolean) => void
 }) {
   const voided = proposal.status === 'void'
   return (
     <div className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
       <div className="w-full max-w-[85%] rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
-        <p className="text-xs text-muted-foreground">{mine ? 'A tua proposta' : `Proposta de ${proposal.proposed_by_name ?? ''}`}</p>
+        <p className="text-xs text-muted-foreground">{byMe ? 'A tua proposta' : `Proposta de ${proposal.proposed_by_name ?? ''}`}</p>
         <p className={`font-semibold ${voided ? 'text-muted-foreground line-through' : ''}`}>
           Proposta: {formatAoa(proposal.amount_aoa ?? 0)}
           {proposal.previous_amount_aoa !== null && <span className="font-normal text-muted-foreground"> (era {formatAoa(proposal.previous_amount_aoa)})</span>}
@@ -120,8 +123,8 @@ function ProposalCard({ proposal, mine, canAnswer, onAnswer, busy, travelFee }: 
         <p className="text-xs text-muted-foreground">{PROPOSAL_STATUS[proposal.status ?? ''] ?? proposal.status} · {formatDateTime(proposal.created_at ?? '')}</p>
         {canAnswer && proposal.status === 'open' && !mine && (
           <div className="mt-2 flex gap-2">
-            <Button size="sm" disabled={busy} onClick={() => onAnswer(true)}>Aceitar</Button>
-            <Button size="sm" variant="outline" disabled={busy} onClick={() => onAnswer(false)}>Recusar</Button>
+            <Button size="sm" disabled={busy} onClick={() => onAnswer(true)}>Aceitar proposta</Button>
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => onAnswer(false)}>Recusar proposta</Button>
           </div>
         )}
       </div>
@@ -147,6 +150,11 @@ export function RequestChat({ threadId, title, negotiation }: { threadId: string
   const messages = useQuery({ queryKey: requestKeys.messages(threadId), queryFn: () => repository.messages(threadId), refetchInterval: 10_000 })
   const proposals = useQuery({ queryKey: [...requestKeys.messages(threadId), 'proposals'], queryFn: () => repository.proposals(threadId), refetchInterval: 10_000 })
   const count = (messages.data?.length ?? 0) + (proposals.data?.length ?? 0)
+  // A proposal answered or voided elsewhere changes the price and the state the page shows.
+  const proposalStates = (proposals.data ?? []).map((row) => `${row.id}:${row.status}`).join(',')
+  useEffect(() => {
+    if (proposalStates) void queryClient.invalidateQueries({ queryKey: ['requests', 'one'] })
+  }, [proposalStates, queryClient])
   const refresh = () => queryClient.invalidateQueries({ queryKey: requestKeys.all })
   const answer = useMutation({
     mutationFn: ({ id, accept }: { id: string; accept: boolean }) => repository.answerProposal(id, accept),
@@ -159,7 +167,8 @@ export function RequestChat({ threadId, title, negotiation }: { threadId: string
     onSuccess: () => { toast.success('Proposta enviada.'); setProposing(false); setAmount(''); setAmountError(null) },
     // INVALID_AMOUNT belongs to the field; anything else (NEGOTIATION_CLOSED…) is a toast.
     onError: (failure) => {
-      if (failure instanceof DataError && failure.field === 'amount_aoa') setAmountError(failure.message)
+      const field = errorDetails(failure).amount_aoa ?? (failure instanceof DataError && failure.field === 'amount_aoa' ? failure.message : undefined)
+      if (field) setAmountError(field)
       else toast.error(errorMessage(failure))
     },
     onSettled: refresh,
@@ -167,6 +176,7 @@ export function RequestChat({ threadId, title, negotiation }: { threadId: string
 
   // R-NEG-01, R-NEG-04: the button only where a proposal may be made.
   const negotiating = negotiation !== undefined && ['invited', 'applied'].includes(negotiation.assignmentStatus)
+    && !(negotiation.answerBy && new Date(negotiation.answerBy).getTime() <= Date.now())
   const mayPropose = negotiating && (negotiation.role === 'interpreter' || negotiation.interpreterNegotiates)
 
   useEffect(() => {
@@ -203,12 +213,14 @@ export function RequestChat({ threadId, title, negotiation }: { threadId: string
       <CardContent className="space-y-3">
         <div className="max-h-96 space-y-2 overflow-y-auto rounded-md border bg-muted/30 p-3" aria-live="polite">
           {messages.isPending ? <p className="text-sm text-muted-foreground">A carregar…</p>
-            : messages.isError ? <p role="alert" className="text-sm text-destructive">Não foi possível carregar as mensagens.</p>
+            : messages.isError || proposals.isError ? <p role="alert" className="text-sm text-destructive">Não foi possível carregar as mensagens.</p>
             : items.length === 0 ? <p className="text-sm text-muted-foreground">Ainda não há mensagens. Escreve a primeira.</p>
             : items.map(({ message, proposal }) => {
               if (proposal) {
                 return (
-                  <ProposalCard key={proposal.id} proposal={proposal} mine={proposal.proposed_by === accountId} canAnswer={negotiating}
+                  <ProposalCard key={proposal.id} proposal={proposal}
+                    mine={negotiation ? proposal.proposed_by_role === negotiation.role : proposal.proposed_by === accountId}
+                    byMe={proposal.proposed_by === accountId} canAnswer={negotiating}
                     busy={answer.isPending} travelFee={negotiation?.travelFee ?? null}
                     onAnswer={(accept) => answer.mutate({ id: proposal.id ?? '', accept })} />
                 )
@@ -230,7 +242,7 @@ export function RequestChat({ threadId, title, negotiation }: { threadId: string
           !negotiating ? <p className="text-xs text-muted-foreground">A negociação está fechada.</p>
             : !mayPropose ? <p className="text-xs text-muted-foreground">Este intérprete não aceita negociar o preço.</p>
             : proposing ? (
-              <form className="flex flex-wrap items-end gap-2 rounded-md border p-3" onSubmit={(event) => { event.preventDefault(); propose.mutate(Number(amount.replace(/[\s.]/g, ''))) }}>
+              <form className="flex flex-wrap items-end gap-2 rounded-md border p-3" onSubmit={(event) => { event.preventDefault(); propose.mutate(Number(amount)) }}>
                 <div className="space-y-1">
                   <Label htmlFor={`proposal-${threadId}`}>Novo valor, em kwanzas, sem a deslocação</Label>
                   <Input id={`proposal-${threadId}`} type="number" inputMode="numeric" className="w-44" value={amount} onChange={(e) => setAmount(e.target.value)} aria-invalid={!!amountError} />

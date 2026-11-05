@@ -3,6 +3,13 @@
 -- the price offered; only the acceptance of the request fixes the price (agreed_price_aoa). The
 -- managed request's thread with the team arrives with H11.
 
+-- An assignment that stops being invited or applied (accepted, declined, expired, cancelled)
+-- ends its negotiation: the open proposal, if any, becomes void (R-NEG-01).
+CREATE OR REPLACE FUNCTION booking.void_open_proposals(p_assignment uuid) RETURNS void
+  LANGUAGE sql VOLATILE SECURITY DEFINER
+  SET search_path = ''
+AS $$ UPDATE booking.proposals SET status = 'void' WHERE assignment_id = p_assignment AND status = 'open' $$;
+
 -- Who the actor is in the thread, or NULL when not a participant.
 CREATE OR REPLACE FUNCTION booking.thread_role(p_thread uuid, p_account uuid) RETURNS text
   LANGUAGE sql STABLE SECURITY DEFINER
@@ -30,6 +37,8 @@ BEGIN
   SELECT a.* INTO v_assignment FROM booking.request_assignments AS a JOIN booking.threads AS t ON t.assignment_id = a.id
    WHERE t.id = p_thread FOR UPDATE OF a;
   IF v_assignment.id IS NULL OR v_assignment.status NOT IN ('invited', 'applied')
+     -- Past the invite's deadline the negotiation is over, even before the expiry task runs.
+     OR (v_assignment.status = 'invited' AND util.now() >= v_assignment.invite_expires_at)
      OR v_request.open_mode IS NOT DISTINCT FROM 'first_accept' OR v_request.status <> 'awaiting_interpreters' THEN
     RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'NEGOTIATION_CLOSED';
   END IF;
@@ -85,12 +94,9 @@ BEGIN
   SELECT * INTO v_row FROM booking.proposals AS p WHERE p.id = p_proposal;
   v_role := booking.thread_role(v_row.thread_id, p_actor);
   IF v_row.id IS NULL OR v_role IS NULL THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'NOT_FOUND'; END IF;
-  -- The request and the assignment are locked first, in the same order as every other change.
-  IF p_accept THEN
-    PERFORM booking.open_negotiation(v_row.thread_id);
-  ELSE
-    PERFORM 1 FROM booking.requests AS r WHERE r.id = v_row.request_id FOR UPDATE;
-  END IF;
+  -- The request and the assignment are locked first, in the same order as every other change;
+  -- accepting or rejecting needs the negotiation still open.
+  PERFORM booking.open_negotiation(v_row.thread_id);
   SELECT * INTO v_row FROM booking.proposals AS p WHERE p.id = p_proposal FOR UPDATE;
   IF v_row.status <> 'open' THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'PROPOSAL_NOT_OPEN'; END IF;
   IF v_role = v_row.proposed_by_role THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'OWN_PROPOSAL'; END IF;

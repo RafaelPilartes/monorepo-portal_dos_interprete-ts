@@ -1,11 +1,12 @@
 # HANDOFF
-- Versão: v0.14.0 (H5 fechado em 2026-10-31)
-- Próximo passo: H6 — negociação de preço (docs/plan/specs/negotiation.md, critérios 1 a 5)
+- Versão: v0.15.0 (H6 fechado em 2026-11-05)
+- Próximo passo: H7 — pedido aberto, nos dois modos (docs/plan/specs/requests-open.md, critérios 1 a 4, com o teste concorrente)
 - Remoto: https://github.com/RafaelPilartes/monorepo-portal_dos_interprete-ts (trabalho em `dev`; `main` não se toca)
+- Feito no H6: negociação de preço no chat (propostas, contrapropostas, aceitar e recusar; 10 achados da revisão corrigidos ou registados, docs/plan/step-reports/H6.md).
 - Feito no H5: pedidos (só o directo), convites, aceitar e recusar, estado derivado, expirações, chat, sino e `/notifications`. 13 achados da revisão corrigidos ou registados (docs/plan/step-reports/H5.md).
-- A lembrar no H6: `booking.proposals` e "aceitar anula as propostas abertas do fio" (critério 5 do directo) entram em `booking.accept_assignment`; as propostas aparecem no meio das mensagens do chat (`RequestChat`).
+- A lembrar no H7: o critério 5 da negociação ("o primeiro que aceitar" sem negociação, sem o botão Propor); `booking.open_negotiation` já recusa `first_accept`. Abrir o tipo `open` em `booking.create_request` e no assistente.
 - A lembrar no H7, H8 e H11: abrir os outros tipos em `booking.create_request` e no assistente; cancelamento e ecrãs de pedidos da equipa (H8); passo 4 de `refresh_request_status` (pagamento do gerido, H11). Coisas dos ecrãs adiadas: AD-034.12.
-- Auto-decisões novas: AD-034 (H5)
+- Auto-decisões novas: AD-034 (H5), AD-035 (H6)
 - Bloqueios: bundle do histórico antigo (AD-001); push de tags (correr scripts/release-tags.sh, AD-002)
 - Por confirmar com a Academia: fixos angolanos (AD-020); limites dos buckets (AD-022); reset-local (AD-025); email genérico (AD-027); preços reais dos serviços (AD-032.8); textos legais, margem do gerido, taxa de verificação e dados bancários (PC-02, PC-03, PC-05, PC-06)
 - Ambiente: arrancar o `dockerd` à mão se `docker info` falhar (apagar `/var/run/docker.pid` se ficou de uma sessão anterior); `pnpm db:up && pnpm db:bootstrap-admin admin@portal.local` antes do Playwright; `pnpm db:down` no fim. Não correr o push (que corre `db:verify`) ao mesmo tempo que o Playwright: os dois usam a base local.

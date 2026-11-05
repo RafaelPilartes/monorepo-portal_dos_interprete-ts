@@ -104,7 +104,7 @@ describe('price negotiation through the API (negotiation.md)', () => {
     const thread = (await owner.query<{ id: string; assignment_id: string }>(
       'SELECT t.id, t.assignment_id FROM booking.threads AS t JOIN booking.request_assignments AS a ON a.id = t.assignment_id WHERE a.request_id = $1', [created.json().id])).rows[0]!
     const zero = await app.inject({ method: 'POST', url: `/threads/${thread.id}/proposals`, headers: as(requester), payload: { amount_aoa: 0 } })
-    expect(zero.json().error).toMatchObject({ code: 'INVALID_AMOUNT', field: 'amount_aoa' })
+    expect(zero.json().error).toMatchObject({ code: 'VALIDATION_FAILED', details: { amount_aoa: 'Indica um valor maior que zero, em kwanzas.' } })
     const first = await app.inject({ method: 'POST', url: `/threads/${thread.id}/proposals`, headers: as(requester), payload: { amount_aoa: 10000 } })
     expect(first.statusCode).toBe(201)
     const counter = await app.inject({ method: 'POST', url: `/threads/${thread.id}/proposals`, headers: as(interpreter), payload: { amount_aoa: 11000 } })

@@ -141,7 +141,7 @@ export default function RequestDetails() {
           {assignments.filter((row) => row.thread_id).map((row) => (
             <RequestChat key={row.id} threadId={row.thread_id ?? ''} title={`Conversa com ${row.interpreter_name ?? 'o intérprete'}`}
               negotiation={manage ? { role: 'requester', assignmentStatus: row.status ?? '', offeredPrice: row.offered_price_aoa,
-                travelFee: row.offered_travel_fee_aoa, interpreterNegotiates: row.accepts_negotiation !== false } : undefined} />
+                travelFee: row.offered_travel_fee_aoa, interpreterNegotiates: row.accepts_negotiation !== false, answerBy: row.invite_expires_at } : undefined} />
           ))}
         </div>
         <RequestTimeline rows={timeline} />

@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify'
+import { amountAoaSchema } from '@portal-dos-interpretes/core'
 import { z } from 'zod'
 import type { Database } from '../lib/db.js'
 import { actor, callSql } from '../lib/routes.js'
@@ -39,7 +40,7 @@ const bodies = {
   reduce: z.object({ interpreters_needed: z.number().int() }),
   meetingLink: z.object({ meeting_link: z.string().trim().max(500) }),
   decline: z.object({ reason: z.string().trim().max(1000) }),
-  proposal: z.object({ amount_aoa: z.number().int() }),
+  proposal: z.object({ amount_aoa: amountAoaSchema }),
 }
 const idParam = z.object({ id: uuid })
 

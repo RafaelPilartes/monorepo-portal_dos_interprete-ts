@@ -83,7 +83,7 @@ test('proposal, counter-proposal, accepted; the interpreter accepts the request 
 
   // The requester accepts the counter-proposal.
   await requesterPage.reload()
-  await requesterPage.getByRole('button', { name: 'Aceitar' }).click()
+  await requesterPage.getByRole('button', { name: 'Aceitar proposta' }).click()
   await expect(requesterPage.getByText('Proposta aceite: é o novo preço proposto.')).toBeVisible()
   await expect(requesterPage.getByText('13 500 Kz', { exact: true }).first()).toBeVisible()
   await shot(requesterPage, '03-requester-accepted-proposal')
@@ -91,7 +91,7 @@ test('proposal, counter-proposal, accepted; the interpreter accepts the request 
   // The interpreter accepts the request at 13 500; the negotiation closes.
   await interpreterPage.reload()
   await expect(interpreterPage.getByText('13 500 Kz', { exact: true }).first()).toBeVisible()
-  await interpreterPage.getByRole('button', { name: 'Aceitar', exact: true }).first().click()
+  await interpreterPage.getByRole('button', { name: 'Aceitar', exact: true }).click()
   await expect(interpreterPage.getByText('Pedido aceite. O solicitante foi avisado.')).toBeVisible()
   await expect(interpreterPage.getByText('A negociação está fechada.')).toBeVisible()
   await shot(interpreterPage, '04-interpreter-accepted-at-negotiated-price')

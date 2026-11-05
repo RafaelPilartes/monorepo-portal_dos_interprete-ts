@@ -486,8 +486,7 @@ BEGIN
     RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'SCHEDULE_OVERLAP';
   END;
   -- R-DRC-03: the negotiation of this thread closes; the price offered in force is the one fixed.
-  UPDATE booking.proposals SET status = 'void'
-   WHERE assignment_id = p_assignment AND status = 'open';
+  PERFORM booking.void_open_proposals(p_assignment);
   PERFORM booking.log_event(v_request.id, p_assignment, 'invited', 'accepted', p_actor, 'interpreter');
   PERFORM booking.notify_request('request_accepted', ARRAY(SELECT auth_helper.requester_accounts(v_request.id)), v_request.id, 'requester',
     jsonb_build_object('interpreter_name', (SELECT p.full_name FROM identity.profiles AS p WHERE p.id = p_actor)));
@@ -518,6 +517,7 @@ BEGIN
   UPDATE booking.request_assignments
      SET status = 'declined', responded_at = util.now(), decline_reason = trim(p_reason)
    WHERE id = p_assignment RETURNING * INTO v_assignment;
+  PERFORM booking.void_open_proposals(p_assignment);
   PERFORM booking.log_event(v_assignment.request_id, p_assignment, 'invited', 'declined', p_actor, 'interpreter', trim(p_reason));
   PERFORM booking.notify_request('request_declined', ARRAY(SELECT auth_helper.requester_accounts(v_assignment.request_id)),
     v_assignment.request_id, 'requester', jsonb_build_object(
@@ -562,6 +562,7 @@ BEGIN
   LOOP
     UPDATE booking.request_assignments SET status = 'cancelled', cancelled_by_role = 'requester', cancel_reason = 'Pedido reduzido'
      WHERE id = v_cancel.id;
+    PERFORM booking.void_open_proposals(v_cancel.id);
     PERFORM booking.log_event(p_request, v_cancel.id, v_cancel.status, 'cancelled', p_actor, 'requester', 'Pedido reduzido');
     PERFORM booking.notify_request('request_cancelled', ARRAY[v_cancel.interpreter_id], p_request, 'interpreter',
       jsonb_build_object('reason', 'O solicitante seguiu com menos intérpretes'));
@@ -633,6 +634,7 @@ BEGIN
      FOR UPDATE OF r, a SKIP LOCKED
   LOOP
     UPDATE booking.request_assignments SET status = 'expired' WHERE id = v_row.id;
+    PERFORM booking.void_open_proposals(v_row.id);
     PERFORM booking.log_event(v_row.request_id, v_row.id, 'invited', 'expired', NULL, 'system');
     PERFORM booking.notify_request('request_invite_expired', ARRAY(SELECT auth_helper.requester_accounts(v_row.request_id)),
       v_row.request_id, 'requester', jsonb_build_object(
@@ -700,6 +702,7 @@ BEGIN
              cancelled_by_role = CASE WHEN v_assignment.status = 'accepted' THEN 'system' END,
              late_cancellation = false
        WHERE id = v_assignment.id;
+      PERFORM booking.void_open_proposals(v_assignment.id);
       PERFORM booking.log_event(v_request.id, v_assignment.id, v_assignment.status,
         CASE WHEN v_assignment.status = 'accepted' THEN 'cancelled' ELSE 'expired' END, NULL, 'system', 'Pedido sem intérpretes suficientes');
     END LOOP;
