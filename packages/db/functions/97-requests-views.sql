@@ -29,7 +29,7 @@ CREATE OR REPLACE VIEW booking.assignment_details WITH (security_invoker = false
 SELECT a.id, a.request_id, a.interpreter_id, i.slug AS interpreter_slug, pr.full_name AS interpreter_name,
        pr.avatar_path AS interpreter_avatar_path, a.origin, a.status, a.offered_price_aoa, a.offered_travel_fee_aoa,
        a.agreed_price_aoa, a.agreed_travel_fee_aoa, a.invite_expires_at, a.responded_at, a.decline_reason,
-       a.cancel_reason, a.created_at, t.id AS thread_id
+       a.cancel_reason, a.created_at, t.id AS thread_id, i.accepts_negotiation
   FROM booking.request_assignments AS a
   JOIN identity.interpreter_profiles AS i ON i.account_id = a.interpreter_id
   JOIN identity.profiles AS pr ON pr.id = a.interpreter_id

@@ -1,3 +1,5 @@
+import { formatAoa } from './money'
+
 // What the person reads about requests and notices (data-model.md §5, notifications.md). One
 // vocabulary for every app: the status badges, the lists and the bell read it from here.
 
@@ -58,6 +60,8 @@ export function notificationText(kind: string, payload: Payload): { title: strin
     case 'request_understaffed_warning': return { title: 'Ainda faltam intérpretes', body: `${request}. Convida mais ou segue com os que tens.` }
     case 'request_expired': return { title: 'O pedido expirou', body: `Não houve intérpretes suficientes a tempo. ${request}` }
     case 'request_cancelled': return { title: 'Um pedido foi cancelado', body: text(payload.reason) ? `${request}. ${text(payload.reason)}` : request }
+    case 'proposal_received': return { title: 'Nova proposta de preço', body: typeof payload.amount_aoa === 'number' ? `${request}: ${formatAoa(payload.amount_aoa)}` : request }
+    case 'proposal_answered': return { title: payload.accepted === true ? 'A tua proposta foi aceite' : 'A tua proposta foi recusada', body: request }
     case 'meeting_link_changed': return { title: 'O link da reunião mudou', body: request }
     case 'org_invite_accepted': return { title: 'Um convite foi aceite', body: text(payload.organization_name) }
     case 'content_removed': return { title: 'A equipa removeu um conteúdo teu', body: text(payload.reason) ? `Motivo: ${text(payload.reason)}` : text(payload.title) }

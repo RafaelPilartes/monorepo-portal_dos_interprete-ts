@@ -12,6 +12,7 @@ export type AssignmentRow = Tables<{ schema: 'booking' }, 'assignment_details'>
 export type MyAssignmentRow = Tables<{ schema: 'booking' }, 'my_assignments'>
 export type TimelineRow = Tables<{ schema: 'booking' }, 'request_timeline'>
 export type MessageRow = Tables<{ schema: 'booking' }, 'messages'>
+export type ProposalRow = Tables<{ schema: 'booking' }, 'proposal_details'>
 
 /** What booking.preview_request_total answers (R-REQ-02): never computed by a screen. */
 export interface RequestPreview {
@@ -91,6 +92,19 @@ export class RequestsRepository {
   // Chat (R-REQ-08) --------------------------------------------------------------------------
   async messages(threadId: string): Promise<MessageRow[]> {
     return this.rows<MessageRow>(this.booking('messages').select('*').eq('thread_id', threadId).order('created_at'), 'booking.messages')
+  }
+
+  /** The price proposals of a thread (negotiation.md), shown among the messages. */
+  async proposals(threadId: string): Promise<ProposalRow[]> {
+    return this.rows<ProposalRow>(this.booking('proposal_details').select('*').eq('thread_id', threadId).order('created_at'), 'booking.proposal_details')
+  }
+
+  propose(threadId: string, amount: number): Promise<unknown> {
+    return this.api.post(`/threads/${threadId}/proposals`, { amount_aoa: amount })
+  }
+
+  answerProposal(proposalId: string, accept: boolean): Promise<unknown> {
+    return this.api.post(`/proposals/${proposalId}/${accept ? 'accept' : 'reject'}`, {})
   }
 
   async send(threadId: string, accountId: string, body: string): Promise<void> {

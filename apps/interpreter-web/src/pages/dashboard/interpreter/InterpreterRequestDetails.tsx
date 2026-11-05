@@ -87,7 +87,11 @@ export default function InterpreterRequestDetails() {
             </CardContent>
           </Card>
           <RequestFacts request={request} />
-          {mine.thread_id && <RequestChat threadId={mine.thread_id} title={`Conversa com ${request.created_by_name ?? 'o solicitante'}`} />}
+          {mine.thread_id && (
+            <RequestChat threadId={mine.thread_id} title={`Conversa com ${request.created_by_name ?? 'o solicitante'}`}
+              negotiation={{ role: 'interpreter', assignmentStatus: mine.status ?? '', offeredPrice: mine.offered_price_aoa,
+                travelFee: mine.offered_travel_fee_aoa, interpreterNegotiates: true }} />
+          )}
         </div>
         <RequestTimeline rows={timeline} />
       </div>

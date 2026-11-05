@@ -97,3 +97,24 @@ describe('direct request through the API (requests-direct.md criterion 6)', () =
     expect(told.rows[0]).toEqual({ reason: 'Estou de férias' })
   })
 })
+
+describe('price negotiation through the API (negotiation.md)', () => {
+  it('proposal, counter-proposal, accept; the interpreter then accepts at the negotiated price', async () => {
+    const created = await app.inject({ method: 'POST', url: '/requests', headers: as(requester), payload: request({ starts_at: new Date(Date.now() + 12 * 24 * 3600_000).toISOString() }) })
+    const thread = (await owner.query<{ id: string; assignment_id: string }>(
+      'SELECT t.id, t.assignment_id FROM booking.threads AS t JOIN booking.request_assignments AS a ON a.id = t.assignment_id WHERE a.request_id = $1', [created.json().id])).rows[0]!
+    const zero = await app.inject({ method: 'POST', url: `/threads/${thread.id}/proposals`, headers: as(requester), payload: { amount_aoa: 0 } })
+    expect(zero.json().error).toMatchObject({ code: 'INVALID_AMOUNT', field: 'amount_aoa' })
+    const first = await app.inject({ method: 'POST', url: `/threads/${thread.id}/proposals`, headers: as(requester), payload: { amount_aoa: 10000 } })
+    expect(first.statusCode).toBe(201)
+    const counter = await app.inject({ method: 'POST', url: `/threads/${thread.id}/proposals`, headers: as(interpreter), payload: { amount_aoa: 11000 } })
+    const own = await app.inject({ method: 'POST', url: `/proposals/${counter.json().id}/accept`, headers: as(interpreter) })
+    expect(own.json().error.code).toBe('OWN_PROPOSAL')
+    const accepted = await app.inject({ method: 'POST', url: `/proposals/${counter.json().id}/accept`, headers: as(requester) })
+    expect(accepted.json()).toMatchObject({ status: 'accepted', amount_aoa: 11000 })
+    const confirmed = await app.inject({ method: 'POST', url: `/assignments/${thread.assignment_id}/accept`, headers: as(interpreter) })
+    expect(confirmed.json()).toMatchObject({ status: 'accepted', agreed_price_aoa: 11000, agreed_travel_fee_aoa: 1500 })
+    const closed = await app.inject({ method: 'POST', url: `/threads/${thread.id}/proposals`, headers: as(requester), payload: { amount_aoa: 9000 } })
+    expect(closed.json().error.code).toBe('NEGOTIATION_CLOSED')
+  })
+})

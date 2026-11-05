@@ -44,6 +44,7 @@ export default defineConfig({
     { name: 'h2', testMatch: /h2-.*\.spec\.ts$/, dependencies: ['admin-login'], use: { storageState: ADMIN_STATE } },
     { name: 'h4', testMatch: /h4-.*\.spec\.ts$/ },
     { name: 'h5', testMatch: /h5-.*\.spec\.ts$/ },
+    { name: 'h6', testMatch: /h6-.*\.spec\.ts$/ },
   ],
   webServer: [
     {

@@ -202,6 +202,133 @@ export type Database = {
                     }
                 ];
             };
+            "proposals": {
+                Row: {
+                    "amount_aoa": number;
+                    "assignment_id": string | null;
+                    "created_at": string;
+                    "id": string;
+                    "previous_amount_aoa": number | null;
+                    "proposed_by": string;
+                    "proposed_by_role": string;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "responded_by": string | null;
+                    "status": string;
+                    "thread_id": string;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "amount_aoa": number;
+                    "assignment_id"?: string | null;
+                    "created_at"?: string;
+                    "id"?: string;
+                    "previous_amount_aoa"?: number | null;
+                    "proposed_by": string;
+                    "proposed_by_role": string;
+                    "request_id": string;
+                    "responded_at"?: string | null;
+                    "responded_by"?: string | null;
+                    "status"?: string;
+                    "thread_id": string;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "amount_aoa"?: number;
+                    "assignment_id"?: string | null;
+                    "created_at"?: string;
+                    "id"?: string;
+                    "previous_amount_aoa"?: number | null;
+                    "proposed_by"?: string;
+                    "proposed_by_role"?: string;
+                    "request_id"?: string;
+                    "responded_at"?: string | null;
+                    "responded_by"?: string | null;
+                    "status"?: string;
+                    "thread_id"?: string;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "proposals_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "assignment_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "proposals_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "proposals_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "proposals_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "proposals_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "requests";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "proposals_thread_id_fkey";
+                        columns: [
+                            "thread_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "assignment_details";
+                        referencedColumns: [
+                            "thread_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "proposals_thread_id_fkey";
+                        columns: [
+                            "thread_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "threads";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
             "request_assignments": {
                 Row: {
                     "agreed_price_aoa": number | null;
@@ -670,6 +797,7 @@ export type Database = {
         Views: {
             "assignment_details": {
                 Row: {
+                    "accepts_negotiation": boolean;
                     "agreed_price_aoa": number | null;
                     "agreed_travel_fee_aoa": number | null;
                     "cancel_reason": string | null;
@@ -757,6 +885,130 @@ export type Database = {
                         ];
                         isOneToOne: false;
                         referencedRelation: "requests";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "proposal_details": {
+                Row: {
+                    "amount_aoa": number;
+                    "assignment_id": string | null;
+                    "created_at": string;
+                    "id": string;
+                    "previous_amount_aoa": number | null;
+                    "proposed_by": string;
+                    "proposed_by_name": string | null;
+                    "proposed_by_role": string;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "status": string;
+                    "thread_id": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "amount_aoa"?: number | null;
+                    "assignment_id"?: string | null;
+                    "created_at"?: string | null;
+                    "id"?: string | null;
+                    "previous_amount_aoa"?: number | null;
+                    "proposed_by"?: string | null;
+                    "proposed_by_name"?: never;
+                    "proposed_by_role"?: string | null;
+                    "request_id"?: string | null;
+                    "responded_at"?: string | null;
+                    "status"?: string | null;
+                    "thread_id"?: string | null;
+                };
+                Update: {
+                    "amount_aoa"?: number | null;
+                    "assignment_id"?: string | null;
+                    "created_at"?: string | null;
+                    "id"?: string | null;
+                    "previous_amount_aoa"?: number | null;
+                    "proposed_by"?: string | null;
+                    "proposed_by_name"?: never;
+                    "proposed_by_role"?: string | null;
+                    "request_id"?: string | null;
+                    "responded_at"?: string | null;
+                    "status"?: string | null;
+                    "thread_id"?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "proposals_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "assignment_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "proposals_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "proposals_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "proposals_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "proposals_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "requests";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "proposals_thread_id_fkey";
+                        columns: [
+                            "thread_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "assignment_details";
+                        referencedColumns: [
+                            "thread_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "proposals_thread_id_fkey";
+                        columns: [
+                            "thread_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "threads";
                         referencedColumns: [
                             "id"
                         ];
@@ -1124,6 +1376,34 @@ export type Database = {
                 };
                 Returns: undefined;
             };
+            "make_proposal": {
+                Args: {
+                    "p_actor": string;
+                    "p_amount": number;
+                    "p_thread": string;
+                };
+                Returns: {
+                    "amount_aoa": number;
+                    "assignment_id": string | null;
+                    "created_at": string;
+                    "id": string;
+                    "previous_amount_aoa": number | null;
+                    "proposed_by": string;
+                    "proposed_by_role": string;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "responded_by": string | null;
+                    "status": string;
+                    "thread_id": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "proposals";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
             "notify_request": {
                 Args: {
                     "p_accounts": (string)[];
@@ -1133,6 +1413,41 @@ export type Database = {
                     "p_request": string;
                 };
                 Returns: undefined;
+            };
+            "open_negotiation": {
+                Args: {
+                    "p_thread": string;
+                };
+                Returns: {
+                    "agreed_price_aoa": number | null;
+                    "agreed_travel_fee_aoa": number | null;
+                    "cancel_reason": string | null;
+                    "cancelled_by_role": string | null;
+                    "completed_at": string | null;
+                    "completed_via": string | null;
+                    "created_at": string;
+                    "decline_reason": string | null;
+                    "delivered_at": string | null;
+                    "id": string;
+                    "interpreter_id": string;
+                    "interpreter_share_aoa": number | null;
+                    "invite_expires_at": string | null;
+                    "late_cancellation": boolean;
+                    "offered_price_aoa": number | null;
+                    "offered_travel_fee_aoa": number | null;
+                    "origin": string;
+                    "period": unknown;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "request_assignments";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
             };
             "preview_request_total": {
                 Args: {
@@ -1192,6 +1507,41 @@ export type Database = {
                     "p_actor"?: string;
                     "p_request": string;
                     "p_role"?: string;
+                };
+                Returns: string;
+            };
+            "respond_proposal": {
+                Args: {
+                    "p_accept": boolean;
+                    "p_actor": string;
+                    "p_proposal": string;
+                };
+                Returns: {
+                    "amount_aoa": number;
+                    "assignment_id": string | null;
+                    "created_at": string;
+                    "id": string;
+                    "previous_amount_aoa": number | null;
+                    "proposed_by": string;
+                    "proposed_by_role": string;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "responded_by": string | null;
+                    "status": string;
+                    "thread_id": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "proposals";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "thread_role": {
+                Args: {
+                    "p_account": string;
+                    "p_thread": string;
                 };
                 Returns: string;
             };

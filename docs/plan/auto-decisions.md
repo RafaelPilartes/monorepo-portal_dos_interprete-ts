@@ -303,3 +303,13 @@
   13. **Quem recusou ou expirou continua a poder escrever no fio** até ele fechar (`chat_close_days` depois do fim do pedido), como diz `R-REQ-08`. A política de escrita compara com `now()` e não com `util.now()`: a sessão não corre funções fora de `auth_helper`.
   10. **Excepções da verificação de aritmética de preços** (`verify.py`, `no-price-arithmetic`): os ecrãs de exemplo de ganhos (H10) e do histórico de verificações (H12), que ainda somam dados de exemplo. Nada se acrescenta a essa lista.
 - **Marcas:** [RISCO] dinheiro (o total vem sempre da base; o preço fica fixo na aceitação, `D-14`).
+
+## AD-035 — Decisões do passo H6 (negociação de preço)
+- **Passo:** H6
+- **Registo:**
+  1. **`previous_amount_aoa`** em `booking.proposals`: o preço em vigor quando a proposta foi feita, para o ecrã mostrar "(era 15 000 Kz)" sem fazer contas.
+  2. **Só os fios solicitante–intérprete** no H6. O fio do gerido com a equipa chega no H11; o pedido aberto (e o critério 5, "o primeiro que aceitar" sem negociação) no H7 — `booking.open_negotiation` já recusa o modo `first_accept`.
+  3. **A proposta é o total do serviço por intérprete**, sem a deslocação (`R-NEG-05`); o campo diz "Novo valor, em kwanzas, sem a deslocação" e mostra o preço actual por baixo.
+  4. **As propostas lêem-se a cada 10 segundos**, como as mensagens (AD-034.6), em vez de Realtime.
+  5. **O campo do valor não tem limite do navegador**: a recusa (`INVALID_AMOUNT`) vem da base e aparece no campo, com o texto do catálogo.
+- **Marcas:** [RISCO] dinheiro (o preço só fica fixo na aceitação do pedido, `D-14`; uma proposta aceite muda só o preço proposto).

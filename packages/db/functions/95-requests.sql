@@ -485,6 +485,9 @@ BEGIN
   EXCEPTION WHEN exclusion_violation THEN
     RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'SCHEDULE_OVERLAP';
   END;
+  -- R-DRC-03: the negotiation of this thread closes; the price offered in force is the one fixed.
+  UPDATE booking.proposals SET status = 'void'
+   WHERE assignment_id = p_assignment AND status = 'open';
   PERFORM booking.log_event(v_request.id, p_assignment, 'invited', 'accepted', p_actor, 'interpreter');
   PERFORM booking.notify_request('request_accepted', ARRAY(SELECT auth_helper.requester_accounts(v_request.id)), v_request.id, 'requester',
     jsonb_build_object('interpreter_name', (SELECT p.full_name FROM identity.profiles AS p WHERE p.id = p_actor)));
