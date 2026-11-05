@@ -315,3 +315,16 @@
   6. **A equipa não lê as propostas dos fios solicitante–intérprete directamente** (revisão do H6): como as mensagens, lê-as pela API quando precisar (`R-PRIV-05`); `data-model.md` §5 dizia "participantes do fio, equipa", e vale esta leitura.
   7. **Uma atribuição que deixa de estar convidada** (aceite, recusada, expirada, cancelada) anula a proposta aberta do fio; depois do prazo do convite a negociação fecha mesmo antes de a tarefa de expiração correr.
 - **Marcas:** [RISCO] dinheiro (o preço só fica fixo na aceitação do pedido, `D-14`; uma proposta aceite muda só o preço proposto).
+
+## AD-036 — Decisões do passo H7 (pedido aberto)
+- **Passo:** H7
+- **Registo:**
+  1. **`application_message`** em `booking.request_assignments`: a mensagem opcional da candidatura (`R-OPN-03`).
+  2. **O total de "o primeiro que aceitar"** é o orçamento por lugar vezes os lugares, calculado na base; em "eu escolho" não há total antes da escolha, e a revisão diz "Cada intérprete candidata-se com o seu preço".
+  3. **`booking.open_requests_for_me`** é uma vista sobre `auth_helper.open_requests_for_me()`: a sessão só corre funções de `auth_helper` (AD-033.1). A elegibilidade decide-se por `directory.is_eligible_for`, uma vez por pedido aberto; rever o custo quando houver muitos pedidos abertos.
+  4. **Quem chega depois do último lugar recebe `SLOTS_FULL`**, mesmo quando o pedido já passou a `confirmed` (critério 1).
+  5. **Os intérpretes elegíveis abrem o detalhe** de um pedido aberto à espera (`R-REQ-07`), sem o beneficiário, a morada ou as notas (`D-95`).
+  6. **A lista `/open-requests` lê-se a cada 20 segundos** em vez de Realtime (como AD-034.6); os filtros por dia, modalidade e cidade aplicam-se no ecrã sobre a lista do próprio.
+  7. **O intérprete escolhido** recebe `request_confirmed` quando o pedido fica completo; o catálogo de avisos não tem um aviso próprio de "foste escolhido" com lugares ainda por preencher.
+  8. **Na "eu escolho", cada candidato pode negociar** no seu fio enquanto a candidatura estiver aberta (`R-NEG-01`); em "o primeiro que aceitar" não há negociação (critério 5 da negociação, testado aqui).
+- **Marcas:** [RISCO] dinheiro (o orçamento de "o primeiro que aceitar" é o valor final, sem deslocação, `D-92`).

@@ -333,6 +333,7 @@ export type Database = {
                 Row: {
                     "agreed_price_aoa": number | null;
                     "agreed_travel_fee_aoa": number | null;
+                    "application_message": string | null;
                     "cancel_reason": string | null;
                     "cancelled_by_role": string | null;
                     "completed_at": string | null;
@@ -358,6 +359,7 @@ export type Database = {
                 Insert: {
                     "agreed_price_aoa"?: number | null;
                     "agreed_travel_fee_aoa"?: number | null;
+                    "application_message"?: string | null;
                     "cancel_reason"?: string | null;
                     "cancelled_by_role"?: string | null;
                     "completed_at"?: string | null;
@@ -382,6 +384,7 @@ export type Database = {
                 Update: {
                     "agreed_price_aoa"?: number | null;
                     "agreed_travel_fee_aoa"?: number | null;
+                    "application_message"?: string | null;
                     "cancel_reason"?: string | null;
                     "cancelled_by_role"?: string | null;
                     "completed_at"?: string | null;
@@ -800,6 +803,7 @@ export type Database = {
                     "accepts_negotiation": boolean;
                     "agreed_price_aoa": number | null;
                     "agreed_travel_fee_aoa": number | null;
+                    "application_message": string | null;
                     "cancel_reason": string | null;
                     "created_at": string;
                     "decline_reason": string | null;
@@ -889,6 +893,29 @@ export type Database = {
                             "id"
                         ];
                     }
+                ];
+            };
+            "open_requests_for_me": {
+                Row: {
+                    "accepted_count": number | null;
+                    "city": string | null;
+                    "code": string | null;
+                    "duration_minutes": number | null;
+                    "id": string | null;
+                    "interpreters_needed": number | null;
+                    "is_urgent": boolean | null;
+                    "language_names": (string)[] | null;
+                    "modality": string | null;
+                    "open_mode": string | null;
+                    "pricing_mode": string | null;
+                    "service_id": string | null;
+                    "service_title": string | null;
+                    "starts_at": string | null;
+                    "travel_fee_aoa": number | null;
+                    "value_aoa": number | null;
+                };
+                ComputedFields: never;
+                Relationships: [
                 ];
             };
             "proposal_details": {
@@ -1021,6 +1048,7 @@ export type Database = {
                     "address": string | null;
                     "beneficiary_contact": string | null;
                     "beneficiary_name": string | null;
+                    "budget_per_interpreter_aoa": number | null;
                     "can_manage": boolean | null;
                     "city": string | null;
                     "code": string;
@@ -1157,6 +1185,7 @@ export type Database = {
                 Returns: {
                     "agreed_price_aoa": number | null;
                     "agreed_travel_fee_aoa": number | null;
+                    "application_message": string | null;
                     "cancel_reason": string | null;
                     "cancelled_by_role": string | null;
                     "completed_at": string | null;
@@ -1185,15 +1214,15 @@ export type Database = {
                     isSetofReturn: false;
                 };
             };
-            "add_invite": {
+            "accept_open_request": {
                 Args: {
                     "p_actor": string;
-                    "p_interpreter": string;
-                    "p_request": Omit<Database["booking"]['Tables']["requests"]['Row'], Database["booking"]['Tables']["requests"]['ComputedFields']>;
+                    "p_request": string;
                 };
                 Returns: {
                     "agreed_price_aoa": number | null;
                     "agreed_travel_fee_aoa": number | null;
+                    "application_message": string | null;
                     "cancel_reason": string | null;
                     "cancelled_by_role": string | null;
                     "completed_at": string | null;
@@ -1221,6 +1250,95 @@ export type Database = {
                     isOneToOne: true;
                     isSetofReturn: false;
                 };
+            };
+            "active_count": {
+                Args: {
+                    "p_request": string;
+                };
+                Returns: number;
+            };
+            "add_invite": {
+                Args: {
+                    "p_actor": string;
+                    "p_interpreter": string;
+                    "p_request": Omit<Database["booking"]['Tables']["requests"]['Row'], Database["booking"]['Tables']["requests"]['ComputedFields']>;
+                };
+                Returns: {
+                    "agreed_price_aoa": number | null;
+                    "agreed_travel_fee_aoa": number | null;
+                    "application_message": string | null;
+                    "cancel_reason": string | null;
+                    "cancelled_by_role": string | null;
+                    "completed_at": string | null;
+                    "completed_via": string | null;
+                    "created_at": string;
+                    "decline_reason": string | null;
+                    "delivered_at": string | null;
+                    "id": string;
+                    "interpreter_id": string;
+                    "interpreter_share_aoa": number | null;
+                    "invite_expires_at": string | null;
+                    "late_cancellation": boolean;
+                    "offered_price_aoa": number | null;
+                    "offered_travel_fee_aoa": number | null;
+                    "origin": string;
+                    "period": unknown;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "request_assignments";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "apply_to_request": {
+                Args: {
+                    "p_actor": string;
+                    "p_message": string;
+                    "p_request": string;
+                };
+                Returns: {
+                    "agreed_price_aoa": number | null;
+                    "agreed_travel_fee_aoa": number | null;
+                    "application_message": string | null;
+                    "cancel_reason": string | null;
+                    "cancelled_by_role": string | null;
+                    "completed_at": string | null;
+                    "completed_via": string | null;
+                    "created_at": string;
+                    "decline_reason": string | null;
+                    "delivered_at": string | null;
+                    "id": string;
+                    "interpreter_id": string;
+                    "interpreter_share_aoa": number | null;
+                    "invite_expires_at": string | null;
+                    "late_cancellation": boolean;
+                    "offered_price_aoa": number | null;
+                    "offered_travel_fee_aoa": number | null;
+                    "origin": string;
+                    "period": unknown;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "request_assignments";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "assert_eligible": {
+                Args: {
+                    "p_interpreter": string;
+                    "p_request": string;
+                };
+                Returns: undefined;
             };
             "can_manage_request": {
                 Args: {
@@ -1284,6 +1402,7 @@ export type Database = {
                 Returns: {
                     "agreed_price_aoa": number | null;
                     "agreed_travel_fee_aoa": number | null;
+                    "application_message": string | null;
                     "cancel_reason": string | null;
                     "cancelled_by_role": string | null;
                     "completed_at": string | null;
@@ -1336,6 +1455,7 @@ export type Database = {
                 Returns: {
                     "agreed_price_aoa": number | null;
                     "agreed_travel_fee_aoa": number | null;
+                    "application_message": string | null;
                     "cancel_reason": string | null;
                     "cancelled_by_role": string | null;
                     "completed_at": string | null;
@@ -1360,6 +1480,52 @@ export type Database = {
                 SetofOptions: {
                     from: "*";
                     to: "request_assignments";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "lock_open_request": {
+                Args: {
+                    "p_mode": string;
+                    "p_request": string;
+                };
+                Returns: {
+                    "address": string | null;
+                    "approved_at": string | null;
+                    "approved_by": string | null;
+                    "beneficiary_contact": string | null;
+                    "beneficiary_name": string | null;
+                    "budget_per_interpreter_aoa": number | null;
+                    "cancel_reason": string | null;
+                    "cancelled_at": string | null;
+                    "cancelled_by": string | null;
+                    "cancelled_by_role": string | null;
+                    "city": string | null;
+                    "code": string;
+                    "config_version_id": string;
+                    "created_at": string;
+                    "created_by": string;
+                    "duration_minutes": number;
+                    "ends_at": string;
+                    "id": string;
+                    "interpreters_needed": number;
+                    "is_urgent": boolean;
+                    "kind": string;
+                    "managed_unit_price_aoa": number | null;
+                    "meeting_link": string | null;
+                    "modality": string;
+                    "notes": string | null;
+                    "open_mode": string | null;
+                    "organization_id": string | null;
+                    "service_id": string;
+                    "starts_at": string;
+                    "status": string;
+                    "understaffed_warned_at": string | null;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "requests";
                     isOneToOne: true;
                     isSetofReturn: false;
                 };
@@ -1421,6 +1587,7 @@ export type Database = {
                 Returns: {
                     "agreed_price_aoa": number | null;
                     "agreed_travel_fee_aoa": number | null;
+                    "application_message": string | null;
                     "cancel_reason": string | null;
                     "cancelled_by_role": string | null;
                     "completed_at": string | null;
@@ -1538,6 +1705,44 @@ export type Database = {
                     isSetofReturn: false;
                 };
             };
+            "select_candidate": {
+                Args: {
+                    "p_actor": string;
+                    "p_assignment": string;
+                    "p_request": string;
+                };
+                Returns: {
+                    "agreed_price_aoa": number | null;
+                    "agreed_travel_fee_aoa": number | null;
+                    "application_message": string | null;
+                    "cancel_reason": string | null;
+                    "cancelled_by_role": string | null;
+                    "completed_at": string | null;
+                    "completed_via": string | null;
+                    "created_at": string;
+                    "decline_reason": string | null;
+                    "delivered_at": string | null;
+                    "id": string;
+                    "interpreter_id": string;
+                    "interpreter_share_aoa": number | null;
+                    "invite_expires_at": string | null;
+                    "late_cancellation": boolean;
+                    "offered_price_aoa": number | null;
+                    "offered_travel_fee_aoa": number | null;
+                    "origin": string;
+                    "period": unknown;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "request_assignments";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
             "thread_role": {
                 Args: {
                     "p_account": string;
@@ -1601,6 +1806,43 @@ export type Database = {
             "warn_understaffed": {
                 Args: Record<PropertyKey, never>;
                 Returns: number;
+            };
+            "withdraw_application": {
+                Args: {
+                    "p_actor": string;
+                    "p_assignment": string;
+                };
+                Returns: {
+                    "agreed_price_aoa": number | null;
+                    "agreed_travel_fee_aoa": number | null;
+                    "application_message": string | null;
+                    "cancel_reason": string | null;
+                    "cancelled_by_role": string | null;
+                    "completed_at": string | null;
+                    "completed_via": string | null;
+                    "created_at": string;
+                    "decline_reason": string | null;
+                    "delivered_at": string | null;
+                    "id": string;
+                    "interpreter_id": string;
+                    "interpreter_share_aoa": number | null;
+                    "invite_expires_at": string | null;
+                    "late_cancellation": boolean;
+                    "offered_price_aoa": number | null;
+                    "offered_travel_fee_aoa": number | null;
+                    "origin": string;
+                    "period": unknown;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "request_assignments";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
             };
         };
         Enums: {

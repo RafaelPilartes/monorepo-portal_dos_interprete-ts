@@ -16,7 +16,7 @@ import { Inbox } from 'lucide-react'
 // "Aceites", "Terminados".
 
 const GROUPS = [
-  { value: 'invites', label: 'Convites', statuses: ['invited'], empty: 'Não tens convites neste momento.' },
+  { value: 'invites', label: 'Convites', statuses: ['invited', 'applied'], empty: 'Não tens convites neste momento.' },
   { value: 'accepted', label: 'Aceites', statuses: ['accepted', 'delivered', 'disputed'], empty: 'Ainda não tens serviços aceites.' },
   { value: 'finished', label: 'Terminados', statuses: ['completed', 'cancelled', 'declined', 'expired', 'not_selected', 'withdrawn'], empty: 'Ainda não há serviços terminados.' },
 ] as const

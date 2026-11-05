@@ -1,359 +1,114 @@
-import { useState } from "react";
-import { PageHeader } from "@portal-dos-interpretes/ui/components/page-header";
-import { FiltersBar } from "@portal-dos-interpretes/ui/components/filters-bar";
-import { EmptyState } from "@portal-dos-interpretes/ui/components/empty-state";
-import { Button } from "@portal-dos-interpretes/ui/components/button";
-import { Card, CardContent } from "@portal-dos-interpretes/ui/components/card";
-import { Badge } from "@portal-dos-interpretes/ui/components/badge";
-import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Video, 
-  DollarSign, 
-  FileText, 
-  Users,
-  CheckCircle,
-  MessageCircle
-} from "lucide-react";
-import { toast } from "sonner";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@portal-dos-interpretes/ui/components/dialog";
-import { Input } from "@portal-dos-interpretes/ui/components/input";
-import { Label } from "@portal-dos-interpretes/ui/components/label";
-import { Textarea } from "@portal-dos-interpretes/ui/components/textarea";
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { QueryError, TableSkeleton } from '@portal-dos-interpretes/features/components/QueryStates'
+import type { OpenRequestRow } from '@portal-dos-interpretes/features/requests/data'
+import { durationText, priceText } from '@portal-dos-interpretes/features/requests/RequestParts'
+import { useRequestAction, useRequests } from '@portal-dos-interpretes/features/requests/RequestsContext'
+import { formatDateTime, MODALITY_TEXT } from '@portal-dos-interpretes/i18n'
+import { Badge } from '@portal-dos-interpretes/ui/components/badge'
+import { Button } from '@portal-dos-interpretes/ui/components/button'
+import { Card, CardContent } from '@portal-dos-interpretes/ui/components/card'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@portal-dos-interpretes/ui/components/dialog'
+import { EmptyState } from '@portal-dos-interpretes/ui/components/empty-state'
+import { Input } from '@portal-dos-interpretes/ui/components/input'
+import { Label } from '@portal-dos-interpretes/ui/components/label'
+import { PageHeader } from '@portal-dos-interpretes/ui/components/page-header'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@portal-dos-interpretes/ui/components/select'
+import { Textarea } from '@portal-dos-interpretes/ui/components/textarea'
+import { Inbox } from 'lucide-react'
 
-interface OpenRequest {
-  id: string;
-  serviceType: string;
-  date: string;
-  time: string;
-  duration: string;
-  modality: "presencial" | "online";
-  location?: string;
-  estimatedBudget?: number;
-  requesterName: string;
-  description?: string;
-  createdAt: string;
+// interpreter-web /open-requests (requests-open.md, R-OPN-01): the open requests for me, with the
+// value I would earn — the budget in "first to accept", my own price in "I choose" — and
+// "Aceitar" or "Candidatar-me". Read every 20 seconds: a request that fills up leaves the list.
+
+const ALL = 'all'
+
+function OpenRequest({ row, onApply }: { row: OpenRequestRow; onApply: (row: OpenRequestRow) => void }) {
+  const accept = useRequestAction((repository, id: string) => repository.acceptOpen(id), 'Pedido aceite. O lugar é teu.')
+  const firstAccept = row.open_mode === 'first_accept'
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-3 p-4">
+      <div className="min-w-0 space-y-1">
+        <p className="font-medium">{row.service_title}{row.is_urgent && <Badge variant="destructive" className="ml-2 py-0 text-[10px]">Urgente</Badge>}</p>
+        <p className="text-sm text-muted-foreground">
+          {formatDateTime(row.starts_at ?? '')} · {durationText(row.duration_minutes ?? 0)} · {row.modality === 'online' ? 'Online' : row.city ?? MODALITY_TEXT.in_person}
+        </p>
+        <p className="text-sm text-muted-foreground">{(row.language_names ?? []).join(', ')} · {firstAccept ? 'O primeiro que aceitar' : 'O solicitante escolhe'} · {row.accepted_count} de {row.interpreters_needed} lugares ocupados</p>
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="text-right">
+          <p className="font-semibold tabular-nums">{priceText(row.value_aoa, row.travel_fee_aoa)}</p>
+          <p className="text-xs text-muted-foreground">{firstAccept ? 'tudo incluído' : 'o teu preço'}</p>
+        </div>
+        {firstAccept
+          ? <Button disabled={accept.isPending} onClick={() => accept.mutate(row.id ?? '')}>Aceitar</Button>
+          : <Button variant="outline" onClick={() => onApply(row)}>Candidatar-me</Button>}
+      </div>
+    </li>
+  )
 }
 
-const openRequests: OpenRequest[] = [
-  {
-    id: "open-001",
-    serviceType: "Consulta Médica",
-    date: "25 Jan 2026",
-    time: "10:00",
-    duration: "2h",
-    modality: "presencial",
-    location: "Hospital Central de Luanda",
-    estimatedBudget: 15000,
-    requesterName: "João Silva",
-    description: "Consulta de acompanhamento para paciente surdo. Necessário conhecimento de terminologia médica.",
-    createdAt: "Há 2 horas"
-  },
-  {
-    id: "open-002",
-    serviceType: "Reunião Empresarial",
-    date: "28 Jan 2026",
-    time: "14:00",
-    duration: "3h",
-    modality: "online",
-    estimatedBudget: 25000,
-    requesterName: "Empresa ABC, Lda",
-    description: "Reunião trimestral com apresentação de resultados. Participação de colaborador surdo.",
-    createdAt: "Há 5 horas"
-  },
-  {
-    id: "open-003",
-    serviceType: "Palestra Educacional",
-    date: "30 Jan 2026",
-    time: "09:00",
-    duration: "4h",
-    modality: "presencial",
-    location: "Universidade Agostinho Neto",
-    requesterName: "ISCED",
-    description: "Palestra sobre inclusão digital. Público estimado de 50 pessoas.",
-    createdAt: "Há 1 dia"
-  },
-  {
-    id: "open-004",
-    serviceType: "Evento Religioso",
-    date: "02 Fev 2026",
-    time: "10:00",
-    duration: "2h",
-    modality: "presencial",
-    location: "Igreja Nossa Senhora da Conceição",
-    estimatedBudget: 8000,
-    requesterName: "Paróquia Central",
-    description: "Missa dominical com presença de membros surdos da comunidade.",
-    createdAt: "Há 2 dias"
-  },
-];
-
-const serviceTypeFilters = [
-  { value: "all", label: "Todos" },
-  { value: "medical", label: "Saúde" },
-  { value: "corporate", label: "Empresarial" },
-  { value: "education", label: "Educação" },
-  { value: "religious", label: "Religioso" },
-];
-
 export default function InterpreterOpenRequests() {
-  const [search, setSearch] = useState("");
-  const [serviceFilter, setServiceFilter] = useState("all");
-  const [selectedRequest, setSelectedRequest] = useState<OpenRequest | null>(null);
-  const [showAcceptModal, setShowAcceptModal] = useState(false);
-  const [showProposeModal, setShowProposeModal] = useState(false);
-  const [proposedPrice, setProposedPrice] = useState("");
-  const [proposalMessage, setProposalMessage] = useState("");
+  const { repository } = useRequests()
+  const list = useQuery({ queryKey: ['requests', 'open-for-me'], queryFn: () => repository.openForMe(), refetchInterval: 20_000 })
+  const [modality, setModality] = useState(ALL)
+  const [city, setCity] = useState('')
+  const [day, setDay] = useState('')
+  const [applying, setApplying] = useState<OpenRequestRow | null>(null)
+  const [message, setMessage] = useState('')
+  const apply = useRequestAction((repo, input: { id: string; message: string }) => repo.apply(input.id, input.message), 'Candidatura enviada. O solicitante foi avisado.')
 
-  const filteredRequests = openRequests.filter((req) => {
-    const matchesSearch = req.serviceType.toLowerCase().includes(search.toLowerCase()) ||
-      req.requesterName.toLowerCase().includes(search.toLowerCase());
-    return matchesSearch;
-  });
-
-  const handleAccept = (request: OpenRequest) => {
-    setSelectedRequest(request);
-    setShowAcceptModal(true);
-  };
-
-  const handlePropose = (request: OpenRequest) => {
-    setSelectedRequest(request);
-    setProposedPrice(request.estimatedBudget?.toString() || "");
-    setShowProposeModal(true);
-  };
-
-  const confirmAccept = () => {
-    toast.success("Solicitação aceite com sucesso!", {
-      description: "Aguarde a confirmação do solicitante.",
-    });
-    setShowAcceptModal(false);
-    setSelectedRequest(null);
-  };
-
-  const submitProposal = () => {
-    toast.success("Proposta enviada!", {
-      description: `Proposta de ${proposedPrice} AOA enviada ao solicitante.`,
-    });
-    setShowProposeModal(false);
-    setSelectedRequest(null);
-    setProposedPrice("");
-    setProposalMessage("");
-  };
+  const rows = (list.data ?? []).filter((row) =>
+    (modality === ALL || row.modality === modality)
+    && (!city.trim() || (row.city ?? '').toLowerCase().includes(city.trim().toLowerCase()))
+    && (!day || (row.starts_at ?? '').startsWith(day)))
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Solicitações Abertas"
-        description="Veja as solicitações disponíveis para todos os intérpretes"
-        action={
-          <Badge variant="secondary" className="gap-1">
-            <Users className="h-4 w-4" />
-            {filteredRequests.length} disponíveis
-          </Badge>
-        }
-      />
+    <>
+      <PageHeader title="Solicitações Abertas" description="Pedidos publicados para intérpretes como tu." />
+      <div className="mb-4 flex flex-wrap gap-3">
+        <Select value={modality} onValueChange={setModality}>
+          <SelectTrigger className="w-44" aria-label="Modalidade"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>Presencial e online</SelectItem>
+            <SelectItem value="in_person">Presencial</SelectItem>
+            <SelectItem value="online">Online</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input aria-label="Cidade" placeholder="Cidade" className="w-44" value={city} onChange={(e) => setCity(e.target.value)} />
+        <Input aria-label="Dia" type="date" className="w-44" value={day} onChange={(e) => setDay(e.target.value)} />
+      </div>
+      <Card><CardContent className="p-0">
+        {list.isPending ? <div className="p-6"><TableSkeleton /></div>
+          : list.isError ? <div className="p-6"><QueryError error={list.error} onRetry={() => void list.refetch()} /></div>
+          : rows.length === 0 ? (
+            <EmptyState icon={Inbox} title="Não há pedidos abertos para ti neste momento."
+              description="Completar o perfil e acrescentar línguas e serviços aumenta os pedidos que vês."
+              action={<Button variant="outline" asChild><Link to="/profile/services">Línguas e serviços</Link></Button>} />
+          ) : <ul className="divide-y">{rows.map((row) => <OpenRequest key={row.id} row={row} onApply={setApplying} />)}</ul>}
+      </CardContent></Card>
 
-      <FiltersBar
-        searchValue={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Pesquisar solicitações..."
-        filters={[
-          {
-            name: "service",
-            value: serviceFilter,
-            onChange: setServiceFilter,
-            options: serviceTypeFilters,
-          },
-        ]}
-        onClearFilters={() => {
-          setSearch("");
-          setServiceFilter("all");
-        }}
-        hasActiveFilters={search !== "" || serviceFilter !== "all"}
-      />
-
-      {filteredRequests.length === 0 ? (
-        <EmptyState
-          icon={FileText}
-          title="Sem solicitações abertas"
-          description="Não há solicitações disponíveis no momento"
-        />
-      ) : (
-        <div className="grid gap-4">
-          {filteredRequests.map((request) => (
-            <Card key={request.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                  <div className="space-y-3 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h3 className="font-semibold text-lg">{request.serviceType}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Solicitado por: {request.requesterName} • {request.createdAt}
-                        </p>
-                      </div>
-                      <Badge variant="outline">Aberta</Badge>
-                    </div>
-
-                    <div className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>{request.date}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>{request.time} ({request.duration})</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        {request.modality === "online" ? (
-                          <Video className="h-4 w-4" />
-                        ) : (
-                          <MapPin className="h-4 w-4" />
-                        )}
-                        <span className="truncate">
-                          {request.modality === "online" ? "Online" : request.location}
-                        </span>
-                      </div>
-                      {request.estimatedBudget && (
-                        <div className="flex items-center gap-2 text-primary font-medium">
-                          <DollarSign className="h-4 w-4" />
-                          <span>{request.estimatedBudget.toLocaleString()} AOA</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {request.description && (
-                      <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
-                        {request.description}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col gap-2 lg:items-end">
-                    <Button onClick={() => handleAccept(request)} className="w-full lg:w-auto">
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Aceitar
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => handlePropose(request)}
-                      className="w-full lg:w-auto"
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      Propor Preço
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Accept Modal */}
-      <Dialog open={showAcceptModal} onOpenChange={setShowAcceptModal}>
+      <Dialog open={applying !== null} onOpenChange={(open) => { if (!open) { setApplying(null); setMessage('') } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Aceitar Solicitação</DialogTitle>
+            <DialogTitle>Candidatar-me</DialogTitle>
             <DialogDescription>
-              Ao aceitar esta solicitação, você se compromete a realizar o serviço nas condições indicadas.
+              {applying && `${applying.service_title}, ${formatDateTime(applying.starts_at ?? '')}. O teu preço: ${priceText(applying.value_aoa, applying.travel_fee_aoa)}.`}
+              {' '}A candidatura é uma oferta firme até a retirares.
             </DialogDescription>
           </DialogHeader>
-          
-          {selectedRequest && (
-            <div className="space-y-4">
-              <div className="p-4 bg-muted rounded-lg space-y-2">
-                <p><strong>Serviço:</strong> {selectedRequest.serviceType}</p>
-                <p><strong>Data:</strong> {selectedRequest.date} às {selectedRequest.time}</p>
-                <p><strong>Duração:</strong> {selectedRequest.duration}</p>
-                {selectedRequest.estimatedBudget && (
-                  <p><strong>Orçamento:</strong> {selectedRequest.estimatedBudget.toLocaleString()} AOA</p>
-                )}
-              </div>
-            </div>
-          )}
-
+          <div className="space-y-1.5">
+            <Label htmlFor="application-message">Mensagem para o solicitante (opcional)</Label>
+            <Textarea id="application-message" rows={3} maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} />
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAcceptModal(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={confirmAccept}>
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Confirmar Aceite
-            </Button>
+            <Button variant="outline" onClick={() => setApplying(null)}>Cancelar</Button>
+            <Button disabled={apply.isPending} onClick={() => applying && apply.mutate({ id: applying.id ?? '', message: message.trim() },
+              { onSuccess: () => { setApplying(null); setMessage('') } })}>Enviar candidatura</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Propose Price Modal */}
-      <Dialog open={showProposeModal} onOpenChange={setShowProposeModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Propor Preço</DialogTitle>
-            <DialogDescription>
-              Envie uma proposta de valor para o solicitante. Ele poderá aceitar, recusar ou contra-propor.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedRequest && (
-            <div className="space-y-4">
-              <div className="p-4 bg-muted rounded-lg space-y-2">
-                <p><strong>Serviço:</strong> {selectedRequest.serviceType}</p>
-                <p><strong>Duração:</strong> {selectedRequest.duration}</p>
-                {selectedRequest.estimatedBudget && (
-                  <p className="text-sm text-muted-foreground">
-                    Orçamento sugerido pelo solicitante: {selectedRequest.estimatedBudget.toLocaleString()} AOA
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="proposed-price">Valor Proposto (AOA)</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="proposed-price"
-                    type="number"
-                    value={proposedPrice}
-                    onChange={(e) => setProposedPrice(e.target.value)}
-                    className="pl-10"
-                    placeholder="Ex: 15000"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="proposal-message">Mensagem (opcional)</Label>
-                <Textarea
-                  id="proposal-message"
-                  value={proposalMessage}
-                  onChange={(e) => setProposalMessage(e.target.value)}
-                  placeholder="Explique a sua proposta..."
-                  rows={3}
-                />
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowProposeModal(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={submitProposal} disabled={!proposedPrice}>
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Enviar Proposta
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+    </>
+  )
 }

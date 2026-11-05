@@ -45,6 +45,7 @@ export default defineConfig({
     { name: 'h4', testMatch: /h4-.*\.spec\.ts$/ },
     { name: 'h5', testMatch: /h5-.*\.spec\.ts$/ },
     { name: 'h6', testMatch: /h6-.*\.spec\.ts$/ },
+    { name: 'h7', testMatch: /h7-.*\.spec\.ts$/ },
   ],
   webServer: [
     {

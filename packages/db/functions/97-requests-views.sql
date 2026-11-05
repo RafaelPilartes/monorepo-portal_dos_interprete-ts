@@ -17,7 +17,8 @@ SELECT r.id, r.code, r.kind, r.open_mode, r.created_by, r.organization_id, r.ser
          WHERE a.request_id = r.id AND a.status IN ('accepted', 'delivered', 'disputed', 'completed')) AS accepted_count,
        (SELECT pr.full_name FROM identity.profiles AS pr WHERE pr.id = r.created_by) AS created_by_name,
        (SELECT o.name FROM identity.organizations AS o WHERE o.id = r.organization_id) AS organization_name,
-       (SELECT auth_helper.account_id() IN (SELECT auth_helper.requester_accounts(r.id))) AS can_manage
+       (SELECT auth_helper.account_id() IN (SELECT auth_helper.requester_accounts(r.id))) AS can_manage,
+       r.budget_per_interpreter_aoa
   FROM booking.requests AS r
   JOIN catalog.services AS s ON s.id = r.service_id
  CROSS JOIN LATERAL (SELECT auth_helper.can_see_request_private(r.id) AS private) AS p
@@ -29,7 +30,7 @@ CREATE OR REPLACE VIEW booking.assignment_details WITH (security_invoker = false
 SELECT a.id, a.request_id, a.interpreter_id, i.slug AS interpreter_slug, pr.full_name AS interpreter_name,
        pr.avatar_path AS interpreter_avatar_path, a.origin, a.status, a.offered_price_aoa, a.offered_travel_fee_aoa,
        a.agreed_price_aoa, a.agreed_travel_fee_aoa, a.invite_expires_at, a.responded_at, a.decline_reason,
-       a.cancel_reason, a.created_at, t.id AS thread_id, i.accepts_negotiation
+       a.cancel_reason, a.created_at, t.id AS thread_id, i.accepts_negotiation, a.application_message
   FROM booking.request_assignments AS a
   JOIN identity.interpreter_profiles AS i ON i.account_id = a.interpreter_id
   JOIN identity.profiles AS pr ON pr.id = a.interpreter_id

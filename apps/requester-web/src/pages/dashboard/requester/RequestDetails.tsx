@@ -24,6 +24,7 @@ type Detail = NonNullable<ReturnType<typeof useRequestDetail>['data']>
 
 function assignmentLine(row: Detail['assignments'][number]): string {
   switch (row.status) {
+    case 'applied': return row.application_message ? `Candidatou-se: «${row.application_message}»` : 'Candidatou-se'
     case 'invited': return `Convidado, responde até ${formatDateTime(row.invite_expires_at ?? '')}`
     case 'declined': return `Recusou${row.decline_reason ? `: ${row.decline_reason}` : ''}`
     case 'expired': return 'O convite expirou'
@@ -71,6 +72,7 @@ export default function RequestDetails() {
   const created = (location.state as { created?: string } | null)?.created
   const detail = useRequestDetail(id)
   const reduce = useRequestAction((repository, needed: number) => repository.reduce(id, needed), 'Pedido actualizado.')
+  const select = useRequestAction((repository, assignmentId: string) => repository.select(id, assignmentId), 'Intérprete escolhido.')
 
   if (detail.isPending) return <Skeleton className="h-96 w-full" />
   if (detail.isError) return <QueryError error={detail.error} onRetry={() => void detail.refetch()} />
@@ -123,13 +125,24 @@ export default function RequestDetails() {
                       {assignmentLine(row) && <p className="text-muted-foreground">{assignmentLine(row)}</p>}
                     </div>
                     <div className="flex items-center gap-3">
+                      {manage && waiting && row.status === 'applied' && request.open_mode === 'requester_chooses' && (
+                        <Button size="sm" disabled={select.isPending} onClick={() => select.mutate(row.id ?? '')}>Escolher</Button>
+                      )}
                       <span className="tabular-nums">{row.agreed_price_aoa !== null ? priceText(row.agreed_price_aoa, row.agreed_travel_fee_aoa) : priceText(row.offered_price_aoa, row.offered_travel_fee_aoa)}</span>
                       <StatusBadge kind="assignment" status={row.status ?? ''} />
                     </div>
                   </li>
                 ))}
               </ul>
-              {manage && waiting && hasRoom && <InviteAnother detail={detail.data} />}
+              {request.kind === 'open' && (
+                <p className="text-sm text-muted-foreground">
+                  {request.open_mode === 'first_accept'
+                    ? `À espera de intérpretes (${accepted} de ${request.interpreters_needed}). Cada um recebe ${priceText(request.budget_per_interpreter_aoa, null)}, tudo incluído.`
+                    : `${accepted} de ${request.interpreters_needed} escolhidos. Os intérpretes candidatam-se com o seu preço.`}
+                </p>
+              )}
+              {assignments.length === 0 && request.kind === 'open' && <p className="text-sm text-muted-foreground">Ainda não há candidaturas.</p>}
+              {manage && waiting && hasRoom && request.kind === 'direct' && <InviteAnother detail={detail.data} />}
               {manage && waiting && accepted > 0 && accepted < (request.interpreters_needed ?? 0) && (
                 <Button variant="outline" disabled={reduce.isPending} onClick={() => reduce.mutate(accepted)}>
                   Seguir com {accepted} {accepted === 1 ? 'intérprete' : 'intérpretes'}

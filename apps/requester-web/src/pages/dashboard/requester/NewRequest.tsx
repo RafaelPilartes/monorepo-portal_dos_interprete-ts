@@ -24,7 +24,7 @@ import { Textarea } from '@portal-dos-interpretes/ui/components/textarea'
 import { AlertCircle, ArrowLeft, ArrowRight, Check, MapPin, Video } from 'lucide-react'
 
 // /requests/new (requests-core.md, "assistente"): seven steps, wired to the database. Only the
-// direct request exists in H5; the open and managed requests arrive with H7 and H11 (AD-034).
+// direct and the open request exist; the managed request arrives with H11 (AD-034).
 // Each step checks its fields with the catalog's messages; the total of the review comes from
 // booking.preview_request_total, and success is shown only after the 201.
 
@@ -33,11 +33,14 @@ type Step = number
 
 // Which step owns each field the API may refuse, to go back to it.
 const FIELD_STEP: Readonly<Record<string, Step>> = {
-  kind: 0, service_id: 1, language_ids: 1, interpreter_id: 1, interpreter_ids: 1, modality: 2,
+  kind: 0, open_mode: 0, budget_per_interpreter_aoa: 5, service_id: 1, language_ids: 1, interpreter_id: 1, interpreter_ids: 1, modality: 2,
   starts_at: 3, duration_minutes: 3, interpreters_needed: 3, meeting_link: 4, address: 4, city: 4,
 }
 
 interface Form {
+  kind: 'direct' | 'open'
+  openMode: 'first_accept' | 'requester_chooses'
+  budget: string
   serviceId: string
   languageIds: string[]
   interpreterIds: string[]
@@ -55,6 +58,7 @@ interface Form {
 }
 
 const EMPTY: Form = {
+  kind: 'direct', openMode: 'requester_chooses', budget: '',
   serviceId: '', languageIds: [], interpreterIds: [], modality: '', day: '', time: '', durationMinutes: '60', needed: '1',
   meetingLink: '', address: '', city: '', notes: '', beneficiaryName: '', beneficiaryContact: '',
 }
@@ -104,6 +108,9 @@ export default function NewRequest() {
   }, [preselected, fromProfile.data, form.interpreterIds.length])
 
   const service = catalog.data?.services.find((row) => row.id === form.serviceId)
+  const firstAccept = form.kind === 'open' && form.openMode === 'first_accept'
+  // Stable between renders: the review's effect depends on it.
+  const interpreterIds = useMemo(() => (form.kind === 'direct' ? form.interpreterIds : []), [form.kind, form.interpreterIds])
   const needed = Math.max(1, Number(form.needed) || 1)
   const firstLanguage = form.languageIds[0]
   const candidates = useListing({ languageId: firstLanguage, limit: 50, offset: 0 })
@@ -121,7 +128,7 @@ export default function NewRequest() {
     if (current === 1) {
       if (!form.serviceId) found.service_id = 'Escolhe o serviço.'
       if (form.languageIds.length === 0) found.language_ids = 'Escolhe pelo menos uma língua.'
-      if (form.interpreterIds.length === 0) found.interpreter_ids = 'Escolhe pelo menos um intérprete.'
+      if (form.kind === 'direct' && form.interpreterIds.length === 0) found.interpreter_ids = 'Escolhe pelo menos um intérprete.'
     }
     if (current === 2 && !form.modality) found.modality = 'Escolhe presencial ou online.'
     if (current === 3) {
@@ -129,10 +136,11 @@ export default function NewRequest() {
       const minutes = Number(form.durationMinutes)
       if (!Number.isInteger(minutes) || minutes < 15 || minutes > 720) found.duration_minutes = 'A duração tem de estar entre 15 minutos e 12 horas.'
       // Every interpreter chosen gets an invite, so they cannot be more than the places.
-      if (form.interpreterIds.length > needed) {
+      if (form.kind === 'direct' && form.interpreterIds.length > needed) {
         found.interpreters_needed = `Escolheste ${form.interpreterIds.length} intérpretes: pede pelo menos ${form.interpreterIds.length}.`
       }
     }
+    if (current === 5 && !(Number(form.budget) > 0)) found.budget_per_interpreter_aoa = 'Indica o valor que pagas a cada intérprete.'
     if (current === 4) {
       if (form.modality === 'online' && !form.meetingLink.trim()) found.meeting_link = 'Indica o link da reunião.'
       if (form.modality === 'online' && form.meetingLink.trim() && !form.meetingLink.trim().startsWith('https://')) found.meeting_link = 'O link tem de começar por https://.'
@@ -145,10 +153,10 @@ export default function NewRequest() {
     const found = check(step)
     setErrors(found)
     if (Object.keys(found).length > 0) return
-    // Step 6 (budget) is only for the open "first to accept" request (H7).
-    setStep((current) => (current === 4 ? 6 : Math.min(current + 1, STEPS.length - 1)))
+    // Step 6 (budget) is only for the open "first to accept" request.
+    setStep((current) => (current === 4 && !firstAccept ? 6 : Math.min(current + 1, STEPS.length - 1)))
   }
-  const back = () => setStep((current) => (current === 6 ? 4 : Math.max(current - 1, 0)))
+  const back = () => setStep((current) => (current === 6 && !firstAccept ? 4 : Math.max(current - 1, 0)))
 
   // The review asks the server for the total (R-REQ-02).
   useEffect(() => {
@@ -156,16 +164,22 @@ export default function NewRequest() {
     let alive = true
     setPreview(null)
     setPreviewError(null)
-    requests.preview({ service_id: form.serviceId, duration_minutes: Number(form.durationMinutes), modality: form.modality, interpreter_ids: form.interpreterIds })
+    requests.preview({
+      kind: form.kind, open_mode: form.kind === 'open' ? form.openMode : undefined,
+      budget_per_interpreter_aoa: firstAccept ? Number(form.budget) : undefined, interpreters_needed: needed,
+      service_id: form.serviceId, duration_minutes: Number(form.durationMinutes), modality: form.modality, interpreter_ids: interpreterIds,
+    })
       .then((result) => { if (alive) setPreview(result) })
       .catch((error: unknown) => { if (alive) setPreviewError(errorMessage(error)) })
     return () => { alive = false }
-  }, [step, form.serviceId, form.durationMinutes, form.modality, form.interpreterIds, requests])
+  }, [step, form.kind, form.openMode, form.budget, firstAccept, needed, form.serviceId, form.durationMinutes, form.modality, interpreterIds, requests])
 
   const submit = async () => {
     if (!preview || !startsAt || !form.modality) return
     const input: NewRequestInput = {
-      kind: 'direct',
+      kind: form.kind,
+      open_mode: form.kind === 'open' ? form.openMode : undefined,
+      budget_per_interpreter_aoa: firstAccept ? Number(form.budget) : undefined,
       organization_id: organizationId ?? undefined,
       service_id: form.serviceId,
       language_ids: form.languageIds,
@@ -179,7 +193,7 @@ export default function NewRequest() {
       notes: form.notes.trim() || undefined,
       beneficiary_name: form.beneficiaryName.trim() || undefined,
       beneficiary_contact: form.beneficiaryContact.trim() || undefined,
-      interpreter_ids: form.interpreterIds,
+      interpreter_ids: interpreterIds,
       expected_total_aoa: preview.total_aoa,
     }
     setSending(true)
@@ -189,7 +203,7 @@ export default function NewRequest() {
     } catch (error) {
       if (error instanceof DataError && error.code === 'PRICE_CHANGED') {
         // The total changed between the review and the send: show the new one (requests-core.md).
-        setPreview(await requests.preview({ service_id: input.service_id, duration_minutes: input.duration_minutes, modality: input.modality, interpreter_ids: input.interpreter_ids }).catch(() => null))
+        setPreview(await requests.preview(input).catch(() => null))
         setPreviewError(errorMessage(error))
         return
       }
@@ -212,7 +226,7 @@ export default function NewRequest() {
     <>
       <PageHeader title="Nova Solicitação" description="Pede um intérprete em poucos passos." />
       <ol className="mb-6 flex flex-wrap gap-2 text-xs" aria-label="Passos">
-        {STEPS.map((name, index) => index === 5 ? null : (
+        {STEPS.map((name, index) => index === 5 && !firstAccept ? null : (
           <li key={name} aria-current={index === step ? 'step' : undefined}
             className={`rounded-full border px-3 py-1 ${index === step ? 'border-primary bg-primary/10 font-medium text-primary' : index < step ? 'text-foreground' : 'text-muted-foreground'}`}>
             {index < step && <Check className="mr-1 inline h-3 w-3" aria-hidden="true" />}{name}
@@ -223,17 +237,36 @@ export default function NewRequest() {
       <Card>
         <CardContent className="space-y-6 pt-6">
           {step === 0 && (
-            <div className="grid gap-3 md:grid-cols-3">
-              <button type="button" aria-pressed="true" className="rounded-lg border-2 border-primary bg-primary/5 p-4 text-left">
-                <p className="font-medium">Escolher um intérprete</p>
-                <p className="text-sm text-muted-foreground">Escolhes quem queres e convidas directamente.</p>
-              </button>
-              {[{ title: 'Publicar para intérpretes', text: 'Os intérpretes disponíveis candidatam-se.' }, { title: 'Pedir à plataforma', text: 'A equipa escolhe e faz o orçamento.' }].map((option) => (
-                <div key={option.title} aria-disabled="true" className="rounded-lg border p-4 opacity-60">
-                  <div className="flex flex-wrap items-center gap-2"><p className="font-medium">{option.title}</p><Badge variant="outline">Disponível em breve</Badge></div>
-                  <p className="text-sm text-muted-foreground">{option.text}</p>
+            <div className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-3">
+                {([['direct', 'Escolher um intérprete', 'Escolhes quem queres e convidas directamente.'],
+                   ['open', 'Publicar para intérpretes', 'Os intérpretes disponíveis aceitam ou candidatam-se.']] as const).map(([value, title, text]) => (
+                  <button key={value} type="button" aria-pressed={form.kind === value} onClick={() => set('kind', value)}
+                    className={`rounded-lg border-2 p-4 text-left ${form.kind === value ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                    <p className="font-medium">{title}</p>
+                    <p className="text-sm text-muted-foreground">{text}</p>
+                  </button>
+                ))}
+                <div aria-disabled="true" className="rounded-lg border p-4 opacity-60">
+                  <div className="flex flex-wrap items-center gap-2"><p className="font-medium">Pedir à plataforma</p><Badge variant="outline">Disponível em breve</Badge></div>
+                  <p className="text-sm text-muted-foreground">A equipa escolhe e faz o orçamento.</p>
                 </div>
-              ))}
+              </div>
+              {form.kind === 'open' && (
+                <fieldset className="space-y-2">
+                  <legend className="text-sm font-medium">Como escolher os intérpretes</legend>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {([['requester_chooses', 'Eu escolho', 'Os intérpretes candidatam-se com o seu preço e tu escolhes.'],
+                       ['first_accept', 'O primeiro que aceitar', 'Defines quanto pagas a cada um; os primeiros a aceitar ficam.']] as const).map(([value, title, text]) => (
+                      <button key={value} type="button" aria-pressed={form.openMode === value} onClick={() => set('openMode', value)}
+                        className={`rounded-lg border-2 p-3 text-left ${form.openMode === value ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                        <p className="font-medium">{title}</p>
+                        <p className="text-sm text-muted-foreground">{text}</p>
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
             </div>
           )}
 
@@ -260,7 +293,7 @@ export default function NewRequest() {
                 </div>
                 {errors.language_ids && <p className="text-sm text-destructive">{errors.language_ids}</p>}
               </fieldset>
-              <fieldset className="space-y-2">
+              {form.kind === 'direct' && <fieldset className="space-y-2">
                 <legend className="text-sm font-medium">Intérprete</legend>
                 {!firstLanguage ? <p className="text-sm text-muted-foreground">Escolhe primeiro uma língua.</p>
                   : candidates.isPending ? <Skeleton className="h-24 w-full" />
@@ -290,7 +323,8 @@ export default function NewRequest() {
                 {errors.interpreter_ids && <p className="text-sm text-destructive">{errors.interpreter_ids}</p>}
                 {errors.interpreter_id && <p className="text-sm text-destructive">{errors.interpreter_id}</p>}
                 <p className="text-xs text-muted-foreground">O preço de cada intérprete aparece na revisão. Só recebem o convite os que oferecem este serviço nas línguas escolhidas.</p>
-              </fieldset>
+              </fieldset>}
+              {form.kind === 'open' && <p className="text-sm text-muted-foreground">O pedido fica visível aos intérpretes que interpretam estas línguas e oferecem este serviço.</p>}
             </div>
           )}
 
@@ -349,6 +383,13 @@ export default function NewRequest() {
             </div>
           )}
 
+          {step === 5 && (
+            <Field id="budget" label="Quanto pagas a cada intérprete (Kz)" error={errors.budget_per_interpreter_aoa}
+              hint="É o valor final, tudo incluído: sem deslocação à parte. Os primeiros a aceitar ficam com o lugar.">
+              <Input id="budget" type="number" inputMode="numeric" className="max-w-48" value={form.budget} onChange={(e) => set('budget', e.target.value)} />
+            </Field>
+          )}
+
           {step === 6 && (
             <div className="space-y-5">
               <CardHeader className="p-0">
@@ -362,9 +403,17 @@ export default function NewRequest() {
                 <div><dt className="text-muted-foreground">Intérpretes</dt><dd className="font-medium">{needed}</dd></div>
               </dl>
               {previewError && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{previewError}</AlertDescription></Alert>}
-              {!preview ? (!previewError && <Skeleton className="h-24 w-full" />) : (
+              {form.kind === 'open' && form.openMode === 'requester_chooses' ? (
+                <Alert><AlertCircle className="h-4 w-4" /><AlertDescription>Cada intérprete candidata-se com o seu preço. Escolhes depois de veres as candidaturas.</AlertDescription></Alert>
+              ) : !preview ? (!previewError && <Skeleton className="h-24 w-full" />) : (
                 <div className="rounded-lg border">
                   <ul className="divide-y text-sm">
+                    {firstAccept && (
+                      <li className="flex flex-wrap justify-between gap-2 p-3">
+                        <span>{needed} {needed === 1 ? 'intérprete' : 'intérpretes'}, cada um a</span>
+                        <span className="tabular-nums">{formatAoa(Number(form.budget))} (tudo incluído)</span>
+                      </li>
+                    )}
                     {preview.lines.map((line) => {
                       const row = candidates.data?.rows.find((item) => item.account_id === line.interpreter_id)
                       return (
@@ -380,7 +429,7 @@ export default function NewRequest() {
                   </div>
                 </div>
               )}
-              {preview && preview.lines.length < form.interpreterIds.length && (
+              {preview && preview.lines.length < interpreterIds.length && (
                 <Alert><AlertCircle className="h-4 w-4" /><AlertDescription>Algum intérprete escolhido não oferece este serviço: volta ao passo 2 e escolhe outro.</AlertDescription></Alert>
               )}
             </div>
@@ -391,7 +440,7 @@ export default function NewRequest() {
               <ArrowLeft className="h-4 w-4" />{step === 0 ? 'Cancelar' : 'Voltar'}
             </Button>
             {step === 6 ? (
-              <Button onClick={() => void submit()} disabled={sending || !preview || preview.lines.length < form.interpreterIds.length}>
+              <Button onClick={() => void submit()} disabled={sending || !preview || preview.lines.length < interpreterIds.length}>
                 {sending ? 'A enviar…' : 'Enviar pedido'}
               </Button>
             ) : (

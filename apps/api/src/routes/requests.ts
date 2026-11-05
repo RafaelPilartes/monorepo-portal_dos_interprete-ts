@@ -6,7 +6,7 @@ import { actor, callSql } from '../lib/routes.js'
 import { RATE_LIMITS } from '../plugins/rateLimit.js'
 
 // Requests, assignments and the price negotiation (api.md §7, §8; requests-core.md,
-// requests-direct.md, negotiation.md). Every rule — who
+// requests-direct.md, requests-open.md, negotiation.md). Every rule — who
 // may, the price, the deadlines, the overlap — is in the booking functions; here only the shapes.
 // The totals are computed by booking.preview_request_total, never by a screen (R-REQ-02).
 
@@ -14,6 +14,10 @@ const uuid = z.string().uuid()
 const optionalText = (max: number) => z.string().trim().max(max).optional()
 
 const shape = {
+  kind: z.enum(['direct', 'open', 'managed']).optional(),
+  open_mode: z.enum(['first_accept', 'requester_chooses']).optional(),
+  budget_per_interpreter_aoa: z.number().int().optional(),
+  interpreters_needed: z.number().int().optional(),
   service_id: uuid,
   duration_minutes: z.number().int(),
   modality: z.enum(['online', 'in_person']),
@@ -41,6 +45,8 @@ const bodies = {
   meetingLink: z.object({ meeting_link: z.string().trim().max(500) }),
   decline: z.object({ reason: z.string().trim().max(1000) }),
   proposal: z.object({ amount_aoa: amountAoaSchema }),
+  application: z.object({ message: z.string().trim().max(1000).optional() }),
+  select: z.object({ assignment_id: uuid }),
 }
 const idParam = z.object({ id: uuid })
 
@@ -70,6 +76,26 @@ export function registerRequestRoutes(server: FastifyInstance, deps: { db: Datab
     callSql(deps.db, request, 'SELECT * FROM booking.update_meeting_link($1, $2, $3)', [
       actor(request), idParam.parse(request.params).id, bodies.meetingLink.parse(request.body).meeting_link,
     ]))
+
+  // R-OPN-02: "first to accept".
+  server.post('/requests/:id/accept', async (request) =>
+    callSql(deps.db, request, 'SELECT * FROM booking.accept_open_request($1, $2)', [actor(request), idParam.parse(request.params).id]))
+
+  // R-OPN-03: "I choose", the application.
+  server.post('/requests/:id/applications', async (request, reply) =>
+    reply.status(201).send(await callSql(deps.db, request, 'SELECT * FROM booking.apply_to_request($1, $2, $3)', [
+      actor(request), idParam.parse(request.params).id, bodies.application.parse(request.body ?? {}).message ?? null,
+    ])))
+
+  // R-OPN-04: the requester chooses.
+  server.post('/requests/:id/select', async (request) =>
+    callSql(deps.db, request, 'SELECT * FROM booking.select_candidate($1, $2, $3)', [
+      actor(request), idParam.parse(request.params).id, bodies.select.parse(request.body).assignment_id,
+    ]))
+
+  // R-OPN-03
+  server.post('/assignments/:id/withdraw', async (request) =>
+    callSql(deps.db, request, 'SELECT * FROM booking.withdraw_application($1, $2)', [actor(request), idParam.parse(request.params).id]))
 
   // R-DRC-03
   server.post('/assignments/:id/accept', async (request) =>

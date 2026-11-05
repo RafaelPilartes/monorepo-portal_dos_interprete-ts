@@ -118,3 +118,46 @@ describe('price negotiation through the API (negotiation.md)', () => {
     expect(closed.json().error.code).toBe('NEGOTIATION_CLOSED')
   })
 })
+
+describe('open request through the API (requests-open.md)', () => {
+  /** A complete, online, LGA interpreter (test setup; H4 has the screens). */
+  async function interpreterReady(): Promise<TestAccount> {
+    const account = await createConfirmedAccount(local.API_URL, local.SERVICE_ROLE_KEY, local.ANON_KEY)
+    await acceptCurrentTerms(owner, account.id)
+    await owner.query('SELECT identity.become_interpreter($1, NULL, NULL)', [account.id])
+    await owner.query(`UPDATE identity.interpreter_profiles SET modality = 'both', city = 'Luanda', travel_fee_aoa = 1500,
+                         bio = repeat('Intérprete de Língua Gestual Angolana em consultas e tribunais. ', 2) WHERE account_id = $1`, [account.id])
+    await owner.query("INSERT INTO directory.interpreter_languages (interpreter_id, language_id, level) VALUES ($1, $2, 'fluent')", [account.id, languageId])
+    await owner.query('INSERT INTO directory.interpreter_services (interpreter_id, service_id, price_aoa) VALUES ($1, $2, 8000)', [account.id, serviceId])
+    return account
+  }
+
+  it('first to accept: with 2 places and 3 simultaneous acceptances, exactly 2 stay and the third gets SLOTS_FULL (criterion 1)', async () => {
+    const takers = await Promise.all([interpreterReady(), interpreterReady(), interpreterReady()])
+    const created = await app.inject({ method: 'POST', url: '/requests', headers: as(requester), payload: request({
+      kind: 'open', open_mode: 'first_accept', budget_per_interpreter_aoa: 9000, interpreters_needed: 2, interpreter_ids: [],
+      starts_at: new Date(Date.now() + 15 * 24 * 3600_000).toISOString(), expected_total_aoa: 18000,
+    }) })
+    expect(created.statusCode).toBe(201)
+    const answers = await Promise.all(takers.map((taker) =>
+      app.inject({ method: 'POST', url: `/requests/${created.json().id}/accept`, headers: as(taker) })))
+    expect(answers.filter((answer) => answer.statusCode === 200)).toHaveLength(2)
+    expect(answers.filter((answer) => answer.json().error?.code === 'SLOTS_FULL')).toHaveLength(1)
+    const accepted = await owner.query("SELECT count(*)::integer AS n FROM booking.request_assignments WHERE request_id = $1 AND status = 'accepted'", [created.json().id])
+    expect(accepted.rows[0]).toEqual({ n: 2 })
+  })
+
+  it('I choose: an application at the own price with the travel fee, chosen at the price in force; then it cannot be withdrawn (R-OPN-03, R-OPN-04)', async () => {
+    const candidate = await interpreterReady()
+    const created = await app.inject({ method: 'POST', url: '/requests', headers: as(requester), payload: request({
+      kind: 'open', open_mode: 'requester_chooses', interpreter_ids: [], starts_at: new Date(Date.now() + 16 * 24 * 3600_000).toISOString(), expected_total_aoa: 0,
+    }) })
+    const applied = await app.inject({ method: 'POST', url: `/requests/${created.json().id}/applications`, headers: as(candidate), payload: { message: 'Disponível.' } })
+    expect(applied.json()).toMatchObject({ status: 'applied', offered_price_aoa: 12000, offered_travel_fee_aoa: 1500, application_message: 'Disponível.' })
+    const chosen = await app.inject({ method: 'POST', url: `/requests/${created.json().id}/select`, headers: as(requester), payload: { assignment_id: applied.json().id } })
+    expect(chosen.json()).toMatchObject({ status: 'accepted', agreed_price_aoa: 12000, agreed_travel_fee_aoa: 1500 })
+    const withdraw = await app.inject({ method: 'POST', url: `/assignments/${applied.json().id}/withdraw`, headers: as(candidate) })
+    expect(withdraw.json().error.code).toBe('STATE_CHANGED')
+  })
+})
+

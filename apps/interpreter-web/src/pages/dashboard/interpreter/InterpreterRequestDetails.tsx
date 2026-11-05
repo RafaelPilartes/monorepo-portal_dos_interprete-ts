@@ -24,6 +24,7 @@ export default function InterpreterRequestDetails() {
   const [reason, setReason] = useState('')
   const accept = useRequestAction((repository, assignmentId: string) => repository.accept(assignmentId), 'Pedido aceite. O solicitante foi avisado.')
   const decline = useRequestAction((repository, input: { id: string; reason: string }) => repository.decline(input.id, input.reason), 'Recusaste o pedido.')
+  const withdraw = useRequestAction((repository, assignmentId: string) => repository.withdraw(assignmentId), 'Candidatura retirada.')
 
   if (detail.isPending) return <Skeleton className="h-96 w-full" />
   if (detail.isError) return <QueryError error={detail.error} onRetry={() => void detail.refetch()} />
@@ -38,6 +39,7 @@ export default function InterpreterRequestDetails() {
   }
   const { request, timeline } = detail.data
   const invited = mine.status === 'invited'
+  const applied = mine.status === 'applied'
   const reasonOk = reason.trim().length >= 3
 
   return (
@@ -55,18 +57,24 @@ export default function InterpreterRequestDetails() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <Card className={invited ? 'border-warning/50' : undefined}>
-            <CardHeader><CardTitle>{invited ? 'Convite' : 'O teu serviço'}</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{invited ? 'Convite' : applied ? 'A tua candidatura' : 'O teu serviço'}</CardTitle></CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="text-muted-foreground">{invited ? 'Preço proposto' : 'Preço acordado'} ({request.pricing_mode === 'fixed' ? 'preço fixo' : 'pela duração, ao teu preço por hora'})</span>
+                <span className="text-muted-foreground">{invited || applied ? 'Preço proposto' : 'Preço acordado'} ({request.pricing_mode === 'fixed' ? 'preço fixo' : 'pela duração, ao teu preço por hora'})</span>
                 <span className="text-lg font-semibold tabular-nums">
-                  {invited ? priceText(mine.offered_price_aoa, mine.offered_travel_fee_aoa) : priceText(mine.agreed_price_aoa, mine.agreed_travel_fee_aoa)}
+                  {invited || applied ? priceText(mine.offered_price_aoa, mine.offered_travel_fee_aoa) : priceText(mine.agreed_price_aoa, mine.agreed_travel_fee_aoa)}
                 </span>
               </div>
               {invited && mine.invite_expires_at && (
                 <p className="flex items-center gap-2 font-medium text-warning"><Clock className="h-4 w-4" aria-hidden="true" />Responde até {formatDateTime(mine.invite_expires_at)}</p>
               )}
               {mine.status === 'declined' && mine.decline_reason && <p className="text-muted-foreground">Recusaste: {mine.decline_reason}</p>}
+              {applied && (
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="text-muted-foreground">Candidatura enviada: o solicitante escolhe entre os candidatos.</p>
+                  <Button variant="outline" disabled={withdraw.isPending} onClick={() => withdraw.mutate(mine.id ?? '')}>Retirar candidatura</Button>
+                </div>
+              )}
               {invited && !declining && (
                 <div className="flex flex-wrap gap-2">
                   <Button disabled={accept.isPending} onClick={() => accept.mutate(mine.id ?? '')}>{accept.isPending ? 'A aceitar…' : 'Aceitar'}</Button>

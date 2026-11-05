@@ -20,8 +20,12 @@ export interface RequestPreview {
   total_aoa: number
 }
 
+export type OpenRequestRow = Tables<{ schema: 'booking' }, 'open_requests_for_me'>
+
 export interface NewRequest {
-  kind: 'direct'
+  kind: 'direct' | 'open'
+  open_mode?: 'first_accept' | 'requester_chooses' | undefined
+  budget_per_interpreter_aoa?: number | undefined
   organization_id?: string | undefined
   service_id: string
   language_ids: string[]
@@ -119,7 +123,28 @@ export class RequestsRepository {
   }
 
   // Writes through the API ---------------------------------------------------------------------
-  preview(input: Pick<NewRequest, 'service_id' | 'duration_minutes' | 'modality' | 'interpreter_ids'>): Promise<RequestPreview> {
+  /** interpreter-web /open-requests (R-OPN-01). */
+  async openForMe(): Promise<OpenRequestRow[]> {
+    return this.rows<OpenRequestRow>(this.booking('open_requests_for_me').select('*'), 'booking.open_requests_for_me')
+  }
+
+  acceptOpen(requestId: string): Promise<unknown> {
+    return this.api.post(`/requests/${requestId}/accept`, {})
+  }
+
+  apply(requestId: string, message: string): Promise<unknown> {
+    return this.api.post(`/requests/${requestId}/applications`, message ? { message } : {})
+  }
+
+  select(requestId: string, assignmentId: string): Promise<unknown> {
+    return this.api.post(`/requests/${requestId}/select`, { assignment_id: assignmentId })
+  }
+
+  withdraw(assignmentId: string): Promise<unknown> {
+    return this.api.post(`/assignments/${assignmentId}/withdraw`, {})
+  }
+
+  preview(input: Pick<NewRequest, 'kind' | 'open_mode' | 'budget_per_interpreter_aoa' | 'interpreters_needed' | 'service_id' | 'duration_minutes' | 'modality' | 'interpreter_ids'>): Promise<RequestPreview> {
     return this.api.post<RequestPreview>('/requests/preview', input)
   }
 

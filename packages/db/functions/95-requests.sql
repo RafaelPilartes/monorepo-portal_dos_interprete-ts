@@ -53,17 +53,24 @@ AS $$ SELECT p_account IN (SELECT auth_helper.requester_accounts(p_request)) $$;
 
 -- R-REQ-07: who sees a request. Open requests (H7) add the eligible interpreters.
 CREATE OR REPLACE FUNCTION auth_helper.can_view_request(p_request uuid) RETURNS boolean
-  LANGUAGE sql STABLE SECURITY DEFINER
+  -- plpgsql: it names directory.is_eligible_for, defined further down this file.
+  LANGUAGE plpgsql STABLE SECURITY DEFINER
   SET search_path = ''
 AS $$
-  SELECT auth_helper.is_active() AND (
+BEGIN
+  RETURN auth_helper.is_active() AND (
     auth_helper.is_staff()
     OR EXISTS (SELECT 1 FROM booking.requests AS r
                 WHERE r.id = p_request
                   AND (r.created_by = auth_helper.account_id()
                        OR (r.organization_id IS NOT NULL AND auth_helper.org_role(r.organization_id) IS NOT NULL)))
     OR EXISTS (SELECT 1 FROM booking.request_assignments AS a
-                WHERE a.request_id = p_request AND a.interpreter_id = auth_helper.account_id()))
+                WHERE a.request_id = p_request AND a.interpreter_id = auth_helper.account_id())
+    -- R-OPN-01: an open request waiting for interpreters, for the eligible ones.
+    OR EXISTS (SELECT 1 FROM booking.requests AS r
+                WHERE r.id = p_request AND r.kind = 'open' AND r.status = 'awaiting_interpreters'
+                  AND (directory.is_eligible_for(auth_helper.account_id(), p_request)).eligible));
+END;
 $$;
 
 -- D-16, D-95: who sees the beneficiary, the exact address and the notes. The requester's side,
@@ -318,8 +325,8 @@ END;
 $$;
 
 -- R-REQ-02: the totals of a request before it exists, per interpreter and in all, for the review
--- screen (POST /requests/preview) and for the PRICE_CHANGED check of create_request. Direct only
--- in H5: each chosen interpreter's price plus the travel fee in person.
+-- screen (POST /requests/preview) and for the PRICE_CHANGED check of create_request. Direct: each
+-- chosen interpreter's price plus the travel fee in person.
 CREATE OR REPLACE FUNCTION booking.preview_request_total(p_input jsonb)
 RETURNS jsonb
   LANGUAGE plpgsql STABLE SECURITY DEFINER
@@ -332,6 +339,14 @@ DECLARE
   v_in_person boolean := p_input ->> 'modality' = 'in_person';
   v_lines jsonb;
 BEGIN
+  -- Open requests (H7): "first to accept" pays the budget per place, everything included (D-92);
+  -- "I choose" has no total until a candidate is chosen, each one proposes its own price.
+  IF p_input ->> 'kind' = 'open' THEN
+    RETURN jsonb_build_object('lines', '[]'::jsonb, 'total_aoa',
+      CASE WHEN p_input ->> 'open_mode' = 'first_accept'
+           THEN coalesce((p_input ->> 'budget_per_interpreter_aoa')::bigint, 0) * coalesce((p_input ->> 'interpreters_needed')::integer, 1)
+           ELSE 0 END);
+  END IF;
   SELECT coalesce(jsonb_agg(jsonb_build_object(
            'interpreter_id', s.interpreter_id,
            'price_aoa', catalog.quote_service(v_service, s.price_aoa, v_duration, v_config),
@@ -348,7 +363,8 @@ END;
 $$;
 
 -- R-REQ-01: create a request, everything checked in the database, in one transaction: the request,
--- its languages, the initial invites and the first line of the log. Direct only in H5 (AD-034).
+-- its languages, the initial invites (direct) and the first line of the log; an open request
+-- tells its eligible interpreters (R-OPN-01).
 CREATE OR REPLACE FUNCTION booking.create_request(p_actor uuid, p_input jsonb)
 RETURNS booking.requests
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
@@ -367,6 +383,8 @@ DECLARE
   v_modality text := p_input ->> 'modality';
   v_link text := nullif(trim(p_input ->> 'meeting_link'), '');
   v_address text := nullif(trim(p_input ->> 'address'), '');
+  v_mode text := nullif(p_input ->> 'open_mode', '');
+  v_budget bigint := (p_input ->> 'budget_per_interpreter_aoa')::bigint;
   v_lead integer;
   v_max integer;
   v_request booking.requests;
@@ -382,8 +400,19 @@ BEGIN
         OR (SELECT o.status FROM identity.organizations AS o WHERE o.id = v_org) <> 'active' THEN
     RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'FORBIDDEN';
   END IF;
-  IF v_kind IS DISTINCT FROM 'direct' THEN
+  -- Direct (H5) and open (H7); the managed request arrives with H11 (AD-034).
+  IF v_kind IS NULL OR v_kind NOT IN ('direct', 'open') THEN
     RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'VALIDATION_FAILED', HINT = 'kind:not_available';
+  END IF;
+  IF v_kind = 'open' THEN
+    IF v_mode IS NULL OR v_mode NOT IN ('first_accept', 'requester_chooses') THEN
+      RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'VALIDATION_FAILED', HINT = 'open_mode:required';
+    END IF;
+    IF v_mode = 'first_accept' AND coalesce(v_budget, 0) <= 0 THEN
+      RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'BUDGET_REQUIRED';
+    END IF;
+    -- Nobody is invited to an open request: the eligible interpreters see it.
+    v_interpreters := '{}';
   END IF;
   SELECT * INTO v_service FROM catalog.services AS s WHERE s.id = (p_input ->> 'service_id')::uuid;
   IF v_service.id IS NULL OR NOT v_service.active THEN
@@ -425,10 +454,13 @@ BEGIN
     RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'PRICE_CHANGED';
   END IF;
 
-  INSERT INTO booking.requests (code, kind, created_by, organization_id, service_id, modality, starts_at, duration_minutes,
+  INSERT INTO booking.requests (code, kind, open_mode, budget_per_interpreter_aoa, created_by, organization_id, service_id,
+    modality, starts_at, duration_minutes,
     meeting_link, address, city, notes, beneficiary_name, beneficiary_contact, interpreters_needed, is_urgent,
     config_version_id, status)
-  VALUES (util.next_code('PI'), v_kind, p_actor, v_org, v_service.id, v_modality, v_starts, v_duration,
+  VALUES (util.next_code('PI'), v_kind, CASE WHEN v_kind = 'open' THEN v_mode END,
+    CASE WHEN v_kind = 'open' AND v_mode = 'first_accept' THEN v_budget END, p_actor, v_org, v_service.id,
+    v_modality, v_starts, v_duration,
     v_link, CASE WHEN v_modality = 'in_person' THEN v_address END, nullif(trim(p_input ->> 'city'), ''),
     nullif(trim(p_input ->> 'notes'), ''), nullif(trim(p_input ->> 'beneficiary_name'), ''),
     nullif(trim(p_input ->> 'beneficiary_contact'), ''), v_needed,
@@ -441,6 +473,13 @@ BEGIN
   FOREACH v_interpreter IN ARRAY v_interpreters LOOP
     PERFORM booking.add_invite(v_request, v_interpreter, p_actor);
   END LOOP;
+  -- R-OPN-01: the eligible interpreters are told, in the Portal only.
+  IF v_kind = 'open' THEN
+    PERFORM booking.notify_request('open_request_new', ARRAY(
+      SELECT l.account_id FROM directory.listed_ids AS l
+       WHERE (directory.is_eligible_for(l.account_id, v_request.id)).eligible), v_request.id, 'interpreter',
+      jsonb_build_object('link', '/open-requests'));
+  END IF;
   RETURN v_request;
 END;
 $$;
