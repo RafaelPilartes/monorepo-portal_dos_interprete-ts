@@ -147,6 +147,17 @@ describe('open request through the API (requests-open.md)', () => {
     expect(accepted.rows[0]).toEqual({ n: 2 })
   })
 
+  it('a non-eligible interpreter cannot apply through the API (criterion 3)', async () => {
+    const outsider = await createConfirmedAccount(local.API_URL, local.SERVICE_ROLE_KEY, local.ANON_KEY)
+    await acceptCurrentTerms(owner, outsider.id)
+    await owner.query('SELECT identity.become_interpreter($1, NULL, NULL)', [outsider.id])
+    const created = await app.inject({ method: 'POST', url: '/requests', headers: as(requester), payload: request({
+      kind: 'open', open_mode: 'requester_chooses', interpreter_ids: [], starts_at: new Date(Date.now() + 17 * 24 * 3600_000).toISOString(), expected_total_aoa: 0,
+    }) })
+    const refused = await app.inject({ method: 'POST', url: `/requests/${created.json().id}/applications`, headers: as(outsider), payload: {} })
+    expect(refused.json().error).toMatchObject({ code: 'INTERPRETER_NOT_ELIGIBLE', field: 'interpreter_id' })
+  })
+
   it('I choose: an application at the own price with the travel fee, chosen at the price in force; then it cannot be withdrawn (R-OPN-03, R-OPN-04)', async () => {
     const candidate = await interpreterReady()
     const created = await app.inject({ method: 'POST', url: '/requests', headers: as(requester), payload: request({

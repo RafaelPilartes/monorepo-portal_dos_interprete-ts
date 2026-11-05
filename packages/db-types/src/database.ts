@@ -1347,6 +1347,14 @@ export type Database = {
                 };
                 Returns: boolean;
             };
+            "close_applications": {
+                Args: {
+                    "p_actor": string;
+                    "p_notify"?: boolean;
+                    "p_request": string;
+                };
+                Returns: undefined;
+            };
             "create_request": {
                 Args: {
                     "p_actor": string;

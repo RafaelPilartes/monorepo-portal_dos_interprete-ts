@@ -813,11 +813,12 @@ def check_api_error_shape(ctx: Context) -> list[Violation]:
         if not rel.startswith("apps/api/src/") or rel in API_ERROR_OWNERS or ".test." in rel or "/testing/" in rel:
             continue
         _, with_strings = mask_source(path.read_text())
-        lines = with_strings.splitlines()
         for match in ERROR_KEYS.finditer(with_strings):
             line = line_of(with_strings, match.start(2))
-            # A request body's own field named message (a zod schema, api.md §7) is not an error.
-            if "z.object(" in lines[line - 1]:
+            # A request body's own field named message (a zod schema, api.md §7) is not an error:
+            # its value is a zod type.
+            after = with_strings[match.end():match.end() + 40]
+            if re.match(r"\s*:\s*z\.", after):
                 continue
             violations.append(Violation(rel, line, f"error {match.group(2)} written outside lib/sendApiError.ts and lib/dbErrors.ts"))
         for match in HAND_SENT_ERROR.finditer(with_strings):

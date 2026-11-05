@@ -5,7 +5,7 @@ import { QueryError, TableSkeleton } from '@portal-dos-interpretes/features/comp
 import type { OpenRequestRow } from '@portal-dos-interpretes/features/requests/data'
 import { durationText, priceText } from '@portal-dos-interpretes/features/requests/RequestParts'
 import { useRequestAction, useRequests } from '@portal-dos-interpretes/features/requests/RequestsContext'
-import { formatDateTime, MODALITY_TEXT } from '@portal-dos-interpretes/i18n'
+import { formatDateTime, luandaDay, MODALITY_TEXT } from '@portal-dos-interpretes/i18n'
 import { Badge } from '@portal-dos-interpretes/ui/components/badge'
 import { Button } from '@portal-dos-interpretes/ui/components/button'
 import { Card, CardContent } from '@portal-dos-interpretes/ui/components/card'
@@ -62,7 +62,7 @@ export default function InterpreterOpenRequests() {
   const rows = (list.data ?? []).filter((row) =>
     (modality === ALL || row.modality === modality)
     && (!city.trim() || (row.city ?? '').toLowerCase().includes(city.trim().toLowerCase()))
-    && (!day || (row.starts_at ?? '').startsWith(day)))
+    && (!day || luandaDay(row.starts_at ?? '') === day))
 
   return (
     <>

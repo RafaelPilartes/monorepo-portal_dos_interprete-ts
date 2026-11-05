@@ -2,6 +2,31 @@
 -- eligible interpreters take the places at the budget, everything included (D-92). "I choose":
 -- the eligible interpreters apply at their own price; the requester picks among them.
 
+-- R-OPN-04, R-REQ-09, R-REQ-10: the candidates still waiting are not selected and, unless the
+-- caller tells them otherwise (expiry), told so. The request is locked by the caller.
+CREATE OR REPLACE FUNCTION booking.close_applications(p_request uuid, p_actor uuid, p_notify boolean DEFAULT true)
+RETURNS void
+  LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+  SET search_path = ''
+AS $$
+DECLARE
+  v_other record;
+BEGIN
+  FOR v_other IN
+    SELECT a.id, a.interpreter_id FROM booking.request_assignments AS a
+     WHERE a.request_id = p_request AND a.status = 'applied' FOR UPDATE
+  LOOP
+    UPDATE booking.request_assignments SET status = 'not_selected', responded_at = util.now() WHERE id = v_other.id;
+    PERFORM booking.void_open_proposals(v_other.id);
+    PERFORM booking.log_event(p_request, v_other.id, 'applied', 'not_selected', p_actor,
+      CASE WHEN p_actor IS NULL THEN 'system' ELSE 'requester' END);
+    IF p_notify THEN
+      PERFORM booking.notify_request('open_application_not_selected', ARRAY[v_other.interpreter_id], p_request, 'interpreter');
+    END IF;
+  END LOOP;
+END;
+$$;
+
 -- The open request of a call, locked, still waiting for interpreters, in the given mode.
 CREATE OR REPLACE FUNCTION booking.lock_open_request(p_request uuid, p_mode text) RETURNS booking.requests
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
@@ -12,7 +37,10 @@ DECLARE
 BEGIN
   SELECT * INTO v_request FROM booking.requests AS r WHERE r.id = p_request FOR UPDATE;
   IF v_request.id IS NULL OR v_request.kind <> 'open' THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'NOT_FOUND'; END IF;
-  IF v_request.open_mode <> p_mode THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'STATE_CHANGED'; END IF;
+  -- From the start, nobody takes or chooses a place: R-REQ-10 decides.
+  IF v_request.open_mode <> p_mode OR util.now() >= v_request.starts_at THEN
+    RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'STATE_CHANGED';
+  END IF;
   IF v_request.status <> 'awaiting_interpreters' THEN
     -- Whoever arrives after the last place was taken is told so (criterion 1).
     RAISE EXCEPTION USING ERRCODE = 'P0001',
@@ -152,7 +180,6 @@ DECLARE
   v_request booking.requests := booking.lock_open_request(p_request, 'requester_chooses');
   v_buffer integer := config.require(v_request.config_version_id, 'overlap_buffer_minutes')::integer;
   v_row booking.request_assignments;
-  v_other record;
 BEGIN
   IF NOT booking.can_manage_request(p_request, p_actor) THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'NOT_FOUND'; END IF;
   SELECT * INTO v_row FROM booking.request_assignments AS a WHERE a.id = p_assignment AND a.request_id = p_request FOR UPDATE;
@@ -173,15 +200,7 @@ BEGIN
   PERFORM booking.void_open_proposals(p_assignment);
   PERFORM booking.log_event(p_request, p_assignment, 'applied', 'accepted', p_actor, 'requester');
   IF booking.active_count(p_request) >= v_request.interpreters_needed THEN
-    FOR v_other IN
-      SELECT a.id, a.interpreter_id FROM booking.request_assignments AS a
-       WHERE a.request_id = p_request AND a.status = 'applied' FOR UPDATE
-    LOOP
-      UPDATE booking.request_assignments SET status = 'not_selected', responded_at = util.now() WHERE id = v_other.id;
-      PERFORM booking.void_open_proposals(v_other.id);
-      PERFORM booking.log_event(p_request, v_other.id, 'applied', 'not_selected', p_actor, 'requester');
-      PERFORM booking.notify_request('open_application_not_selected', ARRAY[v_other.interpreter_id], p_request, 'interpreter');
-    END LOOP;
+    PERFORM booking.close_applications(p_request, p_actor);
   END IF;
   PERFORM booking.refresh_request_status(p_request, p_actor, 'requester');
   RETURN v_row;

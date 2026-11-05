@@ -72,7 +72,9 @@ export default function RequestDetails() {
   const created = (location.state as { created?: string } | null)?.created
   const detail = useRequestDetail(id)
   const reduce = useRequestAction((repository, needed: number) => repository.reduce(id, needed), 'Pedido actualizado.')
-  const select = useRequestAction((repository, assignmentId: string) => repository.select(id, assignmentId), 'Intérprete escolhido.')
+  // R-OPN-04: an overlap here is the candidate's other service, not the requester's.
+  const select = useRequestAction((repository, assignmentId: string) => repository.select(id, assignmentId), 'Intérprete escolhido.',
+    { SCHEDULE_OVERLAP: 'Este intérprete já não está disponível neste horário.' })
 
   if (detail.isPending) return <Skeleton className="h-96 w-full" />
   if (detail.isError) return <QueryError error={detail.error} onRetry={() => void detail.refetch()} />
@@ -95,7 +97,7 @@ export default function RequestDetails() {
     <div className="space-y-6">
       <Button variant="ghost" size="sm" asChild><Link to="/requests"><ArrowLeft className="h-4 w-4" />Pedidos</Link></Button>
       {created && (
-        <Alert><CheckCircle2 className="h-4 w-4" /><AlertDescription>Pedido {created} enviado. Os intérpretes convidados foram avisados.</AlertDescription></Alert>
+        <Alert><CheckCircle2 className="h-4 w-4" /><AlertDescription>Pedido {created} enviado. {request.kind === 'open' ? 'Os intérpretes elegíveis foram avisados.' : 'Os intérpretes convidados foram avisados.'}</AlertDescription></Alert>
       )}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>

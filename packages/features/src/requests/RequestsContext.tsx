@@ -1,6 +1,7 @@
 import { createContext, useContext, type ReactNode } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { DataError } from '@portal-dos-interpretes/data'
 import { errorMessage } from '../lib/errorText'
 import type { RequestsRepository } from './data'
 
@@ -62,13 +63,18 @@ export function useMyAssignments() {
 }
 
 /** A write through the API; re-reads the requests after it, says how it went. */
-export function useRequestAction<Input>(action: (repository: RequestsRepository, input: Input) => Promise<unknown>, success: string) {
+export function useRequestAction<Input>(
+  action: (repository: RequestsRepository, input: Input) => Promise<unknown>,
+  success: string,
+  /** What the person reads for a given error code here, when the catalog's text is about someone else. */
+  messages: Readonly<Record<string, string>> = {},
+) {
   const { repository } = useRequests()
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: Input) => action(repository, input),
     onSuccess: () => toast.success(success),
-    onError: (error) => toast.error(errorMessage(error)),
+    onError: (error) => toast.error((error instanceof DataError && messages[error.code]) || errorMessage(error)),
     onSettled: () => queryClient.invalidateQueries({ queryKey: requestKeys.all }),
   })
 }

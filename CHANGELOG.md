@@ -2,6 +2,13 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.16.0 — 2026-11-05 — Passo H7 (pedido aberto)
+
+- Quem pede pode publicar o pedido para os intérpretes, em dois modos: "eu escolho" (candidatam-se com o seu preço) ou "o primeiro que aceitar" (a um valor fixo por intérprete, tudo incluído).
+- O intérprete vê em "Solicitações Abertas" os pedidos para si, com o valor que ganha, e aceita ou candidata-se com uma mensagem.
+- Quem pede vê os candidatos e escolhe; os restantes são avisados quando o pedido fica completo.
+- Relatório: `docs/plan/step-reports/H7.md`.
+
 ## 0.15.0 — 2026-11-05 — Passo H6 (negociação de preço)
 
 - No chat de um pedido, quem pede e o intérprete convidado podem propor outro preço; a proposta anterior fica riscada.

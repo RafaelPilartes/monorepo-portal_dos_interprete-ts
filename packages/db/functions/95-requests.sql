@@ -593,9 +593,10 @@ BEGIN
     RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'VALIDATION_FAILED', HINT = 'interpreters_needed:invalid';
   END IF;
   UPDATE booking.requests SET interpreters_needed = p_needed WHERE id = p_request;
+  -- Invites hold places; candidates do not (R-OPN-03), so only invites beyond the places go.
   FOR v_cancel IN
     SELECT a.id, a.status, a.interpreter_id FROM booking.request_assignments AS a
-     WHERE a.request_id = p_request AND a.status IN ('invited', 'applied')
+     WHERE a.request_id = p_request AND a.status = 'invited'
      ORDER BY a.created_at, a.id
      OFFSET greatest(p_needed - v_active, 0)
   LOOP
@@ -606,6 +607,8 @@ BEGIN
     PERFORM booking.notify_request('request_cancelled', ARRAY[v_cancel.interpreter_id], p_request, 'interpreter',
       jsonb_build_object('reason', 'O solicitante seguiu com menos intérpretes'));
   END LOOP;
+  -- Full now: the candidates still waiting are not selected, as when the requester chooses.
+  IF v_active >= p_needed THEN PERFORM booking.close_applications(p_request, p_actor); END IF;
   PERFORM booking.refresh_request_status(p_request, p_actor, 'requester');
   SELECT * INTO v_request FROM booking.requests AS r WHERE r.id = p_request;
   RETURN v_request;
@@ -731,10 +734,12 @@ BEGIN
      FOR UPDATE SKIP LOCKED
   LOOP
     v_accepted := ARRAY(SELECT a.interpreter_id FROM booking.request_assignments AS a
-                         WHERE a.request_id = v_request.id AND a.status = 'accepted');
+                         WHERE a.request_id = v_request.id AND a.status IN ('accepted', 'applied'));
+    -- Candidates are not selected (data-model.md §5) and told with everyone else.
+    PERFORM booking.close_applications(v_request.id, NULL, false);
     FOR v_assignment IN
       SELECT a.id, a.status FROM booking.request_assignments AS a
-       WHERE a.request_id = v_request.id AND a.status IN ('invited', 'applied', 'accepted')
+       WHERE a.request_id = v_request.id AND a.status IN ('invited', 'accepted')
     LOOP
       UPDATE booking.request_assignments
          SET status = CASE WHEN v_assignment.status = 'accepted' THEN 'cancelled' ELSE 'expired' END,

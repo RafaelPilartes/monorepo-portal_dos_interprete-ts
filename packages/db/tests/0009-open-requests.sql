@@ -154,3 +154,53 @@ BEGIN
   IF v_code IS DISTINCT FROM 'NEGOTIATION_CLOSED' THEN RAISE EXCEPTION 'FAIL - no negotiation in first to accept (got %)', v_code; END IF;
   RAISE NOTICE 'ok - first to accept: the budget without travel fee, full requests closed, no negotiation (R-OPN-02, negotiation criterion 5)';
 END $$;
+
+-- Review of H7: candidates hold no place when the request goes on with fewer; on expiry they are
+-- not selected and told; nobody takes a place from the start; the link only for who takes part.
+DO $$
+DECLARE
+  v_request booking.requests;
+  v_a booking.request_assignments;
+  v_code text;
+BEGIN
+  v_request := booking.create_request('00000000-0000-4000-8000-0000000000b1', (SELECT input FROM h7_input)
+    || jsonb_build_object('open_mode', 'requester_chooses', 'interpreters_needed', 3, 'starts_at', now() + interval '25 days', 'expected_total_aoa', 0));
+  v_a := booking.apply_to_request('00000000-0000-4000-8000-0000000000b2', v_request.id, NULL);
+  PERFORM booking.apply_to_request('00000000-0000-4000-8000-0000000000b3', v_request.id, NULL);
+  PERFORM booking.reduce_interpreters_needed('00000000-0000-4000-8000-0000000000b1', v_request.id, 2);
+  IF (SELECT count(*) FROM booking.request_assignments WHERE request_id = v_request.id AND status = 'applied') <> 2 THEN
+    RAISE EXCEPTION 'FAIL - going on with fewer keeps every candidate';
+  END IF;
+  INSERT INTO util.test_clock (frozen_at) VALUES (v_request.starts_at);
+  BEGIN PERFORM booking.select_candidate('00000000-0000-4000-8000-0000000000b1', v_request.id, v_a.id);
+  EXCEPTION WHEN raise_exception THEN v_code := SQLERRM; END;
+  IF v_code IS DISTINCT FROM 'STATE_CHANGED' THEN RAISE EXCEPTION 'FAIL - from the start nobody is chosen (got %)', v_code; END IF;
+  PERFORM booking.expire_unstaffed_requests();
+  IF (SELECT count(*) FROM booking.request_assignments WHERE request_id = v_request.id AND status = 'not_selected') <> 2
+     OR (SELECT count(*) FROM notify.notifications WHERE kind = 'request_expired' AND payload ->> 'request_id' = v_request.id::text
+          AND account_id IN ('00000000-0000-4000-8000-0000000000b2', '00000000-0000-4000-8000-0000000000b3')) <> 2 THEN
+    RAISE EXCEPTION 'FAIL - on expiry the candidates are not selected and told';
+  END IF;
+  DELETE FROM util.test_clock;
+  RAISE NOTICE 'ok - candidates are kept when going on with fewer, not selected and told on expiry; nobody chosen from the start (review of H7)';
+END $$;
+
+DO $$
+DECLARE v_request booking.requests;
+BEGIN
+  v_request := booking.create_request('00000000-0000-4000-8000-0000000000b1', (SELECT input FROM h7_input)
+    || jsonb_build_object('open_mode', 'requester_chooses', 'starts_at', now() + interval '26 days', 'expected_total_aoa', 0));
+  INSERT INTO h7 VALUES ('link', v_request.id);
+END $$;
+DO $$ BEGIN PERFORM set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000b2", "role": "authenticated"}', true); END $$;
+SET LOCAL ROLE authenticated;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM booking.request_details WHERE id = (SELECT id FROM h7 WHERE key = 'link'))
+     OR (SELECT meeting_link FROM booking.request_details WHERE id = (SELECT id FROM h7 WHERE key = 'link')) IS NOT NULL THEN
+    RAISE EXCEPTION 'FAIL - an eligible interpreter opens the request but not its meeting link';
+  END IF;
+  RAISE NOTICE 'ok - the meeting link is hidden from an interpreter who only sees the open request (review of H7)';
+END $$;
+RESET ROLE;
+

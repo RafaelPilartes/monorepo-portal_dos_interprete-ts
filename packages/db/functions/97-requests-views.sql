@@ -6,7 +6,10 @@ CREATE OR REPLACE VIEW booking.request_details WITH (security_invoker = false) A
 SELECT r.id, r.code, r.kind, r.open_mode, r.created_by, r.organization_id, r.service_id, s.title AS service_title,
        s.pricing_mode, r.modality, r.starts_at, r.duration_minutes, r.ends_at, r.city, r.interpreters_needed,
        r.is_urgent, r.status, r.config_version_id, r.created_at,
-       r.meeting_link,
+       -- The meeting link, like the address, only for who takes part (review of H7).
+       CASE WHEN p.private OR EXISTS (SELECT 1 FROM booking.request_assignments AS a
+                                       WHERE a.request_id = r.id AND a.interpreter_id = (SELECT auth_helper.account_id()))
+            THEN r.meeting_link END AS meeting_link,
        CASE WHEN p.private THEN r.address END AS address,
        CASE WHEN p.private THEN r.notes END AS notes,
        CASE WHEN p.private THEN r.beneficiary_name END AS beneficiary_name,

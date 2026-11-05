@@ -5,5 +5,6 @@ export function handler(reply: { status(n: number): { send(b: unknown): void } }
   reply.status(400).send({ problem: { ['message']: String(err) } })
   reply.status(400).send({ problem: { 'field': String(err) } })
   reply.status(400).send({ problem: { code: 'X', message: string(err) } })
+  const z = { object: (shape: unknown) => shape }; reply.status(400).send({ problem: z.object({ message: 'Erro' }) })
 }
 declare function string(e: unknown): string
