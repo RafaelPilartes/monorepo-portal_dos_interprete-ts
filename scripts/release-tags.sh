@@ -33,6 +33,7 @@ create_tag v0.12.0 60960524302f4a0a036f7302228dd1236d4d9902 "v0.12.0 - step H3 (
 create_tag v0.13.0 ff96d7187241e39c4b4506b4fa52228f812ffd51 "v0.13.0 - step H4 (interpreter profile and directory)"
 create_tag v0.14.0 9f8a94828626f03ec4da808438caffcfaa404562 "v0.14.0 - step H5 (requests, direct, chat, bell)"
 create_tag v0.15.0 32c3b2f1b1c50a14bdbcab90a912f9602c5cfce8 "v0.15.0 - step H6 (price negotiation)"
+create_tag v0.16.0 bf66410604d2bddfa24a460b02ab9b93f1f1fa9a "v0.16.0 - step H7 (open requests)"
 # TAGS-END
 
 git push origin --tags
