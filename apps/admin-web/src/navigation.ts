@@ -62,6 +62,8 @@ export const navigation: (NavItem | NavGroup)[] = [
         href: '/payments',
         icon: CreditCard
       },
+      { name: 'Reembolsos', href: '/refunds', icon: CreditCard },
+      { name: 'Repasses', href: '/payouts', icon: CreditCard },
     ]
   },
   {

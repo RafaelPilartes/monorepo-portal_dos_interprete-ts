@@ -7,7 +7,9 @@ import AdminOrganizations from '@/pages/accounts/AdminOrganizations'
 import AdminInterpreterVerifications from '@/pages/dashboard/admin/AdminInterpreterVerifications'
 import AdminLayout from '@/pages/dashboard/admin/AdminLayout'
 import AdminOverview from '@/pages/dashboard/admin/AdminOverview'
-import AdminPayments from '@/pages/dashboard/admin/AdminPayments'
+import AdminPayments from '@/pages/billing/AdminPayments'
+import AdminPayouts from '@/pages/billing/AdminPayouts'
+import AdminRefunds from '@/pages/billing/AdminRefunds'
 import AdminReports from '@/pages/dashboard/admin/AdminReports'
 import AdminRequestDetails from '@/pages/requests/AdminRequestDetails'
 import AdminRequests from '@/pages/requests/AdminRequests'
@@ -45,11 +47,14 @@ const AdminRoutes = () => {
         <Route path="requesters/:id" element={<AdminAccountDetails kind="requester" />} />
         <Route path="requests" element={<AdminRequests />} />
         <Route path="requests/:id" element={<AdminRequestDetails />} />
+        {/* Payments (payments.md): finance and super_admin (R-STF-01). */}
+        <Route path="payments" element={<RequireStaffLevel levels={['finance']}><AdminPayments /></RequireStaffLevel>} />
+        <Route path="refunds" element={<RequireStaffLevel levels={['finance']}><AdminRefunds /></RequireStaffLevel>} />
+        <Route path="payouts" element={<RequireStaffLevel levels={['finance']}><AdminPayouts /></RequireStaffLevel>} />
       </Route>
       <Route path="content/testimonials" element={<AdminTestimonials />} />
       <Route path="content/success-cases" element={<AdminSuccessCases />} />
       <Route path="reports" element={<AdminReports />} />
-      <Route path="payments" element={<AdminPayments />} />
       {/* Catalogs (catalogs.md): moderator and super_admin (R-STF-01). */}
       <Route path="catalog/languages" element={<RequireStaffLevel levels={['moderator']}><AdminCatalog kind="languages" /></RequireStaffLevel>} />
       <Route path="catalog/specialties" element={<RequireStaffLevel levels={['moderator']}><AdminCatalog kind="specialties" /></RequireStaffLevel>} />

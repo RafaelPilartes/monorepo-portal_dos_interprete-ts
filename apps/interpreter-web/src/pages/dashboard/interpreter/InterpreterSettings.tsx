@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PayoutDetailsCard } from '@/components/PayoutDetailsCard'
 import { PageHeader } from "@portal-dos-interpretes/ui/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@portal-dos-interpretes/ui/components/card";
 import { Button } from "@portal-dos-interpretes/ui/components/button";
@@ -39,6 +40,7 @@ export default function InterpreterSettings() {
       />
 
       <div className="grid gap-6">
+        <PayoutDetailsCard />
         {/* Notifications */}
         <Card>
           <CardHeader>

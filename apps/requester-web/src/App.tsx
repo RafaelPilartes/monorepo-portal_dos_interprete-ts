@@ -24,6 +24,7 @@ import OrganizationPage from '@/pages/organization/OrganizationPage'
 import BrowseInterpreters from '@/pages/dashboard/requester/BrowseInterpreters'
 import FavoriteInterpreters from '@/pages/dashboard/requester/FavoriteInterpreters'
 import MyReviews from '@/pages/dashboard/requester/MyReviews'
+import Payments from '@/pages/dashboard/requester/Payments'
 import NewRequest from '@/pages/dashboard/requester/NewRequest'
 import RequestDetails from '@/pages/dashboard/requester/RequestDetails'
 import RequestHistory from '@/pages/dashboard/requester/RequestHistory'
@@ -60,6 +61,7 @@ export function RequesterAppRoutes() {
         <Route path="favorites" element={<FavoriteInterpreters />} />
         <Route path="history" element={<RequestHistory />} />
         <Route path="reviews" element={<MyReviews />} />
+        <Route path="payments" element={<Payments />} />
         <Route path="profile" element={<RequesterProfile />} />
         <Route path="settings" element={<RequesterSettings />} />
         <Route path="notifications" element={<Notifications app="requester" />} />

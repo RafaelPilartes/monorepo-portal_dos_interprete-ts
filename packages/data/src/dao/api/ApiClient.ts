@@ -62,6 +62,37 @@ export class ApiClient {
     return this.request<T>('DELETE', path)
   }
 
+  /** A file the API answers (a receipt PDF); its failures are the same DataError as JSON calls. */
+  async download(path: string): Promise<Blob> {
+    const token = await this.options.getAccessToken()
+    const url = `${this.options.baseUrl.replace(/\/+$/, '')}${path}`
+    let response: Response
+    try {
+      response = await this.fetchImpl(url, { method: 'GET', headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    } catch (cause) {
+      console.error(`[api] GET ${path}: network failure`, cause)
+      throw new DataError('INTERNAL_ERROR', { cause })
+    }
+    if (response.ok) return response.blob()
+    // The error body is JSON like any other: let the common path read it.
+    return this.request<Blob>('GET', path)
+  }
+
+  /** Sends a file to the storage URL the API signed (POST /uploads/sign); no session header there. */
+  async uploadToSignedUrl(signedUrl: string, file: Blob): Promise<void> {
+    let response: Response
+    try {
+      response = await this.fetchImpl(signedUrl, { method: 'PUT', headers: { 'Content-Type': file.type || 'application/octet-stream' }, body: file })
+    } catch (cause) {
+      console.error('[api] upload: network failure', cause)
+      throw new DataError('INTERNAL_ERROR', { cause })
+    }
+    if (!response.ok) {
+      console.error(`[api] upload: ${response.status}`)
+      throw new DataError('FILE_INVALID', { params: { reason: 'o envio não terminou, tenta outra vez' } })
+    }
+  }
+
   private async request<T>(method: string, path: string, body?: unknown, idempotencyKey?: string): Promise<T> {
     const token = await this.options.getAccessToken()
     const headers: Record<string, string> = { Accept: 'application/json' }

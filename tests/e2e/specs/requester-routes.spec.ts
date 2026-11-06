@@ -15,6 +15,7 @@ const routes: SmokeRoute[] = [
   { path: '/reviews', name: 'reviews', expectText: 'Avalia os intérpretes depois de cada serviço' },
   { path: '/profile', name: 'profile', expectText: 'Meu Perfil' },
   { path: '/settings', name: 'settings', expectText: 'Notificações' },
+  { path: '/payments', name: 'payments', expectText: 'Não tens pagamentos.' },
   // An unknown slug (the real profiles, videos and articles are in h4-directory.spec.ts).
   { path: '/interpreters/nao-existe', name: 'interpreter-not-found', expectText: 'Este intérprete não existe ou já não está disponível.' },
   { path: '/interpreters/nao-existe/videos', name: 'interpreter-videos-not-found', expectText: 'Este intérprete não existe ou já não está disponível.' },

@@ -11,6 +11,7 @@ import {
   User,
   Settings,
   Building2,
+  CreditCard,
   UsersRound,
 } from "lucide-react";
 
@@ -23,6 +24,7 @@ export const navigation: (NavItem | NavGroup)[] = [
     items: [
       { name: "Minhas Solicitações", href: "/requests", icon: FileText },
       { name: "Histórico", href: "/history", icon: History },
+      { name: "Pagamentos", href: "/payments", icon: CreditCard },
     ],
   },
   {

@@ -70,6 +70,17 @@ export function notificationText(kind: string, payload: Payload): { title: strin
       title: 'A disputa foi resolvida',
       body: `${request}. ${payload.resolution === 'completed' ? 'O serviço conta como feito.' : 'O serviço não conta como feito.'}`,
     }
+    case 'payment_requested': return { title: 'Tens um pagamento por fazer', body: `${text(payload.description)} · ${text(payload.reference)}` }
+    case 'payment_proof_received': return { title: 'Novo comprovativo para validar', body: `${text(payload.description)} · ${text(payload.reference)}` }
+    case 'payment_confirmed': return { title: 'Pagamento confirmado', body: `${text(payload.description)} · ${text(payload.reference)}` }
+    case 'payment_proof_rejected': return { title: 'O comprovativo foi recusado', body: text(payload.reason) ? `Motivo: ${text(payload.reason)}` : text(payload.reference) }
+    case 'payment_expiring': return { title: 'O prazo para pagar está a acabar', body: `${text(payload.description)} · ${text(payload.reference)}` }
+    case 'payment_expired': return { title: 'O prazo para pagar terminou', body: `${text(payload.description)} · ${text(payload.reference)}` }
+    case 'refund_created': return { title: 'Vais receber um reembolso', body: typeof payload.refund_aoa === 'number' ? formatAoa(payload.refund_aoa) : text(payload.reference) }
+    case 'refund_paid': return { title: 'Reembolso pago', body: typeof payload.refund_aoa === 'number' ? formatAoa(payload.refund_aoa) : text(payload.reference) }
+    case 'payout_queued': return { title: 'Tens um pagamento a receber', body: typeof payload.amount_aoa === 'number' ? formatAoa(payload.amount_aoa) : '' }
+    case 'payout_paid': return { title: 'Pagamento transferido', body: typeof payload.amount_aoa === 'number' ? `${formatAoa(payload.amount_aoa)} · ${text(payload.reference)}` : text(payload.reference) }
+    case 'payout_details_missing': return { title: 'Indica o IBAN para receber', body: 'Tens um pagamento à espera dos teus dados bancários.' }
     case 'review_requested': return { title: `Avalia o teu serviço com ${text(payload.other_name) || 'a outra parte'}`, body: request }
     case 'review_revealed': return { title: 'Recebeste uma avaliação', body: request }
     case 'review_hidden': return { title: 'A equipa escondeu uma avaliação tua', body: text(payload.reason) ? `Motivo: ${text(payload.reason)}` : '' }

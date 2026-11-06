@@ -1,131 +1,73 @@
-import { useState } from "react";
-import { PageHeader } from "@portal-dos-interpretes/ui/components/page-header";
-import { StatsCard } from "@portal-dos-interpretes/ui/components/stats-card";
-import { Card, CardContent, CardHeader, CardTitle } from "@portal-dos-interpretes/ui/components/card";
-import { Button } from "@portal-dos-interpretes/ui/components/button";
-import { Badge } from "@portal-dos-interpretes/ui/components/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@portal-dos-interpretes/ui/components/select";
-import { DollarSign, TrendingUp, Calendar, FileText, Download, Eye } from "lucide-react";
-import { EarningsDetailsModal } from "@/components/dashboard/modals/EarningsDetailsModal";
+import { Link } from 'react-router-dom'
+import { useBillingQuery } from '@portal-dos-interpretes/features/billing/Billing'
+import { QueryError, TableSkeleton } from '@portal-dos-interpretes/features/components/QueryStates'
+import { priceText } from '@portal-dos-interpretes/features/requests/RequestParts'
+import { useMyAssignments } from '@portal-dos-interpretes/features/requests/RequestsContext'
+import { formatAoa, formatDate, formatDateTime, PAYOUT_STATUS_LABELS } from '@portal-dos-interpretes/i18n'
+import { Badge } from '@portal-dos-interpretes/ui/components/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@portal-dos-interpretes/ui/components/card'
+import { EmptyState } from '@portal-dos-interpretes/ui/components/empty-state'
+import { PageHeader } from '@portal-dos-interpretes/ui/components/page-header'
+import { Wallet } from 'lucide-react'
 
-const earningsData = [
-  { id: "earn-1", service: "Audiência Jurídica", date: "15 Jan 2026", hours: 4, rate: 10000, total: 40000, status: "paid" },
-  { id: "earn-2", service: "Conferência Médica", date: "12 Jan 2026", hours: 3, rate: 10000, total: 30000, status: "paid" },
-  { id: "earn-3", service: "Reunião Empresarial", date: "10 Jan 2026", hours: 2, rate: 10000, total: 20000, status: "pending" },
-  { id: "earn-4", service: "Consulta Médica", date: "8 Jan 2026", hours: 2, rate: 10000, total: 20000, status: "paid" },
-  { id: "earn-5", service: "Palestra Educacional", date: "5 Jan 2026", hours: 3, rate: 10000, total: 30000, status: "paid" },
-];
-
-const monthlyTotals = [
-  { month: "Janeiro 2026", total: 150000, services: 12 },
-  { month: "Dezembro 2025", total: 130000, services: 10 },
-  { month: "Novembro 2025", total: 145000, services: 11 },
-];
-
+// interpreter-web /earnings (payments.md "Ecrãs"): the payouts of managed requests (queued, paid,
+// with the reference), and apart the prices agreed in direct and open requests, paid outside the
+// Portal (D-30). Nothing is added up here: each value is what the database holds.
 export default function InterpreterEarnings() {
-  const [period, setPeriod] = useState("month");
-  const [selectedEarning, setSelectedEarning] = useState<typeof earningsData[0] | null>(null);
-
-  const totalEarnings = earningsData.reduce((sum, e) => sum + e.total, 0);
-  const pendingEarnings = earningsData.filter(e => e.status === "pending").reduce((sum, e) => sum + e.total, 0);
-  const totalHours = earningsData.reduce((sum, e) => sum + e.hours, 0);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-AO", { style: "currency", currency: "AOA" }).format(value);
-  };
-
+  const payouts = useBillingQuery(['payouts'], (repository) => repository.payouts())
+  const mine = useMyAssignments()
+  const agreed = (mine.data ?? []).filter((row) => row.kind !== 'managed' && ['accepted', 'delivered', 'completed'].includes(row.status ?? '') && row.agreed_price_aoa !== null)
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Ganhos"
-        description="Acompanhe os seus rendimentos e histórico de pagamentos"
-        action={
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar Relatório
-          </Button>
-        }
-      />
-
-      {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard title="Total (Mês)" value={formatCurrency(totalEarnings)} icon={DollarSign} trend={{ value: 15, isPositive: true }} />
-        <StatsCard title="Pendente" value={formatCurrency(pendingEarnings)} icon={Calendar} />
-        <StatsCard title="Horas Trabalhadas" value={`${totalHours}h`} icon={TrendingUp} />
-        <StatsCard title="Serviços" value={earningsData.length} icon={FileText} />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Earnings List */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Histórico de Ganhos</CardTitle>
-            <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="week">Esta Semana</SelectItem>
-                <SelectItem value="month">Este Mês</SelectItem>
-                <SelectItem value="year">Este Ano</SelectItem>
-              </SelectContent>
-            </Select>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {earningsData.map((earning) => (
-                <div key={earning.id} className="flex items-center justify-between p-4 rounded-lg border">
-                  <div className="space-y-1">
-                    <p className="font-medium">{earning.service}</p>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{earning.date}</span>
-                      <span>{earning.hours}h</span>
+      <PageHeader title="Ganhos" description="Os repasses dos pedidos geridos e os valores acordados nos outros pedidos." />
+      <Card>
+        <CardHeader><CardTitle>Repasses do Portal</CardTitle></CardHeader>
+        <CardContent>
+          {payouts.isPending ? <TableSkeleton rows={3} />
+            : payouts.isError ? <QueryError error={payouts.error} onRetry={() => void payouts.refetch()} />
+            : payouts.data.length === 0 ? <EmptyState icon={Wallet} title="Ainda não tens repasses." description="Quando concluíres um pedido gerido, o teu valor entra aqui e a equipa transfere-o." />
+            : (
+              <ul className="divide-y text-sm">
+                {payouts.data.map((row) => (
+                  <li key={row.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                    <div>
+                      <p className="font-medium">{row.service_title} · {row.request_code}</p>
+                      <p className="text-muted-foreground">{formatDate(row.starts_at ?? '')}{row.status === 'paid' ? ` · transferido a ${formatDateTime(row.paid_at ?? '')}, referência ${row.paid_reference}` : ''}</p>
+                      {row.status === 'queued' && !row.payout_details_snapshot && (
+                        <p className="text-destructive">Indica o IBAN em <Link to="/settings" className="underline">Configurações</Link> para receberes.</p>
+                      )}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="font-semibold">{formatCurrency(earning.total)}</p>
-                      <Badge variant={earning.status === "paid" ? "default" : "secondary"}>
-                        {earning.status === "paid" ? "Pago" : "Pendente"}
-                      </Badge>
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold tabular-nums">{formatAoa(row.amount_aoa ?? 0)}</span>
+                      <Badge variant="outline">{PAYOUT_STATUS_LABELS[row.status as keyof typeof PAYOUT_STATUS_LABELS]}</Badge>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => setSelectedEarning(earning)}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Monthly Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Resumo Mensal</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {monthlyTotals.map((month, index) => (
-                <div key={month.month} className="p-4 rounded-lg border">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium">{month.month}</span>
-                    {index === 0 && <Badge>Atual</Badge>}
-                  </div>
-                  <p className="text-2xl font-bold">{formatCurrency(month.total)}</p>
-                  <p className="text-sm text-muted-foreground">{month.services} serviços</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <EarningsDetailsModal
-        isOpen={!!selectedEarning}
-        onClose={() => setSelectedEarning(null)}
-        earning={selectedEarning}
-      />
+                  </li>
+                ))}
+              </ul>
+            )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Valores acordados noutros pedidos</CardTitle>
+          <p className="text-sm text-muted-foreground">Pagos fora do Portal: combinas o pagamento com quem pede.</p>
+        </CardHeader>
+        <CardContent>
+          {mine.isPending ? <TableSkeleton rows={3} />
+            : mine.isError ? <QueryError error={mine.error} onRetry={() => void mine.refetch()} />
+            : agreed.length === 0 ? <p className="text-sm text-muted-foreground">Ainda não tens pedidos directos ou abertos aceites.</p>
+            : (
+              <ul className="divide-y text-sm">
+                {agreed.map((row) => (
+                  <li key={row.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                    <Link to={`/requests/${row.request_id}`} className="hover:underline">{row.service_title} · {row.code} · {formatDate(row.starts_at ?? '')}</Link>
+                    <span className="tabular-nums">{priceText(row.agreed_price_aoa, row.agreed_travel_fee_aoa)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }

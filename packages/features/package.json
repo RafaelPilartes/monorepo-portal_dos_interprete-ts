@@ -16,7 +16,9 @@
     "./directory/data": "./src/directory/data.ts",
     "./directory/labels": "./src/directory/labels.ts",
     "./requests/*": "./src/requests/*.tsx",
-    "./requests/data": "./src/requests/data.ts"
+    "./requests/data": "./src/requests/data.ts",
+    "./billing/*": "./src/billing/*.tsx",
+    "./billing/data": "./src/billing/data.ts"
   },
   "scripts": {
     "lint": "eslint .",

@@ -885,7 +885,6 @@ PRICE_ARITHMETIC = re.compile(
 # Mock screens still summing their example data, each removed by the step that wires it (AD-034):
 # the earnings (H10) and the verification history (H12). Nothing may be added to this list.
 PRICE_ARITHMETIC_MOCKS = {
-    "apps/interpreter-web/src/pages/dashboard/interpreter/InterpreterEarnings.tsx",
     "apps/admin-web/src/pages/dashboard/admin/AdminVerificationHistory.tsx",
 }
 
