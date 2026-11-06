@@ -187,6 +187,11 @@ BEGIN
   IF booking.reveal_reviews() <> 0 THEN RAISE EXCEPTION 'FAIL - nothing is revealed before review_reveal_days'; END IF;
   PERFORM pg_temp.at(v_row.completed_at + v_reveal * interval '1 day');
   IF booking.reveal_reviews() <> 1 THEN RAISE EXCEPTION 'FAIL - the unanswered review is revealed after review_reveal_days'; END IF;
+  -- AD-038.2: once it is revealed, the other side no longer reviews (it would have seen it first).
+  BEGIN PERFORM booking.submit_review('00000000-0000-4000-8000-0000000000e2', v_row.id, 3, NULL);
+  EXCEPTION WHEN raise_exception THEN v_code := SQLERRM; END;
+  IF v_code IS DISTINCT FROM 'REVIEW_WINDOW_CLOSED' THEN RAISE EXCEPTION 'FAIL - after the clock reveal the other side no longer reviews (got %)', v_code; END IF;
+  v_code := NULL;
   PERFORM pg_temp.at(v_row.completed_at + v_window * interval '1 day');
   BEGIN PERFORM booking.submit_review('00000000-0000-4000-8000-0000000000e2', v_row.id, 3, NULL);
   EXCEPTION WHEN raise_exception THEN v_code := SQLERRM; END;
@@ -216,6 +221,22 @@ BEGIN
     RAISE EXCEPTION 'FAIL - a hidden review leaves the average and the listing; the author is told; audited';
   END IF;
   RAISE NOTICE 'ok - a hidden review is out of the average, audited, its author told (criterion 5, R-REV-04)';
+END $$;
+
+-- Review of H9: a review the team hid before it was revealed is never announced to its target.
+DO $$
+DECLARE
+  v_row booking.request_assignments := pg_temp.completed('00000000-0000-4000-8000-0000000000e1', '00000000-0000-4000-8000-0000000000e3');
+  v_review booking.reviews;
+BEGIN
+  v_review := booking.submit_review('00000000-0000-4000-8000-0000000000e1', v_row.id, 1, 'Texto ofensivo.');
+  PERFORM booking.hide_review('00000000-0000-4000-8000-0000000000e9', v_review.id, 'Linguagem ofensiva');
+  PERFORM booking.submit_review('00000000-0000-4000-8000-0000000000e3', v_row.id, 4, NULL);
+  IF EXISTS (SELECT 1 FROM notify.notifications WHERE kind = 'review_revealed' AND account_id = '00000000-0000-4000-8000-0000000000e3')
+     OR NOT EXISTS (SELECT 1 FROM notify.notifications WHERE kind = 'review_revealed' AND account_id = '00000000-0000-4000-8000-0000000000e1') THEN
+    RAISE EXCEPTION 'FAIL - a hidden review is not announced; the other one is';
+  END IF;
+  RAISE NOTICE 'ok - a review hidden before its reveal is never announced (review of H9)';
 END $$;
 
 -- Edge case: a cancelled service is not reviewed.

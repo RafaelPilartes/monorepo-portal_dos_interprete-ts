@@ -89,6 +89,11 @@ export function useReviews(query: ReviewQuery, enabled = true) {
   return useQuery({ queryKey: requestKeys.reviews(query), queryFn: () => repository.reviews(query), enabled })
 }
 
+export function useUnrevealedCount(role: 'requester' | 'interpreter') {
+  const { repository } = useRequests()
+  return useQuery({ queryKey: ['requests', 'reviews', 'unrevealed', role], queryFn: () => repository.unrevealedCount(role) })
+}
+
 export function useRating(accountId: string, role: 'requester' | 'interpreter') {
   const { repository } = useRequests()
   return useQuery({ queryKey: requestKeys.rating(accountId, role), queryFn: () => repository.rating(accountId, role), enabled: accountId !== '' })

@@ -27,7 +27,7 @@ export type ReviewToDoRow = Tables<{ schema: 'booking' }, 'reviews_to_do'>
 export interface Rating { average: number | null; count: number }
 
 /** Which reviews to read (R-REV-03 decides what the person may see). */
-export type ReviewQuery = { authorId: string } | { targetId: string; role: 'requester' | 'interpreter' } | { requestId: string }
+export type ReviewQuery = { authorId: string; role?: 'requester' | 'interpreter' } | { targetId: string; role: 'requester' | 'interpreter' } | { requestId: string }
 
 export interface NewRequest {
   kind: 'direct' | 'open'
@@ -221,7 +221,10 @@ export class RequestsRepository {
   /** By author ("Que fiz"), by target and the role they were reviewed in ("Que recebi", a profile), or by request. */
   async reviews(query: ReviewQuery): Promise<ReviewRow[]> {
     let request = this.booking('review_details').select('*')
-    if ('authorId' in query) request = request.eq('author_account', query.authorId)
+    if ('authorId' in query) {
+      request = request.eq('author_account', query.authorId)
+      if (query.role) request = request.eq('author_role', query.role)
+    }
     else if ('targetId' in query) request = request.eq('target_account', query.targetId).eq('author_role', query.role === 'interpreter' ? 'requester' : 'interpreter')
     else request = request.eq('request_id', query.requestId)
     return this.rows<ReviewRow>(request.order('submitted_at', { ascending: false }), 'booking.review_details')
@@ -236,6 +239,14 @@ export class RequestsRepository {
         this.booking('requester_ratings').select('rating_average, rating_count').eq('requester_id', accountId), 'booking.requester_ratings')
     const row = rows[0]
     return { average: row?.rating_average === null || row?.rating_average === undefined ? null : Number(row.rating_average), count: row?.rating_count ?? 0 }
+  }
+
+  /** "N avaliações por revelar": only how many, never what (R-REV-02). */
+  async unrevealedCount(role: 'requester' | 'interpreter'): Promise<number> {
+    const rows = await this.rows<{ author_role: string | null; pending_count: number | null }>(
+      this.booking('my_unrevealed_reviews').select('*'), 'booking.my_unrevealed_reviews')
+    // Reviews of an interpreter are written by requesters, and the other way round.
+    return rows.find((row) => row.author_role === (role === 'interpreter' ? 'requester' : 'interpreter'))?.pending_count ?? 0
   }
 
   submitReview(assignmentId: string, rating: number, comment: string): Promise<unknown> {

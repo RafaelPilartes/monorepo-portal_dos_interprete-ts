@@ -13,7 +13,7 @@ import { DataError } from '@portal-dos-interpretes/data'
 import { QueryError } from '../components/QueryStates'
 import { errorDetails } from '../lib/errorText'
 import type { ReviewRow, ReviewToDoRow } from './data'
-import { useRating, useRequestAction, useRequests, useReviews, useReviewsToDo } from './RequestsContext'
+import { useRating, useRequestAction, useRequests, useReviews, useReviewsToDo, useUnrevealedCount } from './RequestsContext'
 
 // Reviews (reviews.md "Ecrãs"): the stars, the form after a completed service, the review cards,
 // the /reviews page of each panel and the average (R-REV-05). What each person sees is decided by
@@ -45,6 +45,12 @@ export function RatingLine({ accountId, role }: { accountId: string; role: 'requ
 
 interface Sent { todo: ReviewToDoRow; revealed: boolean }
 
+/** "daqui a N dias", counted from the completion (R-REV-02), as the base gives it. */
+function revealIn(revealAt: string | null): string {
+  const days = Math.ceil((Date.parse(revealAt ?? '') - Date.now()) / 86_400_000)
+  return Number.isFinite(days) && days > 1 ? `daqui a ${days} dias` : days === 1 ? 'daqui a 1 dia' : 'em breve'
+}
+
 function ThankYou({ sent }: { sent: Sent }) {
   return (
     <Alert>
@@ -52,7 +58,7 @@ function ThankYou({ sent }: { sent: Sent }) {
       <AlertDescription>
         {sent.revealed
           ? `Obrigado. ${sent.todo.other_name ?? 'A outra parte'} já tinha avaliado: as duas avaliações estão visíveis.`
-          : `Obrigado. A tua avaliação fica visível quando ${sent.todo.other_name ?? 'a outra parte'} também avaliar, ou daqui a ${sent.todo.reveal_days} dias.`}
+          : `Obrigado. A tua avaliação fica visível quando ${sent.todo.other_name ?? 'a outra parte'} também avaliar, ou ${revealIn(sent.todo.reveal_at)}.`}
       </AlertDescription>
     </Alert>
   )
@@ -157,7 +163,7 @@ export function RequestReviewForms({ requestId }: { requestId: string }) {
 export function ReviewsPage({ role }: { role: 'requester' | 'interpreter' }) {
   const { accountId } = useRequests()
   const todo = useReviewsToDo()
-  const mine = useReviews({ authorId: accountId }, accountId !== '')
+  const mine = useReviews({ authorId: accountId, role }, accountId !== '')
   const received = useReviews({ targetId: accountId, role }, accountId !== '')
   const forms = (todo.data ?? []).filter((row) => row.author_role === role)
   return (
@@ -179,12 +185,20 @@ export function ReviewsPage({ role }: { role: 'requester' | 'interpreter' }) {
       </TabsContent>
       <TabsContent value="received" className="space-y-4">
         <RatingLine accountId={accountId} role={role} />
+        <UnrevealedNote role={role} />
         {received.isPending ? <Skeleton className="h-40 w-full" />
           : received.isError ? <QueryError error={received.error} onRetry={() => void received.refetch()} />
           : <ReviewList rows={received.data.filter((row) => row.revealed_at)} perspective="target" empty="Ainda não recebeste avaliações visíveis." />}
       </TabsContent>
     </Tabs>
   )
+}
+
+/** "1 avaliação por revelar" (interpreter-profile-and-directory.md, /profile/reviews). */
+export function UnrevealedNote({ role }: { role: 'requester' | 'interpreter' }) {
+  const count = useUnrevealedCount(role)
+  if (!count.data) return null
+  return <p className="text-sm text-muted-foreground">{count.data === 1 ? '1 avaliação por revelar' : `${count.data} avaliações por revelar`}</p>
 }
 
 /** The revealed reviews of an account as others read them: an interpreter's profile, a requester for its interpreters. */

@@ -344,3 +344,17 @@
   9. **A confirmação automática corre a cada 5 minutos.** Não há lembrete ao intérprete que se esquece de marcar como feito (`delivery_reminder`); fica como melhoria.
   10. **No Playwright, um serviço "já feito"** é preparado mudando as horas do pedido na base local, com os gatilhos desligados nessa instrução: nenhum ecrã muda a hora.
 - **Marcas:** [RISCO] dinheiro (no gerido, a conclusão põe o repasse em fila e o cancelamento cria o reembolso; chega no H11).
+
+## AD-038 — Decisões do passo H9 (avaliações dupla-cegas)
+- **Passo:** H9
+- **Registo:**
+  1. **`booking.reviews`** (migration 0011), uma por lado e atribuição (`reviews_one_per_side`, traduzida para `REVIEW_EXISTS`). A revelação pela segunda avaliação faz-se dentro de `booking.submit_review`, na mesma transacção, e não por um gatilho (`R-REV-02` fala de gatilho); o efeito é o mesmo: as duas no mesmo instante.
+  2. **Incoerência da spec, resolvida pela opção mais segura:** `review_reveal_days` (14) é menor que `review_window_days` (30), e `R-REV-02` manda revelar pelo relógio ao fim de 14 dias e diz que "ninguém vê a avaliação do outro antes de dar a sua". Decidido: **quando a avaliação de um lado é revelada pelo relógio, o prazo do outro lado fecha** (`REVIEW_WINDOW_CLOSED`, e o "Por avaliar" deixa de a mostrar). Reversível: basta tirar a verificação. A confirmar com a Academia.
+  3. **Uma avaliação enviada depois do prazo de revelação** fica logo visível (sem esperar pela tarefa horária). A mensagem de agradecimento conta os dias a partir da conclusão, como a regra.
+  4. **Uma avaliação escondida antes de ser revelada** revela-se (desbloqueia o par), mas o avaliado não é avisado.
+  5. **`review_requested`** sai por um gatilho quando a atribuição fica `completed`, por qualquer caminho (confirmação, automática, disputa).
+  6. **Quem lê as avaliações de um solicitante** (`D-44`): qualquer intérprete com uma linha num pedido criado por ele, em qualquer estado (convidado que recusou ou deixou expirar incluído): foi convidado ou candidatou-se, que é o que `R-REV-03` diz.
+  7. **Numa organização,** as avaliações ao lado do solicitante vão para quem criou o pedido (`R-REV-01`); os outros administradores da organização não as vêem em "Que recebi".
+  8. **`directory.interpreter_ratings` só mostra intérpretes listados** (`R-DIR-03`), como o directório.
+  9. **`auth_helper.clock()`** dá às vistas da sessão o relógio da base (`util.now()`, que segue `util.test_clock`), porque a sessão só corre funções de `auth_helper`.
+- **Marcas:** nenhuma de dinheiro.

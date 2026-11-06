@@ -2,6 +2,7 @@ import { ReasonAction } from '@portal-dos-interpretes/features/requests/Lifecycl
 import { ReviewCard } from '@portal-dos-interpretes/features/requests/Reviews'
 import type { ReviewRow } from '@portal-dos-interpretes/features/requests/data'
 import { useRequestAction, useReviews } from '@portal-dos-interpretes/features/requests/RequestsContext'
+import { QueryError, TableSkeleton } from '@portal-dos-interpretes/features/components/QueryStates'
 import { Card, CardContent, CardHeader, CardTitle } from '@portal-dos-interpretes/ui/components/card'
 
 // admin-web, the account sheet (reviews.md "Ecrãs"): the reviews it received and gave, with
@@ -26,7 +27,10 @@ export function AccountReviews({ accountId, role, canModerate }: { accountId: st
     <Card className="lg:col-span-2">
       <CardHeader className="pb-2"><CardTitle className="text-base">Avaliações</CardTitle></CardHeader>
       <CardContent>
-        {rows.length === 0 ? <p className="text-sm text-muted-foreground">Sem avaliações.</p> : (
+        {received.isPending || given.isPending ? <TableSkeleton rows={3} />
+          : received.isError ? <QueryError error={received.error} onRetry={() => void received.refetch()} />
+          : given.isError ? <QueryError error={given.error} onRetry={() => void given.refetch()} />
+          : rows.length === 0 ? <p className="text-sm text-muted-foreground">Sem avaliações.</p> : (
           <ul className="space-y-3">
             {rows.map((row) => (
               <ReviewCard key={row.id} row={row} perspective={row.author_account === accountId ? 'author' : 'reader'}

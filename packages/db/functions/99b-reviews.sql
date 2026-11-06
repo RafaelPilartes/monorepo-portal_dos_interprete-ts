@@ -3,6 +3,13 @@
 -- until both sides reviewed or review_reveal_days passed (double blind); a moderator hides one
 -- with a reason. The averages are views, never stored (R-DIR-05).
 
+-- The database clock (util.now(), which follows util.test_clock) for the views the session reads:
+-- the session runs only auth_helper functions (AD-033.1).
+CREATE OR REPLACE FUNCTION auth_helper.clock() RETURNS timestamptz
+  LANGUAGE sql STABLE SECURITY DEFINER
+  SET search_path = ''
+AS $$ SELECT util.now() $$;
+
 -- R-REV-03 (D-44): reviews of a requester are read only by an interpreter with an assignment
 -- (invited, candidate or assigned) on a request that requester created.
 CREATE OR REPLACE FUNCTION auth_helper.can_view_requester_reviews(p_requester uuid) RETURNS boolean
@@ -23,7 +30,8 @@ DECLARE
   v_review booking.reviews;
 BEGIN
   UPDATE booking.reviews SET revealed_at = util.now() WHERE id = p_review AND revealed_at IS NULL RETURNING * INTO v_review;
-  IF v_review.id IS NOT NULL THEN
+  -- A review the team hid is revealed (it still unblinds the pair) but never announced.
+  IF v_review.id IS NOT NULL AND NOT v_review.hidden THEN
     PERFORM booking.notify_request('review_revealed', ARRAY[v_review.target_account], v_review.request_id,
       CASE WHEN v_review.author_role = 'requester' THEN 'interpreter' ELSE 'requester' END,
       jsonb_build_object('rating', v_review.rating, 'link', '/reviews'));
@@ -58,6 +66,12 @@ BEGIN
   IF EXISTS (SELECT 1 FROM booking.reviews AS v WHERE v.assignment_id = p_assignment AND v.author_role = v_role) THEN
     RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'REVIEW_EXISTS';
   END IF;
+  -- AD-038.2: once the other side's review was revealed by the clock, this side no longer reviews
+  -- (R-REV-02: nobody sees the other's review before giving its own; review_reveal_days is shorter
+  -- than review_window_days).
+  IF EXISTS (SELECT 1 FROM booking.reviews AS v WHERE v.assignment_id = p_assignment AND v.author_role <> v_role AND v.revealed_at IS NOT NULL) THEN
+    RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'REVIEW_WINDOW_CLOSED';
+  END IF;
   IF p_rating IS NULL OR p_rating NOT BETWEEN 1 AND 5 THEN
     RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'VALIDATION_FAILED', HINT = 'rating:stars';
   END IF;
@@ -71,8 +85,11 @@ BEGIN
   IF v_other IS NOT NULL THEN
     PERFORM booking.reveal_review(v_other);
     PERFORM booking.reveal_review(v_review.id);
-    SELECT * INTO v_review FROM booking.reviews AS v WHERE v.id = v_review.id;
+  ELSIF util.now() >= v_row.completed_at + config.require(v_request.config_version_id, 'review_reveal_days')::integer * interval '1 day' THEN
+    -- Sent after the reveal deadline: visible at once, not at the next hourly run.
+    PERFORM booking.reveal_review(v_review.id);
   END IF;
+  SELECT * INTO v_review FROM booking.reviews AS v WHERE v.id = v_review.id;
   RETURN v_review;
 END;
 $$;
@@ -177,10 +194,11 @@ SELECT v.id, v.assignment_id, v.request_id, v.author_account, v.author_role, v.t
           OR (SELECT auth_helper.can_view_requester_reviews(v.target_account))));
 
 -- R-DIR-05: an interpreter's average and count, over revealed reviews not hidden. Public, like
--- the directory listing.
+-- the directory listing, and like it only for listed interpreters (R-DIR-03).
 CREATE OR REPLACE VIEW directory.interpreter_ratings WITH (security_invoker = false) AS
 SELECT v.target_account AS interpreter_id, round(avg(v.rating), 1) AS rating_average, count(*)::integer AS rating_count
   FROM booking.reviews AS v
+  JOIN directory.listed_ids AS l ON l.account_id = v.target_account
  WHERE v.author_role = 'requester' AND v.revealed_at IS NOT NULL AND NOT v.hidden
  GROUP BY v.target_account;
 
@@ -202,7 +220,8 @@ SELECT a.id AS assignment_id, a.request_id, x.role AS author_role, r.code AS req
        CASE WHEN x.role = 'requester' THEN pi.full_name ELSE pc.full_name END AS other_name,
        a.completed_at,
        a.completed_at + c.review_window_days * interval '1 day' AS review_by,
-       c.review_reveal_days AS reveal_days
+       c.review_reveal_days AS reveal_days,
+       a.completed_at + c.review_reveal_days * interval '1 day' AS reveal_at
   FROM booking.request_assignments AS a
   JOIN booking.requests AS r ON r.id = a.request_id
   JOIN catalog.services AS s ON s.id = r.service_id
@@ -216,5 +235,15 @@ SELECT a.id AS assignment_id, a.request_id, x.role AS author_role, r.code AS req
    SELECT 'requester' WHERE (SELECT auth_helper.account_id()) IN (SELECT auth_helper.requester_accounts(a.request_id))
  ) AS x
  WHERE a.status = 'completed' AND (SELECT auth_helper.is_active())
-   AND pg_catalog.now() < a.completed_at + c.review_window_days * interval '1 day'
-   AND NOT EXISTS (SELECT 1 FROM booking.reviews AS v WHERE v.assignment_id = a.id AND v.author_role = x.role);
+   AND (SELECT auth_helper.clock()) < a.completed_at + c.review_window_days * interval '1 day'
+   AND NOT EXISTS (SELECT 1 FROM booking.reviews AS v WHERE v.assignment_id = a.id AND v.author_role = x.role)
+   -- AD-038.2: closed once the other side's review was revealed by the clock.
+   AND NOT EXISTS (SELECT 1 FROM booking.reviews AS v WHERE v.assignment_id = a.id AND v.author_role <> x.role AND v.revealed_at IS NOT NULL);
+
+-- "1 avaliação por revelar" (interpreter-profile-and-directory.md, /profile/reviews): only the count
+-- of the reviews received and not yet revealed, never their content.
+CREATE OR REPLACE VIEW booking.my_unrevealed_reviews WITH (security_invoker = false) AS
+SELECT v.author_role, count(*)::integer AS pending_count
+  FROM booking.reviews AS v
+ WHERE v.target_account = (SELECT auth_helper.account_id()) AND (SELECT auth_helper.is_active()) AND v.revealed_at IS NULL
+ GROUP BY v.author_role;

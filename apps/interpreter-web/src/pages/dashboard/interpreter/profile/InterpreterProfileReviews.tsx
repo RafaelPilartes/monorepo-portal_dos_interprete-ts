@@ -1,4 +1,4 @@
-import { ReceivedReviews } from '@portal-dos-interpretes/features/requests/Reviews'
+import { ReceivedReviews, UnrevealedNote } from '@portal-dos-interpretes/features/requests/Reviews'
 import { useRequests } from '@portal-dos-interpretes/features/requests/RequestsContext'
 import { ProfileShell } from '@/components/profile/ProfileShell'
 
@@ -7,7 +7,12 @@ export default function InterpreterProfileReviews() {
   const { accountId } = useRequests()
   return (
     <ProfileShell title="Avaliações" description="O que os solicitantes dizem do teu trabalho.">
-      {() => <ReceivedReviews accountId={accountId} role="interpreter" title="Avaliações recebidas" />}
+      {() => (
+        <div className="space-y-2">
+          <ReceivedReviews accountId={accountId} role="interpreter" title="Avaliações recebidas" />
+          <UnrevealedNote role="interpreter" />
+        </div>
+      )}
     </ProfileShell>
   )
 }
