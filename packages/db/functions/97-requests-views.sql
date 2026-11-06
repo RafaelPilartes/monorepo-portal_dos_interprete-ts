@@ -10,6 +10,7 @@ CREATE OR REPLACE FUNCTION auth_helper.cancel_is_late(p_request uuid) RETURNS bo
   SET search_path = ''
 AS $$
 BEGIN
+  IF NOT auth_helper.can_view_request(p_request) THEN RETURN NULL; END IF;
   RETURN (SELECT booking.is_late(r) FROM booking.requests AS r WHERE r.id = p_request);
 END;
 $$;
@@ -19,7 +20,8 @@ CREATE OR REPLACE FUNCTION auth_helper.confirmation_deadline(p_assignment uuid) 
   SET search_path = ''
 AS $$
 BEGIN
-  RETURN (SELECT booking.confirmation_deadline(a) FROM booking.request_assignments AS a WHERE a.id = p_assignment AND a.delivered_at IS NOT NULL);
+  RETURN (SELECT booking.confirmation_deadline(a) FROM booking.request_assignments AS a
+           WHERE a.id = p_assignment AND a.delivered_at IS NOT NULL AND auth_helper.can_view_request(a.request_id));
 END;
 $$;
 

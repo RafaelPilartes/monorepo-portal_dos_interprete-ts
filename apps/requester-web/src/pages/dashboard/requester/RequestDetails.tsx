@@ -24,6 +24,8 @@ import { ArrowLeft, CheckCircle2 } from 'lucide-react'
 
 /** The statuses in which the request can no longer be cancelled (R-LIFE-01). */
 const NOT_CANCELLABLE = ['delivered', 'completed', 'disputed', 'cancelled', 'expired']
+/** Nor once an interpreter has delivered (review of H8). */
+const DONE = ['delivered', 'disputed', 'completed']
 
 type Detail = NonNullable<ReturnType<typeof useRequestDetail>['data']>
 
@@ -117,7 +119,7 @@ export default function RequestDetails() {
         </div>
         <div className="flex items-center gap-3">
           <StatusBadge kind="request" status={request.status ?? ''} className="text-sm" />
-          {manage && !NOT_CANCELLABLE.includes(request.status ?? '') && (
+          {manage && !NOT_CANCELLABLE.includes(request.status ?? '') && !assignments.some((row) => DONE.includes(row.status ?? '')) && (
             <ReasonAction label="Cancelar pedido" title="Cancelar o pedido" confirmLabel="Cancelar o pedido" variant="destructive" pending={cancel.isPending}
               description="Todos os intérpretes deste pedido são avisados. Isto não se desfaz."
               warning={request.cancel_is_late && accepted > 0 ? LATE_WARNING : null}

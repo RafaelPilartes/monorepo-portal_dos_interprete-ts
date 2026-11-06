@@ -222,6 +222,31 @@ BEGIN
   RAISE NOTICE 'ok - a dispute resolved as cancelled after the start does not reopen the place (R-LIFE-07)';
 END $$;
 
+-- Review of H8: once one interpreter delivered, the request is no longer cancelled.
+DO $$
+DECLARE
+  v_request booking.requests;
+  v_code text;
+  v_now timestamptz := util.now();
+BEGIN
+  v_request := booking.create_request('00000000-0000-4000-8000-0000000000d1', jsonb_build_object(
+    'kind', 'direct', 'service_id', (SELECT id FROM h8 WHERE key = 'service'),
+    'language_ids', jsonb_build_array((SELECT id FROM h8 WHERE key = 'lga')),
+    'modality', 'online', 'meeting_link', 'https://meet.exemplo.ao/c', 'starts_at', util.now() + interval '10 days',
+    'duration_minutes', 60, 'interpreters_needed', 2,
+    'interpreter_ids', jsonb_build_array('00000000-0000-4000-8000-0000000000d2', '00000000-0000-4000-8000-0000000000d3'),
+    'beneficiary_name', 'Senhor Beneficiário', 'expected_total_aoa', 20000));
+  PERFORM booking.accept_assignment(a.interpreter_id, a.id) FROM booking.request_assignments AS a WHERE a.request_id = v_request.id;
+  PERFORM pg_temp.at(v_request.ends_at);
+  PERFORM booking.mark_delivered('00000000-0000-4000-8000-0000000000d2',
+    (SELECT id FROM booking.request_assignments WHERE request_id = v_request.id AND interpreter_id = '00000000-0000-4000-8000-0000000000d2'));
+  BEGIN PERFORM booking.cancel_request('00000000-0000-4000-8000-0000000000d1', v_request.id, 'Já não preciso');
+  EXCEPTION WHEN raise_exception THEN v_code := SQLERRM; END;
+  IF v_code IS DISTINCT FROM 'STATE_CHANGED' THEN RAISE EXCEPTION 'FAIL - a request with a delivered service is not cancelled (got %)', v_code; END IF;
+  PERFORM pg_temp.at(v_now);
+  RAISE NOTICE 'ok - once an interpreter delivered, the request is confirmed or disputed, never cancelled (review of H8)';
+END $$;
+
 -- The parties read their dispute; others do not.
 DO $$ BEGIN PERFORM set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000d3", "role": "authenticated"}', true); END $$;
 SET LOCAL ROLE authenticated;

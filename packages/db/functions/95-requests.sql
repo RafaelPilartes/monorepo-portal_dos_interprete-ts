@@ -249,7 +249,8 @@ BEGIN
   IF v_status <> v_request.status THEN
     UPDATE booking.requests SET status = v_status WHERE id = p_request;
     PERFORM booking.log_event(p_request, NULL, v_request.status, v_status, p_actor, p_role);
-    IF v_status = 'confirmed' THEN
+    -- Only on the way in: back from a dispute is not a new confirmation (review of H8).
+    IF v_status = 'confirmed' AND v_request.status = 'awaiting_interpreters' THEN
       PERFORM booking.notify_request('request_confirmed', ARRAY(SELECT auth_helper.requester_accounts(p_request)), p_request, 'requester');
       PERFORM booking.notify_request('request_confirmed', ARRAY(
         SELECT a.interpreter_id FROM booking.request_assignments AS a

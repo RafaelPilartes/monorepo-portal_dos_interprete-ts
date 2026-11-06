@@ -23,6 +23,7 @@ import { ArrowLeft } from 'lucide-react'
 // A moderator (or a request operator on managed ones) can also cancel the request (R-LIFE-01).
 
 const NOT_CANCELLABLE = ['delivered', 'completed', 'disputed', 'cancelled', 'expired']
+const DONE = ['delivered', 'disputed', 'completed']
 
 function ResolveDispute({ dispute }: { dispute: DisputeRow }) {
   const [open, setOpen] = useState(false)
@@ -84,6 +85,7 @@ export default function AdminRequestDetails() {
   const { request, assignments, timeline } = detail.data
   const moderates = level === 'moderator' || level === 'super_admin'
   const canCancel = (moderates || (level === 'request_operator' && request.kind === 'managed')) && !NOT_CANCELLABLE.includes(request.status ?? '')
+    && !assignments.some((row) => DONE.includes(row.status ?? ''))
 
   return (
     <div className="space-y-6">

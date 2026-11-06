@@ -70,7 +70,9 @@ export function notificationText(kind: string, payload: Payload): { title: strin
       title: 'A disputa foi resolvida',
       body: `${request}. ${payload.resolution === 'completed' ? 'O serviço conta como feito.' : 'O serviço não conta como feito.'}`,
     }
-    case 'account_suspended_counterparty': return { title: 'Um pedido foi cancelado pela equipa', body: `A outra parte deixou de estar disponível. ${request}` }
+    case 'account_suspended_counterparty': return payload.place_reopened === true
+      ? { title: 'Um intérprete deixou de estar disponível', body: `${request}. O lugar voltou a ficar livre.` }
+      : { title: 'Um pedido foi cancelado pela equipa', body: `A outra parte deixou de estar disponível. ${request}` }
     case 'proposal_received': return { title: 'Nova proposta de preço', body: typeof payload.amount_aoa === 'number' ? `${request}: ${formatAoa(payload.amount_aoa)}` : request }
     case 'proposal_answered': return { title: payload.accepted === true ? 'A tua proposta foi aceite' : 'A tua proposta foi recusada', body: request }
     case 'meeting_link_changed': return { title: 'O link da reunião mudou', body: request }

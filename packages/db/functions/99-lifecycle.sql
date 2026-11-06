@@ -83,7 +83,10 @@ BEGIN
   END;
   IF v_role IS NULL THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'NOT_FOUND'; END IF;
   -- A dispute is resolved, never cancelled (R-LIFE-06).
-  IF v_request.status IN ('delivered', 'completed', 'disputed', 'cancelled', 'expired') THEN
+  -- Nor once any interpreter has delivered: a service done is confirmed or disputed (review of H8).
+  IF v_request.status IN ('delivered', 'completed', 'disputed', 'cancelled', 'expired')
+     OR EXISTS (SELECT 1 FROM booking.request_assignments AS a
+                 WHERE a.request_id = p_request AND a.status IN ('delivered', 'disputed', 'completed')) THEN
     RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'STATE_CHANGED';
   END IF;
   RETURN booking.cancel_whole_request(v_request, p_actor, v_role, trim(p_reason), 'request_cancelled');
@@ -123,7 +126,9 @@ BEGIN
    WHERE id = p_assignment RETURNING * INTO v_row;
   PERFORM booking.log_event(v_request.id, p_assignment, 'accepted', 'cancelled', p_actor, v_role, trim(p_reason));
   PERFORM booking.notify_request('request_cancelled', ARRAY(SELECT auth_helper.requester_accounts(v_request.id)), v_request.id, 'requester',
-    jsonb_build_object('reason', trim(p_reason), 'interpreter_name', (SELECT p.full_name FROM identity.profiles AS p WHERE p.id = v_row.interpreter_id)));
+    jsonb_build_object('reason', trim(p_reason)) || CASE WHEN v_role = 'interpreter'
+      THEN jsonb_build_object('interpreter_name', (SELECT p.full_name FROM identity.profiles AS p WHERE p.id = v_row.interpreter_id))
+      ELSE '{}'::jsonb END);
   IF v_role = 'staff' THEN
     PERFORM booking.notify_request('request_cancelled', ARRAY[v_row.interpreter_id], v_request.id, 'interpreter', jsonb_build_object('reason', trim(p_reason)));
   END IF;
@@ -337,7 +342,7 @@ BEGIN
     PERFORM booking.void_open_proposals(v_row.id);
     PERFORM booking.log_event(v_row.request_id, v_row.id, v_row.status, 'cancelled', p_actor, 'staff', 'Conta suspensa');
     PERFORM booking.notify_request('account_suspended_counterparty', ARRAY(SELECT auth_helper.requester_accounts(v_row.request_id)),
-      v_row.request_id, 'requester');
+      v_row.request_id, 'requester', jsonb_build_object('place_reopened', true));
     PERFORM booking.refresh_request_status(v_row.request_id, p_actor, 'staff');
   END LOOP;
   FOR v_request IN
@@ -370,7 +375,10 @@ END;
 $$;
 
 -- R-DIR-06: late cancellations of the last 12 months, per account: an interpreter's own, and a
--- requester's (one per request it cancelled late). Never stored; any active account reads it.
+-- requester's (one per request it cancelled late), on whoever cancelled (D-22: "no perfil de quem
+-- cancelou"; an organisation's owner cancelling a member's request). Never stored; any active
+-- account reads it. The window uses the real clock: the session runs no function outside
+-- auth_helper (AD-033.1), and twelve months is not a deadline the tests move.
 CREATE OR REPLACE VIEW directory.late_cancellations WITH (security_invoker = false) AS
 SELECT x.account_id, count(*)::integer AS late_count
   FROM (
@@ -378,7 +386,7 @@ SELECT x.account_id, count(*)::integer AS late_count
       FROM booking.request_assignments AS a JOIN booking.requests AS r ON r.id = a.request_id
      WHERE a.late_cancellation AND a.cancelled_by_role = 'interpreter' AND r.starts_at > pg_catalog.now() - interval '12 months'
     UNION
-    SELECT r.created_by, r.id::text
+    SELECT coalesce(r.cancelled_by, r.created_by), r.id::text
       FROM booking.request_assignments AS a JOIN booking.requests AS r ON r.id = a.request_id
      WHERE a.late_cancellation AND a.cancelled_by_role = 'requester' AND r.starts_at > pg_catalog.now() - interval '12 months'
   ) AS x
@@ -392,6 +400,6 @@ SELECT d.id, d.assignment_id, d.request_id, d.opened_by, d.opened_by_role, d.rea
        (SELECT p.full_name FROM identity.profiles AS p WHERE p.id = d.opened_by) AS opened_by_name
   FROM booking.disputes AS d
   JOIN booking.request_assignments AS a ON a.id = d.assignment_id
- WHERE (SELECT auth_helper.is_staff())
+ WHERE (SELECT auth_helper.is_staff(ARRAY['moderator', 'request_operator']))
     OR a.interpreter_id = (SELECT auth_helper.account_id())
     OR ((SELECT auth_helper.is_active()) AND (SELECT auth_helper.account_id()) IN (SELECT auth_helper.requester_accounts(d.request_id)));

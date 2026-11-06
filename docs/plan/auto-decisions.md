@@ -329,3 +329,18 @@
   9. **Revisão do H7:** os candidatos não ocupam lugares ao seguir com menos; na expiração passam a `not_selected` e são avisados; ninguém aceita, se candidata ou é escolhido a partir da hora de início; o link da reunião só para quem participa (o lado do solicitante, a equipa e as linhas do próprio intérprete); quem escolhe um candidato com outro serviço no mesmo horário lê "Este intérprete já não está disponível neste horário". A guarda `first_accept` de `open_negotiation` é defensiva: nesse modo não há candidaturas, só atribuições já aceites.
   8. **Na "eu escolho", cada candidato pode negociar** no seu fio enquanto a candidatura estiver aberta (`R-NEG-01`); em "o primeiro que aceitar" não há negociação (critério 5 da negociação, testado aqui).
 - **Marcas:** [RISCO] dinheiro (o orçamento de "o primeiro que aceitar" é o valor final, sem deslocação, `D-92`).
+
+## AD-037 — Decisões do passo H8 (ciclo do serviço e cascata da suspensão)
+- **Passo:** H8
+- **Registo:**
+  1. **`booking.disputes`** (migration 0010), com uma só disputa aberta por atribuição (`disputes_one_open`, traduzida para `DISPUTE_OPEN`). A decisão de reembolso (`refund_decision`) fica vazia até ao gerido (H11).
+  2. **"Menos de 24 horas" é estrito** (`D-22`): às 24h00 certas não é tardio. Só as atribuições aceites ficam tardias; a equipa nunca cancela tarde; num cancelamento do intérprete, só ele.
+  3. **`directory.late_cancellations` conta contra quem cancelou** (`D-22`, "no perfil de quem cancelou"): o intérprete pelas suas atribuições, o lado do solicitante por `cancelled_by` (um dono da organização que cancela o pedido de um membro). A janela de 12 meses usa o relógio real: a sessão não corre funções fora de `auth_helper` (AD-033.1).
+  4. **Depois do início, um lugar não reabre:** uma disputa resolvida como `cancelled` termina o pedido (`R-LIFE-07`). Um pedido ainda à espera à hora de início continua à espera, para `R-REQ-10`. As conversas fecham quando o pedido fica `completed` ou `cancelled`.
+  5. **Um pedido com um serviço já feito não se cancela** (revisão do H8): com uma atribuição `delivered`, `disputed` ou `completed`, o caminho é confirmar ou disputar.
+  6. **Os ecrãs lêem, não calculam,** se um cancelamento agora seria tardio (`request_details.cancel_is_late`) e até quando se confirma (`assignment_details.confirm_by`), por funções de `auth_helper` que só respondem a quem vê o pedido. O texto do aviso é o da spec ("Faltam menos de 24 horas…"); se `cancellation_free_until_hours` mudar, o texto muda com ele.
+  7. **As disputas lêem-se** pelas partes, pelos moderadores e pelos operadores de pedidos (`booking.dispute_details`). A leitura do chat pelo moderador chega com `R-PRIV-05` (H14); o painel do admin mostra o motivo, as partes, os intérpretes e o histórico.
+  8. **A suspensão de um intérprete** avisa o lado do solicitante com `account_suspended_counterparty` e `place_reopened`: o pedido não foi cancelado, o lugar voltou a ficar livre.
+  9. **A confirmação automática corre a cada 5 minutos.** Não há lembrete ao intérprete que se esquece de marcar como feito (`delivery_reminder`); fica como melhoria.
+  10. **No Playwright, um serviço "já feito"** é preparado mudando as horas do pedido na base local, com os gatilhos desligados nessa instrução: nenhum ecrã muda a hora.
+- **Marcas:** [RISCO] dinheiro (no gerido, a conclusão põe o repasse em fila e o cancelamento cria o reembolso; chega no H11).
