@@ -202,13 +202,15 @@ export function UnrevealedNote({ role }: { role: 'requester' | 'interpreter' }) 
 }
 
 /** The revealed reviews of an account as others read them: an interpreter's profile, a requester for its interpreters. */
-export function ReceivedReviews({ accountId, role, title }: { accountId: string; role: 'requester' | 'interpreter'; title: string }) {
+export function ReceivedReviews({ accountId, role, title, showRating = true }: { accountId: string; role: 'requester' | 'interpreter'; title: string; showRating?: boolean }) {
   const reviews = useReviews({ targetId: accountId, role }, accountId !== '')
   const rows = (reviews.data ?? []).filter((row) => row.revealed_at && !row.hidden)
+  // Where the average is already shown above (the profile header), the section shows only the reviews.
+  if (!showRating && rows.length === 0) return null
   return (
     <section className="space-y-3">
       <h2 className="text-lg font-semibold">{title}</h2>
-      <RatingLine accountId={accountId} role={role} />
+      {showRating && <RatingLine accountId={accountId} role={role} />}
       {rows.length > 0 && <ul className="space-y-3">{rows.slice(0, 10).map((row) => <ReviewCard key={row.id} row={row} perspective="reader" />)}</ul>}
       {rows.length > 10 && <p className="text-sm text-muted-foreground">E mais {rows.length - 10}.</p>}
     </section>

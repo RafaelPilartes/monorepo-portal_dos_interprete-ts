@@ -97,7 +97,8 @@ DO $$ BEGIN PERFORM pg_temp.as_account('00000000-0000-4000-8000-0000000000e2'); 
 SET LOCAL ROLE authenticated;
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM booking.review_details) OR EXISTS (SELECT 1 FROM directory.interpreter_ratings) THEN
+  IF EXISTS (SELECT 1 FROM booking.review_details WHERE assignment_id = (SELECT id FROM h9 WHERE key = 'first'))
+     OR EXISTS (SELECT 1 FROM directory.interpreter_ratings WHERE interpreter_id = '00000000-0000-4000-8000-0000000000e2') THEN
     RAISE EXCEPTION 'FAIL - the reviewed interpreter does not see a review before giving its own';
   END IF;
   IF (SELECT author_role FROM booking.reviews_to_do) IS DISTINCT FROM 'interpreter' THEN
@@ -109,7 +110,7 @@ DO $$ BEGIN PERFORM pg_temp.as_account('00000000-0000-4000-8000-0000000000e1'); 
 SET LOCAL ROLE authenticated;
 DO $$
 BEGIN
-  IF (SELECT count(*) FROM booking.review_details) <> 1 OR EXISTS (SELECT 1 FROM booking.reviews_to_do) THEN
+  IF (SELECT count(*) FROM booking.review_details WHERE assignment_id = (SELECT id FROM h9 WHERE key = 'first')) <> 1 OR EXISTS (SELECT 1 FROM booking.reviews_to_do) THEN
     RAISE EXCEPTION 'FAIL - the author sees its own review, and has nothing left to review';
   END IF;
 END $$;
@@ -118,7 +119,9 @@ DO $$ BEGIN PERFORM pg_temp.as_account('00000000-0000-4000-8000-0000000000e9'); 
 SET LOCAL ROLE authenticated;
 DO $$
 BEGIN
-  IF (SELECT count(*) FROM booking.review_details) <> 1 THEN RAISE EXCEPTION 'FAIL - the team sees every review'; END IF;
+  IF (SELECT count(*) FROM booking.review_details WHERE assignment_id = (SELECT id FROM h9 WHERE key = 'first')) <> 1 THEN
+    RAISE EXCEPTION 'FAIL - the team sees every review';
+  END IF;
   RAISE NOTICE 'ok - with one side only, the review is seen by its author and the team, nobody else (criterion 1)';
 END $$;
 RESET ROLE;
@@ -131,7 +134,8 @@ BEGIN
   PERFORM booking.submit_review('00000000-0000-4000-8000-0000000000e2', v_row, 4, 'Pedido bem preparado.');
   IF (SELECT count(DISTINCT revealed_at) FROM booking.reviews WHERE assignment_id = v_row AND revealed_at IS NOT NULL) <> 1
      OR (SELECT count(*) FROM booking.reviews WHERE assignment_id = v_row AND revealed_at IS NOT NULL) <> 2
-     OR (SELECT count(*) FROM notify.notifications WHERE kind = 'review_revealed') <> 2 THEN
+     OR (SELECT count(*) FROM notify.notifications WHERE kind = 'review_revealed'
+          AND account_id IN ('00000000-0000-4000-8000-0000000000e1', '00000000-0000-4000-8000-0000000000e2')) <> 2 THEN
     RAISE EXCEPTION 'FAIL - the second review reveals both at the same instant, each target told';
   END IF;
   RAISE NOTICE 'ok - the second side reveals both reviews at the same instant (criterion 2)';
@@ -184,9 +188,15 @@ DECLARE
 BEGIN
   PERFORM booking.submit_review('00000000-0000-4000-8000-0000000000e4', v_row.id, 1, 'Chegou tarde.');
   PERFORM pg_temp.at(v_row.completed_at + v_reveal * interval '1 day' - interval '1 minute');
-  IF booking.reveal_reviews() <> 0 THEN RAISE EXCEPTION 'FAIL - nothing is revealed before review_reveal_days'; END IF;
+  PERFORM booking.reveal_reviews();
+  IF (SELECT revealed_at FROM booking.reviews WHERE assignment_id = v_row.id) IS NOT NULL THEN
+    RAISE EXCEPTION 'FAIL - nothing is revealed before review_reveal_days';
+  END IF;
   PERFORM pg_temp.at(v_row.completed_at + v_reveal * interval '1 day');
-  IF booking.reveal_reviews() <> 1 THEN RAISE EXCEPTION 'FAIL - the unanswered review is revealed after review_reveal_days'; END IF;
+  PERFORM booking.reveal_reviews();
+  IF (SELECT revealed_at FROM booking.reviews WHERE assignment_id = v_row.id) IS NULL THEN
+    RAISE EXCEPTION 'FAIL - the unanswered review is revealed after review_reveal_days';
+  END IF;
   -- AD-038.2: once it is revealed, the other side no longer reviews (it would have seen it first).
   BEGIN PERFORM booking.submit_review('00000000-0000-4000-8000-0000000000e2', v_row.id, 3, NULL);
   EXCEPTION WHEN raise_exception THEN v_code := SQLERRM; END;

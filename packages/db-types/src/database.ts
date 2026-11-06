@@ -1267,6 +1267,15 @@ export type Database = {
                     }
                 ];
             };
+            "my_unrevealed_reviews": {
+                Row: {
+                    "author_role": string;
+                    "pending_count": number | null;
+                };
+                ComputedFields: never;
+                Relationships: [
+                ];
+            };
             "open_requests_for_me": {
                 Row: {
                     "accepted_count": number | null;
@@ -1679,6 +1688,7 @@ export type Database = {
                     "other_name": string | null;
                     "request_code": string;
                     "request_id": string;
+                    "reveal_at": string | null;
                     "reveal_days": number | null;
                     "review_by": string | null;
                     "service_title": string;

@@ -161,7 +161,7 @@ export function InterpreterProfileView({ details }: { details: InterpreterDetail
             </Section>
           )}
 
-          <ReceivedReviews accountId={id ?? ''} role="interpreter" title="Avaliações" />
+          <ReceivedReviews accountId={id ?? ''} role="interpreter" title="Avaliações" showRating={false} />
 
           {(videos.length > 0 || articles.length > 0) && (
             <Section title="Conteúdo">

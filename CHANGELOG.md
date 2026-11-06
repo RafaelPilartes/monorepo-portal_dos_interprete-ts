@@ -2,6 +2,14 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.18.0 — 2026-11-06 — Passo H9 (avaliações)
+
+- Depois de cada serviço concluído, quem pede e o intérprete avaliam-se um ao outro, com estrelas e um comentário.
+- Cada avaliação fica escondida até as duas partes avaliarem, ou até passarem 14 dias; nessa altura, quem não avaliou já não avalia.
+- O perfil do intérprete mostra a média e as avaliações; o intérprete convidado vê as avaliações de quem pede.
+- A equipa pode esconder uma avaliação com motivo; deixa de contar para a média.
+- Relatório: `docs/plan/step-reports/H9.md`.
+
 ## 0.17.0 — 2026-11-06 — Passo H8 (ciclo do serviço)
 
 - Quem pede pode cancelar o pedido; a menos de 24 horas do início, o ecrã avisa que fica registado no perfil.
