@@ -1,13 +1,15 @@
 # HANDOFF
-- Versão: v0.16.0 (H7 fechado em 2026-11-05)
-- Próximo passo: H8 — cancelar, marcar como feito, confirmar, confirmação automática, disputas, e a cascata da suspensão (docs/plan/specs/service-lifecycle.md; critério 5 de contas)
+- Versão: v0.17.0 (H8 fechado em 2026-11-06)
+- Próximo passo: H9 — avaliações dupla-cegas (docs/plan/specs/reviews.md; critérios 1 a 5)
 - Remoto: https://github.com/RafaelPilartes/monorepo-portal_dos_interprete-ts (trabalho em `dev`; `main` não se toca)
+- Feito no H8: cancelar (pedido e participação, com tardio), marcar como feito, confirmar e confirmação automática, disputas e resolução no admin, `/schedule` real, cascata da suspensão (7 achados da revisão, 6 corrigidos, docs/plan/step-reports/H8.md).
 - Feito no H7: pedido aberto nos dois modos, candidaturas, escolha, aceitação concorrente (10 achados da revisão corrigidos ou registados, docs/plan/step-reports/H7.md).
 - Feito no H6: negociação de preço no chat (propostas, contrapropostas, aceitar e recusar; 10 achados da revisão corrigidos ou registados, docs/plan/step-reports/H6.md).
 - Feito no H5: pedidos (só o directo), convites, aceitar e recusar, estado derivado, expirações, chat, sino e `/notifications`. 13 achados da revisão corrigidos ou registados (docs/plan/step-reports/H5.md).
-- A lembrar no H8: cancelar, feito, confirmar, disputas e a cascata da suspensão sobre pedidos e atribuições (`identity.suspend_account`, `R-ACC-05`); o diálogo de suspensão já o promete (AD-030.4); ecrãs de pedidos da equipa com a disputa.
-- A lembrar no H7, H8 e H11: abrir os outros tipos em `booking.create_request` e no assistente; cancelamento e ecrãs de pedidos da equipa (H8); passo 4 de `refresh_request_status` (pagamento do gerido, H11). Coisas dos ecrãs adiadas: AD-034.12.
-- Auto-decisões novas: AD-034 (H5), AD-035 (H6), AD-036 (H7)
+- A lembrar no H9: as avaliações abrem quando a atribuição fica `completed` (H8 já o marca: `completed_via`).
+- A lembrar no H11: critério 6 do ciclo (reembolso numa disputa do gerido, `refund_decision`), a suspensão num gerido pago, o repasse ao concluir.
+- A lembrar no H7, H8 e H11: abrir os outros tipos em `booking.create_request` e no assistente; passo 4 de `refresh_request_status` (pagamento do gerido, H11). Coisas dos ecrãs adiadas: AD-034.12.
+- Auto-decisões novas: AD-034 (H5), AD-035 (H6), AD-036 (H7), AD-037 (H8)
 - Bloqueios: bundle do histórico antigo (AD-001); push de tags (correr scripts/release-tags.sh, AD-002)
 - Por confirmar com a Academia: fixos angolanos (AD-020); limites dos buckets (AD-022); reset-local (AD-025); email genérico (AD-027); preços reais dos serviços (AD-032.8); textos legais, margem do gerido, taxa de verificação e dados bancários (PC-02, PC-03, PC-05, PC-06)
 - Ambiente: arrancar o `dockerd` à mão se `docker info` falhar (apagar `/var/run/docker.pid` se ficou de uma sessão anterior); `pnpm db:up && pnpm db:bootstrap-admin admin@portal.local` antes do Playwright; `pnpm db:down` no fim. Não correr o push (que corre `db:verify`) ao mesmo tempo que o Playwright: os dois usam a base local.

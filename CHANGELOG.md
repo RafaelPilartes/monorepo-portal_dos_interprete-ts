@@ -2,6 +2,16 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.17.0 — 2026-11-06 — Passo H8 (ciclo do serviço)
+
+- Quem pede pode cancelar o pedido; a menos de 24 horas do início, o ecrã avisa que fica registado no perfil.
+- O intérprete pode cancelar a sua participação antes do início, e marcar o serviço como feito depois da hora de fim.
+- Quem pede confirma o serviço ou abre uma disputa; sem resposta, o serviço fica confirmado automaticamente.
+- A equipa vê os pedidos e as disputas no painel e resolve-as com notas.
+- A agenda do intérprete mostra os serviços aceites e os que faltam marcar como feitos.
+- Suspender uma conta cancela os pedidos e participações que ainda não começaram, e avisa a outra parte.
+- Relatório: `docs/plan/step-reports/H8.md`.
+
 ## 0.16.0 — 2026-11-05 — Passo H7 (pedido aberto)
 
 - Quem pede pode publicar o pedido para os intérpretes, em dois modos: "eu escolho" (candidatam-se com o seu preço) ou "o primeiro que aceitar" (a um valor fixo por intérprete, tudo incluído).
