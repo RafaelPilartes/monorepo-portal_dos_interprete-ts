@@ -358,3 +358,18 @@
   8. **`directory.interpreter_ratings` só mostra intérpretes listados** (`R-DIR-03`), como o directório.
   9. **`auth_helper.clock()`** dá às vistas da sessão o relógio da base (`util.now()`, que segue `util.test_clock`), porque a sessão só corre funções de `auth_helper`.
 - **Marcas:** nenhuma de dinheiro.
+
+## AD-039 — Decisões do passo H10 (pagamentos, reembolsos, repasses, recibos)
+- **Passo:** H10
+- **Registo:**
+  1. **Os assuntos chegam depois:** `billing.on_subject_event` existe e não faz nada até ao H11 (pedido gerido), H12 (verificação) e H17 (eventos), que o preenchem. Nenhuma rota cria intenções (`R-PAY-01`); os testes e o Playwright criam a intenção por fixture, como diz o `MASTER-PLAN` H10. `managed_refund_amount` e `warn_payment_review` (`D-94`) precisam do pedido gerido e ficam para o H11.
+  2. **A descrição da intenção** (`description`) é uma coluna nova: o texto que o pagador e o financeiro lêem ("Pedido gerido PI-…", "Taxa de verificação"), dado por quem cria a intenção.
+  3. **O comprovativo só é aceite** se o ficheiro for o que a API assinou para essa intenção (`payment_proof/<intenção>/…`) e existir no armazenamento; senão `PROOF_FILE_INVALID`.
+  4. **Recusar o comprovativo de um assunto já cancelado** passa a intenção a `cancelled`; aceitá-lo cria logo o reembolso guardado no cancelamento, com o motivo guardado (`refund_due_reason_code`, coluna nova).
+  5. **O aviso `payment_expiring`** sai uma vez, 12 horas antes do prazo (`expiring_warned_at`, coluna nova); a tarefa corre a cada 5 minutos.
+  6. **O recibo em PDF** é escrito pela API à mão (uma página de texto em Helvetica, Latin-1), a partir do `payload` guardado na emissão: não foi preciso acrescentar uma dependência. Diz "Documento não fiscal" (`D-36`, `PC-04`).
+  7. **Duplo clique em "Aceitar":** a segunda chamada responde `STATE_CHANGED` (a intenção já está confirmada). O `Idempotency-Key` da API ainda não guarda respostas; fica para quando houver um pagamento real de ponta a ponta (H11).
+  8. **Dados para receber:** gravados por `identity.save_payout_details` através de `PUT /me/payout-details` (sem colunas abertas à sessão); o IBAN aceita espaços e minúsculas e é guardado normalizado.
+  9. **Quem lê um pagamento:** o pagador, os membros activos da organização pagadora (só `owner`/`admin` pagam) e `finance` (e `super_admin`). As filas do admin (`/payments`, `/refunds`, `/payouts`) só para `finance`.
+  10. **Valores de teste:** os testes usam dados bancários fictícios; os reais (`PC-06`), a taxa de imposto (`PC-04`) e a percentagem do intérprete (`PC-02`) continuam pendentes da Academia e vazios na configuração publicada, o que bloqueia a criação de intenções reais com `CONFIG_VALUE_MISSING` (critério 1).
+- **Marcas:** [RISCO] dinheiro (todos os montantes e impostos saem da base; nenhum ecrã soma; a produção fica bloqueada até `PC-02`, `PC-04` e `PC-06`).
