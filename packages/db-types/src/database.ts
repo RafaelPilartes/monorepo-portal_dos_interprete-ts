@@ -131,13 +131,888 @@ export type Database = {
     };
     "billing": {
         Tables: {
-            [_ in never]: never;
+            "payment_intents": {
+                Row: {
+                    "amount_base_aoa": number;
+                    "amount_total_aoa": number;
+                    "bank_snapshot": NonNullable<Json>;
+                    "config_version_id": string;
+                    "confirmed_at": string | null;
+                    "confirmed_by": string | null;
+                    "context": string;
+                    "created_at": string;
+                    "description": string;
+                    "due_at": string;
+                    "expiring_warned_at": string | null;
+                    "id": string;
+                    "organization_id": string | null;
+                    "payer_account": string;
+                    "reference": string;
+                    "refund_due_on_confirm_aoa": number | null;
+                    "refund_due_reason_code": string | null;
+                    "status": string;
+                    "subject_cancelled_at": string | null;
+                    "subject_id": string;
+                    "tax_aoa": number;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "amount_base_aoa": number;
+                    "amount_total_aoa": number;
+                    "bank_snapshot": NonNullable<Json>;
+                    "config_version_id": string;
+                    "confirmed_at"?: string | null;
+                    "confirmed_by"?: string | null;
+                    "context": string;
+                    "created_at"?: string;
+                    "description": string;
+                    "due_at": string;
+                    "expiring_warned_at"?: string | null;
+                    "id"?: string;
+                    "organization_id"?: string | null;
+                    "payer_account": string;
+                    "reference": string;
+                    "refund_due_on_confirm_aoa"?: number | null;
+                    "refund_due_reason_code"?: string | null;
+                    "status"?: string;
+                    "subject_cancelled_at"?: string | null;
+                    "subject_id": string;
+                    "tax_aoa": number;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "amount_base_aoa"?: number;
+                    "amount_total_aoa"?: number;
+                    "bank_snapshot"?: NonNullable<Json>;
+                    "config_version_id"?: string;
+                    "confirmed_at"?: string | null;
+                    "confirmed_by"?: string | null;
+                    "context"?: string;
+                    "created_at"?: string;
+                    "description"?: string;
+                    "due_at"?: string;
+                    "expiring_warned_at"?: string | null;
+                    "id"?: string;
+                    "organization_id"?: string | null;
+                    "payer_account"?: string;
+                    "reference"?: string;
+                    "refund_due_on_confirm_aoa"?: number | null;
+                    "refund_due_reason_code"?: string | null;
+                    "status"?: string;
+                    "subject_cancelled_at"?: string | null;
+                    "subject_id"?: string;
+                    "tax_aoa"?: number;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                ];
+            };
+            "payment_proofs": {
+                Row: {
+                    "file_path": string;
+                    "id": string;
+                    "intent_id": string;
+                    "rejection_reason": string | null;
+                    "review_status": string;
+                    "reviewed_at": string | null;
+                    "reviewed_by": string | null;
+                    "uploaded_at": string;
+                    "uploaded_by": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "file_path": string;
+                    "id"?: string;
+                    "intent_id": string;
+                    "rejection_reason"?: string | null;
+                    "review_status"?: string;
+                    "reviewed_at"?: string | null;
+                    "reviewed_by"?: string | null;
+                    "uploaded_at": string;
+                    "uploaded_by": string;
+                };
+                Update: {
+                    "file_path"?: string;
+                    "id"?: string;
+                    "intent_id"?: string;
+                    "rejection_reason"?: string | null;
+                    "review_status"?: string;
+                    "reviewed_at"?: string | null;
+                    "reviewed_by"?: string | null;
+                    "uploaded_at"?: string;
+                    "uploaded_by"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "payment_proofs_intent_id_fkey";
+                        columns: [
+                            "intent_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "payment_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "payment_proofs_intent_id_fkey";
+                        columns: [
+                            "intent_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "payment_intents";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "payouts": {
+                Row: {
+                    "amount_aoa": number;
+                    "assignment_id": string;
+                    "cancelled_reason": string | null;
+                    "created_at": string;
+                    "id": string;
+                    "interpreter_id": string;
+                    "paid_at": string | null;
+                    "paid_by": string | null;
+                    "paid_reference": string | null;
+                    "payout_details_snapshot": Json | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "amount_aoa": number;
+                    "assignment_id": string;
+                    "cancelled_reason"?: string | null;
+                    "created_at"?: string;
+                    "id"?: string;
+                    "interpreter_id": string;
+                    "paid_at"?: string | null;
+                    "paid_by"?: string | null;
+                    "paid_reference"?: string | null;
+                    "payout_details_snapshot"?: Json | null;
+                    "status"?: string;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "amount_aoa"?: number;
+                    "assignment_id"?: string;
+                    "cancelled_reason"?: string | null;
+                    "created_at"?: string;
+                    "id"?: string;
+                    "interpreter_id"?: string;
+                    "paid_at"?: string | null;
+                    "paid_by"?: string | null;
+                    "paid_reference"?: string | null;
+                    "payout_details_snapshot"?: Json | null;
+                    "status"?: string;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                ];
+            };
+            "receipts": {
+                Row: {
+                    "amount_aoa": number;
+                    "id": string;
+                    "intent_id": string;
+                    "issued_at": string;
+                    "issued_to_name": string;
+                    "kind": string;
+                    "number": string;
+                    "payload": NonNullable<Json>;
+                    "refund_id": string | null;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "amount_aoa": number;
+                    "id"?: string;
+                    "intent_id": string;
+                    "issued_at": string;
+                    "issued_to_name": string;
+                    "kind": string;
+                    "number": string;
+                    "payload": NonNullable<Json>;
+                    "refund_id"?: string | null;
+                };
+                Update: {
+                    "amount_aoa"?: number;
+                    "id"?: string;
+                    "intent_id"?: string;
+                    "issued_at"?: string;
+                    "issued_to_name"?: string;
+                    "kind"?: string;
+                    "number"?: string;
+                    "payload"?: NonNullable<Json>;
+                    "refund_id"?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "receipts_intent_id_fkey";
+                        columns: [
+                            "intent_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "payment_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "receipts_intent_id_fkey";
+                        columns: [
+                            "intent_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "payment_intents";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "receipts_refund_id_fkey";
+                        columns: [
+                            "refund_id"
+                        ];
+                        isOneToOne: true;
+                        referencedRelation: "refund_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "receipts_refund_id_fkey";
+                        columns: [
+                            "refund_id"
+                        ];
+                        isOneToOne: true;
+                        referencedRelation: "refunds";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "refunds": {
+                Row: {
+                    "amount_aoa": number;
+                    "assignment_id": string | null;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "id": string;
+                    "intent_id": string;
+                    "note": string | null;
+                    "paid_at": string | null;
+                    "paid_by": string | null;
+                    "paid_reference": string | null;
+                    "policy_snapshot": Json | null;
+                    "reason_code": string;
+                    "status": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "amount_aoa": number;
+                    "assignment_id"?: string | null;
+                    "created_at"?: string;
+                    "created_by"?: string | null;
+                    "id"?: string;
+                    "intent_id": string;
+                    "note"?: string | null;
+                    "paid_at"?: string | null;
+                    "paid_by"?: string | null;
+                    "paid_reference"?: string | null;
+                    "policy_snapshot"?: Json | null;
+                    "reason_code": string;
+                    "status"?: string;
+                };
+                Update: {
+                    "amount_aoa"?: number;
+                    "assignment_id"?: string | null;
+                    "created_at"?: string;
+                    "created_by"?: string | null;
+                    "id"?: string;
+                    "intent_id"?: string;
+                    "note"?: string | null;
+                    "paid_at"?: string | null;
+                    "paid_by"?: string | null;
+                    "paid_reference"?: string | null;
+                    "policy_snapshot"?: Json | null;
+                    "reason_code"?: string;
+                    "status"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "refunds_intent_id_fkey";
+                        columns: [
+                            "intent_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "payment_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "refunds_intent_id_fkey";
+                        columns: [
+                            "intent_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "payment_intents";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
         };
         Views: {
-            [_ in never]: never;
+            "payment_details": {
+                Row: {
+                    "amount_base_aoa": number;
+                    "amount_total_aoa": number;
+                    "bank_snapshot": NonNullable<Json>;
+                    "can_pay": boolean | null;
+                    "confirmed_at": string | null;
+                    "context": string;
+                    "created_at": string;
+                    "description": string;
+                    "due_at": string;
+                    "id": string;
+                    "last_proof_id": string | null;
+                    "last_proof_path": string | null;
+                    "last_proof_status": string | null;
+                    "last_proof_uploaded_at": string | null;
+                    "last_rejection_reason": string | null;
+                    "organization_id": string | null;
+                    "organization_name": string | null;
+                    "payer_account": string;
+                    "payer_name": string | null;
+                    "receipts": Json | null;
+                    "reference": string;
+                    "refunded_aoa": number | null;
+                    "status": string;
+                    "subject_cancelled_at": string | null;
+                    "subject_id": string;
+                    "tax_aoa": number;
+                };
+                ComputedFields: never;
+                Relationships: [
+                ];
+            };
+            "payout_details": {
+                Row: {
+                    "amount_aoa": number;
+                    "assignment_id": string;
+                    "cancelled_reason": string | null;
+                    "created_at": string;
+                    "id": string;
+                    "interpreter_id": string;
+                    "interpreter_name": string | null;
+                    "paid_at": string | null;
+                    "paid_reference": string | null;
+                    "payout_details_snapshot": Json | null;
+                    "request_code": string;
+                    "service_title": string;
+                    "starts_at": string;
+                    "status": string;
+                };
+                ComputedFields: never;
+                Relationships: [
+                ];
+            };
+            "proof_queue": {
+                Row: {
+                    "amount_base_aoa": number;
+                    "amount_total_aoa": number;
+                    "context": string;
+                    "description": string;
+                    "due_at": string;
+                    "file_path": string;
+                    "id": string;
+                    "intent_id": string;
+                    "intent_status": string;
+                    "payer_name": string | null;
+                    "reference": string;
+                    "rejection_reason": string | null;
+                    "review_status": string;
+                    "reviewed_at": string | null;
+                    "reviewed_by_name": string | null;
+                    "subject_cancelled_at": string | null;
+                    "tax_aoa": number;
+                    "uploaded_at": string;
+                    "uploaded_by_name": string | null;
+                };
+                ComputedFields: never;
+                Relationships: [
+                    {
+                        foreignKeyName: "payment_proofs_intent_id_fkey";
+                        columns: [
+                            "intent_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "payment_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "payment_proofs_intent_id_fkey";
+                        columns: [
+                            "intent_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "payment_intents";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "refund_details": {
+                Row: {
+                    "amount_aoa": number;
+                    "amount_total_aoa": number;
+                    "assignment_id": string | null;
+                    "created_at": string;
+                    "description": string;
+                    "id": string;
+                    "intent_id": string;
+                    "note": string | null;
+                    "paid_at": string | null;
+                    "paid_reference": string | null;
+                    "payer_name": string | null;
+                    "payment_reference": string;
+                    "reason_code": string;
+                    "status": string;
+                };
+                ComputedFields: never;
+                Relationships: [
+                    {
+                        foreignKeyName: "refunds_intent_id_fkey";
+                        columns: [
+                            "intent_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "payment_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "refunds_intent_id_fkey";
+                        columns: [
+                            "intent_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "payment_intents";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
         };
         Functions: {
-            [_ in never]: never;
+            "can_pay_intent": {
+                Args: {
+                    "p_account": string;
+                    "p_intent": Omit<Database["billing"]['Tables']["payment_intents"]['Row'], Database["billing"]['Tables']["payment_intents"]['ComputedFields']>;
+                };
+                Returns: boolean;
+            };
+            "can_view_intent": {
+                Args: {
+                    "p_account": string;
+                    "p_intent": Omit<Database["billing"]['Tables']["payment_intents"]['Row'], Database["billing"]['Tables']["payment_intents"]['ComputedFields']>;
+                };
+                Returns: boolean;
+            };
+            "cancel_intent_for_subject": {
+                Args: {
+                    "p_context": string;
+                    "p_policy"?: Json;
+                    "p_reason_code": string;
+                    "p_refund_aoa": number;
+                    "p_subject": string;
+                };
+                Returns: {
+                    "amount_base_aoa": number;
+                    "amount_total_aoa": number;
+                    "bank_snapshot": NonNullable<Json>;
+                    "config_version_id": string;
+                    "confirmed_at": string | null;
+                    "confirmed_by": string | null;
+                    "context": string;
+                    "created_at": string;
+                    "description": string;
+                    "due_at": string;
+                    "expiring_warned_at": string | null;
+                    "id": string;
+                    "organization_id": string | null;
+                    "payer_account": string;
+                    "reference": string;
+                    "refund_due_on_confirm_aoa": number | null;
+                    "refund_due_reason_code": string | null;
+                    "status": string;
+                    "subject_cancelled_at": string | null;
+                    "subject_id": string;
+                    "tax_aoa": number;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "payment_intents";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "cancel_payout": {
+                Args: {
+                    "p_assignment": string;
+                    "p_reason": string;
+                };
+                Returns: undefined;
+            };
+            "create_intent": {
+                Args: {
+                    "p_context": string;
+                    "p_description": string;
+                    "p_due_at": string;
+                    "p_organization": string;
+                    "p_payer": string;
+                    "p_price": number;
+                    "p_subject": string;
+                    "p_version": string;
+                };
+                Returns: {
+                    "amount_base_aoa": number;
+                    "amount_total_aoa": number;
+                    "bank_snapshot": NonNullable<Json>;
+                    "config_version_id": string;
+                    "confirmed_at": string | null;
+                    "confirmed_by": string | null;
+                    "context": string;
+                    "created_at": string;
+                    "description": string;
+                    "due_at": string;
+                    "expiring_warned_at": string | null;
+                    "id": string;
+                    "organization_id": string | null;
+                    "payer_account": string;
+                    "reference": string;
+                    "refund_due_on_confirm_aoa": number | null;
+                    "refund_due_reason_code": string | null;
+                    "status": string;
+                    "subject_cancelled_at": string | null;
+                    "subject_id": string;
+                    "tax_aoa": number;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "payment_intents";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "create_manual_refund": {
+                Args: {
+                    "p_actor": string;
+                    "p_amount": number;
+                    "p_intent": string;
+                    "p_note": string;
+                };
+                Returns: {
+                    "amount_aoa": number;
+                    "assignment_id": string | null;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "id": string;
+                    "intent_id": string;
+                    "note": string | null;
+                    "paid_at": string | null;
+                    "paid_by": string | null;
+                    "paid_reference": string | null;
+                    "policy_snapshot": Json | null;
+                    "reason_code": string;
+                    "status": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "refunds";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "create_refund": {
+                Args: {
+                    "p_actor": string;
+                    "p_amount": number;
+                    "p_assignment"?: string;
+                    "p_intent": string;
+                    "p_note"?: string;
+                    "p_policy"?: Json;
+                    "p_reason_code": string;
+                };
+                Returns: {
+                    "amount_aoa": number;
+                    "assignment_id": string | null;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "id": string;
+                    "intent_id": string;
+                    "note": string | null;
+                    "paid_at": string | null;
+                    "paid_by": string | null;
+                    "paid_reference": string | null;
+                    "policy_snapshot": Json | null;
+                    "reason_code": string;
+                    "status": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "refunds";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "expire_intents": {
+                Args: Record<PropertyKey, never>;
+                Returns: number;
+            };
+            "issue_receipt": {
+                Args: {
+                    "p_intent": Omit<Database["billing"]['Tables']["payment_intents"]['Row'], Database["billing"]['Tables']["payment_intents"]['ComputedFields']>;
+                    "p_kind": string;
+                    "p_refund"?: Omit<Database["billing"]['Tables']["refunds"]['Row'], Database["billing"]['Tables']["refunds"]['ComputedFields']>;
+                };
+                Returns: {
+                    "amount_aoa": number;
+                    "id": string;
+                    "intent_id": string;
+                    "issued_at": string;
+                    "issued_to_name": string;
+                    "kind": string;
+                    "number": string;
+                    "payload": NonNullable<Json>;
+                    "refund_id": string | null;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "receipts";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "managed_interpreter_share": {
+                Args: {
+                    "p_price": number;
+                    "p_travel_fee": number;
+                    "p_version": string;
+                };
+                Returns: number;
+            };
+            "mark_payout_paid": {
+                Args: {
+                    "p_actor": string;
+                    "p_payout": string;
+                    "p_reference": string;
+                };
+                Returns: {
+                    "amount_aoa": number;
+                    "assignment_id": string;
+                    "cancelled_reason": string | null;
+                    "created_at": string;
+                    "id": string;
+                    "interpreter_id": string;
+                    "paid_at": string | null;
+                    "paid_by": string | null;
+                    "paid_reference": string | null;
+                    "payout_details_snapshot": Json | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "payouts";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "mark_refund_paid": {
+                Args: {
+                    "p_actor": string;
+                    "p_reference": string;
+                    "p_refund": string;
+                };
+                Returns: {
+                    "amount_aoa": number;
+                    "assignment_id": string | null;
+                    "created_at": string;
+                    "created_by": string | null;
+                    "id": string;
+                    "intent_id": string;
+                    "note": string | null;
+                    "paid_at": string | null;
+                    "paid_by": string | null;
+                    "paid_reference": string | null;
+                    "policy_snapshot": Json | null;
+                    "reason_code": string;
+                    "status": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "refunds";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "notify_finance": {
+                Args: {
+                    "p_intent": Omit<Database["billing"]['Tables']["payment_intents"]['Row'], Database["billing"]['Tables']["payment_intents"]['ComputedFields']>;
+                    "p_kind": string;
+                };
+                Returns: undefined;
+            };
+            "notify_payer": {
+                Args: {
+                    "p_extra"?: Json;
+                    "p_intent": Omit<Database["billing"]['Tables']["payment_intents"]['Row'], Database["billing"]['Tables']["payment_intents"]['ComputedFields']>;
+                    "p_kind": string;
+                };
+                Returns: undefined;
+            };
+            "on_subject_event": {
+                Args: {
+                    "p_event": string;
+                    "p_intent": Omit<Database["billing"]['Tables']["payment_intents"]['Row'], Database["billing"]['Tables']["payment_intents"]['ComputedFields']>;
+                };
+                Returns: undefined;
+            };
+            "queue_payout": {
+                Args: {
+                    "p_amount": number;
+                    "p_assignment": string;
+                    "p_interpreter": string;
+                };
+                Returns: {
+                    "amount_aoa": number;
+                    "assignment_id": string;
+                    "cancelled_reason": string | null;
+                    "created_at": string;
+                    "id": string;
+                    "interpreter_id": string;
+                    "paid_at": string | null;
+                    "paid_by": string | null;
+                    "paid_reference": string | null;
+                    "payout_details_snapshot": Json | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "payouts";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "receipt_for": {
+                Args: {
+                    "p_actor": string;
+                    "p_receipt": string;
+                };
+                Returns: {
+                    "amount_aoa": number;
+                    "id": string;
+                    "intent_id": string;
+                    "issued_at": string;
+                    "issued_to_name": string;
+                    "kind": string;
+                    "number": string;
+                    "payload": NonNullable<Json>;
+                    "refund_id": string | null;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "receipts";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "review_proof": {
+                Args: {
+                    "p_accept": boolean;
+                    "p_actor": string;
+                    "p_proof": string;
+                    "p_reason"?: string;
+                };
+                Returns: {
+                    "amount_base_aoa": number;
+                    "amount_total_aoa": number;
+                    "bank_snapshot": NonNullable<Json>;
+                    "config_version_id": string;
+                    "confirmed_at": string | null;
+                    "confirmed_by": string | null;
+                    "context": string;
+                    "created_at": string;
+                    "description": string;
+                    "due_at": string;
+                    "expiring_warned_at": string | null;
+                    "id": string;
+                    "organization_id": string | null;
+                    "payer_account": string;
+                    "reference": string;
+                    "refund_due_on_confirm_aoa": number | null;
+                    "refund_due_reason_code": string | null;
+                    "status": string;
+                    "subject_cancelled_at": string | null;
+                    "subject_id": string;
+                    "tax_aoa": number;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "payment_intents";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "split_amount": {
+                Args: {
+                    "p_price": number;
+                    "p_version": string;
+                };
+                Returns: Record<string, unknown>;
+            };
+            "submit_proof": {
+                Args: {
+                    "p_actor": string;
+                    "p_file_path": string;
+                    "p_intent": string;
+                };
+                Returns: {
+                    "file_path": string;
+                    "id": string;
+                    "intent_id": string;
+                    "rejection_reason": string | null;
+                    "review_status": string;
+                    "reviewed_at": string | null;
+                    "reviewed_by": string | null;
+                    "uploaded_at": string;
+                    "uploaded_by": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "payment_proofs";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
         };
         Enums: {
             [_ in never]: never;
@@ -4800,6 +5675,46 @@ export type Database = {
                     }
                 ];
             };
+            "interpreter_payout_details": {
+                Row: {
+                    "account_holder": string;
+                    "bank_name": string;
+                    "created_at": string;
+                    "iban": string;
+                    "interpreter_id": string;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "account_holder": string;
+                    "bank_name": string;
+                    "created_at"?: string;
+                    "iban": string;
+                    "interpreter_id": string;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "account_holder"?: string;
+                    "bank_name"?: string;
+                    "created_at"?: string;
+                    "iban"?: string;
+                    "interpreter_id"?: string;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "interpreter_payout_details_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: true;
+                        referencedRelation: "interpreter_profiles";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    }
+                ];
+            };
             "interpreter_profiles": {
                 Row: {
                     "accepts_negotiation": boolean;
@@ -5583,6 +6498,43 @@ export type Database = {
                     }
                 ];
             };
+            "my_payout_details": {
+                Row: {
+                    "account_holder": string;
+                    "bank_name": string;
+                    "iban": string;
+                    "interpreter_id": string;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "account_holder"?: string | null;
+                    "bank_name"?: string | null;
+                    "iban"?: string | null;
+                    "interpreter_id"?: string | null;
+                    "updated_at"?: string | null;
+                };
+                Update: {
+                    "account_holder"?: string | null;
+                    "bank_name"?: string | null;
+                    "iban"?: string | null;
+                    "interpreter_id"?: string | null;
+                    "updated_at"?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "interpreter_payout_details_interpreter_id_fkey";
+                        columns: [
+                            "interpreter_id"
+                        ];
+                        isOneToOne: true;
+                        referencedRelation: "interpreter_profiles";
+                        referencedColumns: [
+                            "account_id"
+                        ];
+                    }
+                ];
+            };
             "organization_directory": {
                 Row: {
                     "address": string | null;
@@ -6193,6 +7145,28 @@ export type Database = {
                     "p_account": string;
                 };
                 Returns: (string)[];
+            };
+            "save_payout_details": {
+                Args: {
+                    "p_actor": string;
+                    "p_bank": string;
+                    "p_holder": string;
+                    "p_iban": string;
+                };
+                Returns: {
+                    "account_holder": string;
+                    "bank_name": string;
+                    "created_at": string;
+                    "iban": string;
+                    "interpreter_id": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "interpreter_payout_details";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
             };
             "set_active_role": {
                 Args: {

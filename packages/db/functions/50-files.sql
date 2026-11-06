@@ -1,6 +1,7 @@
 -- Who may upload or read a private file (api.md §6). The API asks this before signing a URL; the
 -- same function decides writing and reading, per purpose. Each purpose's function answers false
--- until the step that owns it fills it in (payments H7, verification H10, chat H4, support H15).
+-- until the step that owns it fills it in (payments H10 in 99c-billing.sql, verification H12, chat,
+-- support H15).
 -- EXECUTE for service_role only.
 
 CREATE OR REPLACE FUNCTION util.can_access_payment_proof(p_account uuid, p_subject uuid, p_mode text) RETURNS boolean

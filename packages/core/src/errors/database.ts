@@ -42,6 +42,8 @@ export const CONSTRAINT_CODES: Readonly<Record<string, ErrorCode>> = {
   organizations_nif_key: 'NIF_IN_USE',
   disputes_one_open: 'DISPUTE_OPEN',
   reviews_one_per_side: 'REVIEW_EXISTS',
+  payment_intents_one_live: 'PAYMENT_ALREADY_PENDING',
+  payment_proofs_one_pending: 'PROOF_ALREADY_PENDING',
 }
 
 /** Unique constraints whose duplicate is a form error: the field and what the person reads. */
