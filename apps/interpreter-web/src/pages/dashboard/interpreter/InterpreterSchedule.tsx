@@ -1,145 +1,113 @@
-import { useState } from "react";
-import { PageHeader } from "@portal-dos-interpretes/ui/components/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@portal-dos-interpretes/ui/components/card";
-import { Button } from "@portal-dos-interpretes/ui/components/button";
-import { Calendar } from "@portal-dos-interpretes/ui/components/calendar";
-import { Badge } from "@portal-dos-interpretes/ui/components/badge";
-import { Clock, MapPin, Video, User } from "lucide-react";
-import { format } from "date-fns";
-import { pt } from "date-fns/locale";
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { QueryError } from '@portal-dos-interpretes/features/components/QueryStates'
+import type { MyAssignmentRow } from '@portal-dos-interpretes/features/requests/data'
+import { durationText } from '@portal-dos-interpretes/features/requests/RequestParts'
+import { useMyAssignments } from '@portal-dos-interpretes/features/requests/RequestsContext'
+import { formatDate, formatDateTime, formatTime, luandaDay, MODALITY_TEXT } from '@portal-dos-interpretes/i18n'
+import { Button } from '@portal-dos-interpretes/ui/components/button'
+import { Calendar } from '@portal-dos-interpretes/ui/components/calendar'
+import { Card, CardContent, CardHeader, CardTitle } from '@portal-dos-interpretes/ui/components/card'
+import { PageHeader } from '@portal-dos-interpretes/ui/components/page-header'
+import { Skeleton } from '@portal-dos-interpretes/ui/components/skeleton'
+import { StatusBadge } from '@portal-dos-interpretes/ui/components/status-badge'
+import { CheckCircle2, Clock, MapPin, Video } from 'lucide-react'
 
-const scheduledServices = [
-  { id: "srv-1", service: "Audiência Jurídica", date: new Date(2026, 0, 18), time: "09:00", duration: "4h", location: "Tribunal de Luanda", modality: "presencial", requester: "Maria Costa" },
-  { id: "srv-2", service: "Conferência Médica", date: new Date(2026, 0, 19), time: "14:00", duration: "3h", location: "Zoom", modality: "online", requester: "Hospital ABC" },
-  { id: "srv-3", service: "Reunião Empresarial", date: new Date(2026, 0, 22), time: "10:00", duration: "2h", location: "Sede Empresa XYZ", modality: "presencial", requester: "Empresa XYZ" },
-  { id: "srv-4", service: "Consulta Médica", date: new Date(2026, 0, 25), time: "08:30", duration: "1h30", location: "Clínica Central", modality: "presencial", requester: "Dr. António" },
-];
+// interpreter-web /schedule (service-lifecycle.md "Ecrãs"): the accepted services in a calendar
+// and a list, with the ones waiting to be marked as done first. Days are Luanda days.
+
+const ON_SCHEDULE = ['accepted', 'delivered', 'disputed']
+
+function ServiceLine({ row }: { row: MyAssignmentRow }) {
+  const Icon = row.modality === 'online' ? Video : MapPin
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
+      <div className="flex items-start gap-3">
+        <Icon className="mt-0.5 h-5 w-5 text-primary" aria-hidden="true" />
+        <div>
+          <p className="font-medium">{row.service_title}</p>
+          <p className="text-sm text-muted-foreground">
+            {formatDateTime(row.starts_at ?? '')} · {durationText(row.duration_minutes)} · {MODALITY_TEXT[row.modality as keyof typeof MODALITY_TEXT]}{row.city ? ` · ${row.city}` : ''}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <StatusBadge kind="assignment" status={row.status ?? ''} />
+        <Button variant="outline" size="sm" asChild><Link to={`/requests/${row.request_id}`}>Ver pedido</Link></Button>
+      </div>
+    </li>
+  )
+}
 
 export default function InterpreterSchedule() {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const mine = useMyAssignments()
+  const [day, setDay] = useState<Date | undefined>(new Date())
 
-  const servicesOnDate = selectedDate
-    ? scheduledServices.filter(
-        (s) => format(s.date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
-      )
-    : [];
+  if (mine.isPending) return <Skeleton className="h-96 w-full" />
+  if (mine.isError) return <QueryError error={mine.error} onRetry={() => void mine.refetch()} />
 
-  const datesWithServices = scheduledServices.map((s) => format(s.date, "yyyy-MM-dd"));
+  const now = Date.now()
+  const services = (mine.data ?? []).filter((row) => ON_SCHEDULE.includes(row.status ?? ''))
+  const toMark = services.filter((row) => row.status === 'accepted' && Date.parse(row.ends_at ?? '') <= now)
+  const upcoming = services.filter((row) => Date.parse(row.ends_at ?? '') > now)
+  const days = new Set(services.map((row) => luandaDay(row.starts_at ?? '')))
+  const onDay = day ? services.filter((row) => luandaDay(row.starts_at ?? '') === luandaDay(day)) : []
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Minha Agenda"
-        description="Visualize e gerencie os seus serviços agendados"
-      />
+      <PageHeader title="Agenda" description="Os serviços que aceitaste, por dia." />
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Calendar */}
-        <Card className="lg:col-span-1">
+      {toMark.length > 0 && (
+        <Card className="border-warning/50">
           <CardHeader>
-            <CardTitle>Calendário</CardTitle>
+            <CardTitle className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-warning" aria-hidden="true" />Por marcar como feitos</CardTitle>
           </CardHeader>
           <CardContent>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              className="rounded-md border"
-              modifiers={{
-                hasService: (date) => datesWithServices.includes(format(date, "yyyy-MM-dd")),
-              }}
-              modifiersStyles={{
-                hasService: { backgroundColor: "hsl(var(--primary) / 0.1)", fontWeight: "bold" },
-              }}
-            />
+            <p className="mb-3 text-sm text-muted-foreground">Estes serviços já terminaram. Marca-os como feitos para o solicitante confirmar.</p>
+            <ul className="space-y-3">{toMark.map((row) => <ServiceLine key={row.id} row={row} />)}</ul>
           </CardContent>
         </Card>
+      )}
 
-        {/* Services for Selected Date */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>
-              {selectedDate
-                ? format(selectedDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: pt })
-                : "Selecione uma data"}
-            </CardTitle>
-          </CardHeader>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card>
+          <CardHeader><CardTitle>Calendário</CardTitle></CardHeader>
           <CardContent>
-            {servicesOnDate.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Nenhum serviço agendado para esta data</p>
+            <Calendar mode="single" selected={day} onSelect={setDay} className="rounded-md border"
+              modifiers={{ hasService: (date) => days.has(luandaDay(date)) }}
+              modifiersClassNames={{ hasService: 'bg-primary/10 font-semibold' }} />
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-2">
+          <CardHeader><CardTitle>{day ? formatDate(day) : 'Escolhe um dia'}</CardTitle></CardHeader>
+          <CardContent>
+            {onDay.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground">
+                <Clock className="mx-auto mb-3 h-10 w-10 opacity-50" aria-hidden="true" />
+                <p>Nenhum serviço neste dia.</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {servicesOnDate.map((service) => (
-                  <div key={service.id} className="flex items-start gap-4 p-4 rounded-lg border">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                      {service.modality === "online" ? (
-                        <Video className="h-6 w-6 text-primary" />
-                      ) : (
-                        <MapPin className="h-6 w-6 text-primary" />
-                      )}
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium">{service.service}</h4>
-                        <Badge variant="outline">{service.modality}</Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          {service.time} ({service.duration})
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <User className="h-4 w-4" />
-                          {service.requester}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{service.location}</p>
-                    </div>
-                  </div>
+              <ul className="space-y-3">
+                {onDay.map((row) => (
+                  <li key={row.id} className="flex items-center justify-between gap-3 rounded-lg border p-3 text-sm">
+                    <span><span className="font-medium tabular-nums">{formatTime(row.starts_at ?? '')}</span> {row.service_title}</span>
+                    <Button variant="ghost" size="sm" asChild><Link to={`/requests/${row.request_id}`}>Abrir</Link></Button>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </CardContent>
         </Card>
-
-        {/* Upcoming Services List */}
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Próximos Serviços</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {scheduledServices.map((service) => (
-                <div key={service.id} className="flex items-center justify-between p-4 rounded-lg border">
-                  <div className="flex items-center gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">{format(service.date, "d")}</div>
-                      <div className="text-xs text-muted-foreground uppercase">
-                        {format(service.date, "MMM", { locale: pt })}
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="font-medium">{service.service}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {service.time} • {service.location}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={service.modality === "online" ? "secondary" : "outline"}>
-                      {service.modality}
-                    </Badge>
-                    <Button variant="outline" size="sm">Ver Detalhes</Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
+
+      <Card>
+        <CardHeader><CardTitle>Próximos serviços</CardTitle></CardHeader>
+        <CardContent>
+          {upcoming.length === 0
+            ? <p className="text-sm text-muted-foreground">Ainda não tens serviços marcados. Os pedidos que aceitares aparecem aqui.</p>
+            : <ul className="space-y-3">{upcoming.map((row) => <ServiceLine key={row.id} row={row} />)}</ul>}
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }

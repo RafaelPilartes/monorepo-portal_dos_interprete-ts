@@ -47,6 +47,8 @@ const bodies = {
   proposal: z.object({ amount_aoa: amountAoaSchema }),
   application: z.object({ message: z.string().trim().max(1000).optional() }),
   select: z.object({ assignment_id: uuid }),
+  reason: z.object({ reason: z.string().trim().max(2000) }),
+  resolve: z.object({ resolution: z.enum(['completed', 'cancelled']), notes: z.string().trim().max(4000) }),
 }
 const idParam = z.object({ id: uuid })
 
@@ -116,4 +118,29 @@ export function registerRequestRoutes(server: FastifyInstance, deps: { db: Datab
     callSql(deps.db, request, 'SELECT * FROM booking.decline_assignment($1, $2, $3)', [
       actor(request), idParam.parse(request.params).id, bodies.decline.parse(request.body).reason,
     ]))
+
+  // The service lifecycle (service-lifecycle.md): R-LIFE-01 to R-LIFE-06.
+  server.post('/requests/:id/cancel', async (request) =>
+    callSql(deps.db, request, 'SELECT * FROM booking.cancel_request($1, $2, $3)', [
+      actor(request), idParam.parse(request.params).id, bodies.reason.parse(request.body).reason,
+    ]))
+  server.post('/assignments/:id/cancel', async (request) =>
+    callSql(deps.db, request, 'SELECT * FROM booking.cancel_assignment($1, $2, $3)', [
+      actor(request), idParam.parse(request.params).id, bodies.reason.parse(request.body).reason,
+    ]))
+  server.post('/assignments/:id/deliver', async (request) =>
+    callSql(deps.db, request, 'SELECT * FROM booking.mark_delivered($1, $2)', [actor(request), idParam.parse(request.params).id]))
+  server.post('/assignments/:id/confirm', async (request) =>
+    callSql(deps.db, request, 'SELECT * FROM booking.confirm_delivery($1, $2)', [actor(request), idParam.parse(request.params).id]))
+  server.post('/assignments/:id/disputes', async (request, reply) =>
+    reply.status(201).send(await callSql(deps.db, request, 'SELECT * FROM booking.open_dispute($1, $2, $3)', [
+      actor(request), idParam.parse(request.params).id, bodies.reason.parse(request.body).reason,
+    ])))
+  // The refund decision of the managed request arrives with H11 (R-LIFE-06).
+  server.post('/admin/disputes/:id/resolve', async (request) => {
+    const body = bodies.resolve.parse(request.body)
+    return callSql(deps.db, request, 'SELECT * FROM booking.resolve_dispute($1, $2, $3, $4)', [
+      actor(request), idParam.parse(request.params).id, body.resolution, body.notes,
+    ])
+  })
 }

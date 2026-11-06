@@ -172,3 +172,26 @@ describe('open request through the API (requests-open.md)', () => {
   })
 })
 
+
+describe('service lifecycle through the API (service-lifecycle.md)', () => {
+  it('done only after the end; a dispute only after the start; a cancellation needs a reason; only a moderator resolves', async () => {
+    const created = await app.inject({ method: 'POST', url: '/requests', headers: as(requester), payload: request({ starts_at: new Date(Date.now() + 9 * 24 * 3600_000).toISOString() }) })
+    const assignment = (await owner.query<{ id: string }>('SELECT id FROM booking.request_assignments WHERE request_id = $1', [created.json().id])).rows[0]!
+    await app.inject({ method: 'POST', url: `/assignments/${assignment.id}/accept`, headers: as(interpreter) })
+
+    const early = await app.inject({ method: 'POST', url: `/assignments/${assignment.id}/deliver`, headers: as(interpreter) })
+    expect(early.statusCode).toBe(409)
+    expect(early.json().error).toMatchObject({ code: 'NOT_FINISHED_YET', message: 'Só podes marcar como feito depois da hora de fim do serviço.' })
+    const dispute = await app.inject({ method: 'POST', url: `/assignments/${assignment.id}/disputes`, headers: as(requester), payload: { reason: 'Ainda não começou' } })
+    expect(dispute.json().error.code).toBe('STATE_CHANGED')
+    const resolve = await app.inject({ method: 'POST', url: `/admin/disputes/${assignment.id}/resolve`, headers: as(requester), payload: { resolution: 'completed', notes: 'Decido eu' } })
+    expect(resolve.json().error.code).toBe('FORBIDDEN')
+
+    const noReason = await app.inject({ method: 'POST', url: `/requests/${created.json().id}/cancel`, headers: as(requester), payload: { reason: '' } })
+    expect(noReason.json().error).toMatchObject({ code: 'VALIDATION_FAILED', details: { reason: 'Preenche este campo.' } })
+    const cancelled = await app.inject({ method: 'POST', url: `/requests/${created.json().id}/cancel`, headers: as(requester), payload: { reason: 'Mudança de planos' } })
+    expect(cancelled.json()).toMatchObject({ status: 'cancelled', cancelled_by_role: 'requester' })
+    const line = await owner.query('SELECT status, late_cancellation FROM booking.request_assignments WHERE id = $1', [assignment.id])
+    expect(line.rows[0]).toEqual({ status: 'cancelled', late_cancellation: false })
+  })
+})

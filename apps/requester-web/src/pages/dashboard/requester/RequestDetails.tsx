@@ -3,7 +3,8 @@ import { Link, useLocation, useParams } from 'react-router-dom'
 import { QueryError } from '@portal-dos-interpretes/features/components/QueryStates'
 import { useListing } from '@portal-dos-interpretes/features/directory/DirectoryContext'
 import { priceText, RequestChat, RequestFacts, RequestTimeline } from '@portal-dos-interpretes/features/requests/RequestParts'
-import { useRequestAction, useRequestDetail } from '@portal-dos-interpretes/features/requests/RequestsContext'
+import { DeliveredActions, DisputeList, LATE_WARNING, OpenDispute, ReasonAction } from '@portal-dos-interpretes/features/requests/Lifecycle'
+import { useRequestAction, useRequestDetail, useRequestDisputes } from '@portal-dos-interpretes/features/requests/RequestsContext'
 import { formatDateTime, REQUEST_KIND_LABELS } from '@portal-dos-interpretes/i18n'
 import { Alert, AlertDescription } from '@portal-dos-interpretes/ui/components/alert'
 import { Button } from '@portal-dos-interpretes/ui/components/button'
@@ -18,7 +19,11 @@ import { ArrowLeft, CheckCircle2 } from 'lucide-react'
 // requester-web /requests/:id (requests-core.md, requests-direct.md): the request, its interpreters
 // with their state and price, the chat with each, the timeline. Actions while it waits for
 // interpreters: invite another (when there is a free place), go on with fewer, change the link.
-// "Cancelar pedido" arrives with the service lifecycle (H8).
+// The lifecycle (service-lifecycle.md): cancel the request (warned when late), confirm or dispute
+// a delivered service, dispute one that started.
+
+/** The statuses in which the request can no longer be cancelled (R-LIFE-01). */
+const NOT_CANCELLABLE = ['delivered', 'completed', 'disputed', 'cancelled', 'expired']
 
 type Detail = NonNullable<ReturnType<typeof useRequestDetail>['data']>
 
@@ -28,6 +33,9 @@ function assignmentLine(row: Detail['assignments'][number]): string {
     case 'invited': return `Convidado, responde até ${formatDateTime(row.invite_expires_at ?? '')}`
     case 'declined': return `Recusou${row.decline_reason ? `: ${row.decline_reason}` : ''}`
     case 'expired': return 'O convite expirou'
+    case 'cancelled': return `Cancelado${row.cancel_reason ? `: ${row.cancel_reason}` : ''}`
+    case 'delivered': return `Marcou como feito a ${formatDateTime(row.delivered_at ?? '')}`
+    case 'completed': return row.completed_via === 'auto' ? 'Confirmado automaticamente' : row.completed_via === 'staff' ? 'Confirmado pela equipa' : 'Confirmado'
     default: return ''
   }
 }
@@ -71,6 +79,8 @@ export default function RequestDetails() {
   const location = useLocation()
   const created = (location.state as { created?: string } | null)?.created
   const detail = useRequestDetail(id)
+  const disputes = useRequestDisputes(id)
+  const cancel = useRequestAction((repository, reason: string) => repository.cancelRequest(id, reason), 'Pedido cancelado. Os intérpretes foram avisados.')
   const reduce = useRequestAction((repository, needed: number) => repository.reduce(id, needed), 'Pedido actualizado.')
   // R-OPN-04: an overlap here is the candidate's other service, not the requester's.
   const select = useRequestAction((repository, assignmentId: string) => repository.select(id, assignmentId), 'Intérprete escolhido.',
@@ -92,6 +102,7 @@ export default function RequestDetails() {
   const pending = assignments.filter((row) => row.status === 'invited').length
   const hasRoom = accepted + pending < (request.interpreters_needed ?? 0)
   const manage = request.can_manage === true
+  const started = Date.parse(request.starts_at ?? '') <= Date.now()
 
   return (
     <div className="space-y-6">
@@ -104,8 +115,19 @@ export default function RequestDetails() {
           <p className="font-mono text-sm text-muted-foreground">{request.code} · {REQUEST_KIND_LABELS[request.kind as keyof typeof REQUEST_KIND_LABELS]}</p>
           <h1 className="text-2xl font-semibold">{request.service_title}</h1>
         </div>
-        <StatusBadge kind="request" status={request.status ?? ''} className="text-sm" />
+        <div className="flex items-center gap-3">
+          <StatusBadge kind="request" status={request.status ?? ''} className="text-sm" />
+          {manage && !NOT_CANCELLABLE.includes(request.status ?? '') && (
+            <ReasonAction label="Cancelar pedido" title="Cancelar o pedido" confirmLabel="Cancelar o pedido" variant="destructive" pending={cancel.isPending}
+              description="Todos os intérpretes deste pedido são avisados. Isto não se desfaz."
+              warning={request.cancel_is_late && accepted > 0 ? LATE_WARNING : null}
+              onConfirm={(reason, close) => cancel.mutate(reason, { onSuccess: close })} />
+          )}
+        </div>
       </div>
+      {request.status === 'cancelled' && request.cancel_reason && (
+        <p className="text-sm text-muted-foreground">Cancelado{request.cancelled_by_role === 'staff' ? ' pela equipa' : ''}: {request.cancel_reason}</p>
+      )}
       {waiting && (
         <p className="text-sm text-muted-foreground">
           {accepted} de {request.interpreters_needed} {request.interpreters_needed === 1 ? 'intérprete aceite' : 'intérpretes aceites'}.
@@ -122,9 +144,11 @@ export default function RequestDetails() {
               <ul className="divide-y">
                 {assignments.map((row) => (
                   <li key={row.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
-                    <div>
+                    <div className="space-y-2">
                       <Link to={`/interpreters/${row.interpreter_slug}`} className="font-medium hover:underline">{row.interpreter_name}</Link>
                       {assignmentLine(row) && <p className="text-muted-foreground">{assignmentLine(row)}</p>}
+                      {manage && row.status === 'delivered' && <DeliveredActions row={row} />}
+                      {manage && row.status === 'accepted' && started && <OpenDispute assignmentId={row.id ?? ''} other="o intérprete" />}
                     </div>
                     <div className="flex items-center gap-3">
                       {manage && waiting && row.status === 'applied' && request.open_mode === 'requester_chooses' && (
@@ -153,6 +177,12 @@ export default function RequestDetails() {
               {manage && request.modality === 'online' && accepted === 0 && waiting && <MeetingLink detail={detail.data} />}
             </CardContent>
           </Card>
+          {(disputes.data?.length ?? 0) > 0 && (
+            <Card>
+              <CardHeader><CardTitle>Disputas</CardTitle></CardHeader>
+              <CardContent><DisputeList rows={disputes.data ?? []} /></CardContent>
+            </Card>
+          )}
           {assignments.filter((row) => row.thread_id).map((row) => (
             <RequestChat key={row.id} threadId={row.thread_id ?? ''} title={`Conversa com ${row.interpreter_name ?? 'o intérprete'}`}
               negotiation={manage ? { role: 'requester', assignmentStatus: row.status ?? '', offeredPrice: row.offered_price_aoa,

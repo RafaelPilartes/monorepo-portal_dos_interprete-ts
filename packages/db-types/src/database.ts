@@ -148,6 +148,114 @@ export type Database = {
     };
     "booking": {
         Tables: {
+            "disputes": {
+                Row: {
+                    "assignment_id": string;
+                    "created_at": string;
+                    "id": string;
+                    "notes": string | null;
+                    "opened_by": string;
+                    "opened_by_role": string;
+                    "reason": string;
+                    "refund_decision": string | null;
+                    "request_id": string;
+                    "resolution": string | null;
+                    "resolved_at": string | null;
+                    "resolved_by": string | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "assignment_id": string;
+                    "created_at"?: string;
+                    "id"?: string;
+                    "notes"?: string | null;
+                    "opened_by": string;
+                    "opened_by_role": string;
+                    "reason": string;
+                    "refund_decision"?: string | null;
+                    "request_id": string;
+                    "resolution"?: string | null;
+                    "resolved_at"?: string | null;
+                    "resolved_by"?: string | null;
+                    "status"?: string;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "assignment_id"?: string;
+                    "created_at"?: string;
+                    "id"?: string;
+                    "notes"?: string | null;
+                    "opened_by"?: string;
+                    "opened_by_role"?: string;
+                    "reason"?: string;
+                    "refund_decision"?: string | null;
+                    "request_id"?: string;
+                    "resolution"?: string | null;
+                    "resolved_at"?: string | null;
+                    "resolved_by"?: string | null;
+                    "status"?: string;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "disputes_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "assignment_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "disputes_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "disputes_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "disputes_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "disputes_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "requests";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
             "messages": {
                 Row: {
                     "attachment_path": string | null;
@@ -354,8 +462,9 @@ export type Database = {
                     "responded_at": string | null;
                     "status": string;
                     "updated_at": string;
+                    "confirmation_deadline": string | null;
                 };
-                ComputedFields: never;
+                ComputedFields: "confirmation_deadline";
                 Insert: {
                     "agreed_price_aoa"?: number | null;
                     "agreed_travel_fee_aoa"?: number | null;
@@ -597,8 +706,9 @@ export type Database = {
                     "status": string;
                     "understaffed_warned_at": string | null;
                     "updated_at": string;
+                    "is_late": boolean | null;
                 };
-                ComputedFields: never;
+                ComputedFields: "is_late";
                 Insert: {
                     "address"?: string | null;
                     "approved_at"?: string | null;
@@ -805,16 +915,23 @@ export type Database = {
                     "agreed_travel_fee_aoa": number | null;
                     "application_message": string | null;
                     "cancel_reason": string | null;
+                    "cancelled_by_role": string | null;
+                    "completed_at": string | null;
+                    "completed_via": string | null;
+                    "confirm_by": string | null;
                     "created_at": string;
                     "decline_reason": string | null;
+                    "delivered_at": string | null;
                     "id": string;
                     "interpreter_avatar_path": string | null;
                     "interpreter_id": string;
                     "interpreter_name": string;
                     "interpreter_slug": string;
                     "invite_expires_at": string | null;
+                    "late_cancellation": boolean;
                     "offered_price_aoa": number | null;
                     "offered_travel_fee_aoa": number | null;
+                    "open_dispute_id": string | null;
                     "origin": string;
                     "request_id": string;
                     "responded_at": string | null;
@@ -847,6 +964,80 @@ export type Database = {
                     }
                 ];
             };
+            "dispute_details": {
+                Row: {
+                    "assignment_id": string;
+                    "created_at": string;
+                    "id": string;
+                    "notes": string | null;
+                    "opened_by": string;
+                    "opened_by_name": string | null;
+                    "opened_by_role": string;
+                    "reason": string;
+                    "request_id": string;
+                    "resolution": string | null;
+                    "resolved_at": string | null;
+                    "status": string;
+                };
+                ComputedFields: never;
+                Relationships: [
+                    {
+                        foreignKeyName: "disputes_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "assignment_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "disputes_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "disputes_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "disputes_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "disputes_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "requests";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
             "my_assignments": {
                 Row: {
                     "agreed_price_aoa": number | null;
@@ -855,6 +1046,7 @@ export type Database = {
                     "code": string;
                     "created_at": string;
                     "duration_minutes": number;
+                    "ends_at": string;
                     "id": string;
                     "invite_expires_at": string | null;
                     "is_urgent": boolean;
@@ -1050,6 +1242,9 @@ export type Database = {
                     "beneficiary_name": string | null;
                     "budget_per_interpreter_aoa": number | null;
                     "can_manage": boolean | null;
+                    "cancel_is_late": boolean | null;
+                    "cancel_reason": string | null;
+                    "cancelled_by_role": string | null;
                     "city": string | null;
                     "code": string;
                     "config_version_id": string;
@@ -1340,12 +1535,150 @@ export type Database = {
                 };
                 Returns: undefined;
             };
+            "auto_confirm_deliveries": {
+                Args: Record<PropertyKey, never>;
+                Returns: number;
+            };
             "can_manage_request": {
                 Args: {
                     "p_account": string;
                     "p_request": string;
                 };
                 Returns: boolean;
+            };
+            "cancel_assignment": {
+                Args: {
+                    "p_actor": string;
+                    "p_assignment": string;
+                    "p_reason": string;
+                };
+                Returns: {
+                    "agreed_price_aoa": number | null;
+                    "agreed_travel_fee_aoa": number | null;
+                    "application_message": string | null;
+                    "cancel_reason": string | null;
+                    "cancelled_by_role": string | null;
+                    "completed_at": string | null;
+                    "completed_via": string | null;
+                    "created_at": string;
+                    "decline_reason": string | null;
+                    "delivered_at": string | null;
+                    "id": string;
+                    "interpreter_id": string;
+                    "interpreter_share_aoa": number | null;
+                    "invite_expires_at": string | null;
+                    "late_cancellation": boolean;
+                    "offered_price_aoa": number | null;
+                    "offered_travel_fee_aoa": number | null;
+                    "origin": string;
+                    "period": unknown;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "request_assignments";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "cancel_request": {
+                Args: {
+                    "p_actor": string;
+                    "p_reason": string;
+                    "p_request": string;
+                };
+                Returns: {
+                    "address": string | null;
+                    "approved_at": string | null;
+                    "approved_by": string | null;
+                    "beneficiary_contact": string | null;
+                    "beneficiary_name": string | null;
+                    "budget_per_interpreter_aoa": number | null;
+                    "cancel_reason": string | null;
+                    "cancelled_at": string | null;
+                    "cancelled_by": string | null;
+                    "cancelled_by_role": string | null;
+                    "city": string | null;
+                    "code": string;
+                    "config_version_id": string;
+                    "created_at": string;
+                    "created_by": string;
+                    "duration_minutes": number;
+                    "ends_at": string;
+                    "id": string;
+                    "interpreters_needed": number;
+                    "is_urgent": boolean;
+                    "kind": string;
+                    "managed_unit_price_aoa": number | null;
+                    "meeting_link": string | null;
+                    "modality": string;
+                    "notes": string | null;
+                    "open_mode": string | null;
+                    "organization_id": string | null;
+                    "service_id": string;
+                    "starts_at": string;
+                    "status": string;
+                    "understaffed_warned_at": string | null;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "requests";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "cancel_whole_request": {
+                Args: {
+                    "p_actor": string;
+                    "p_notice": string;
+                    "p_reason": string;
+                    "p_request": Omit<Database["booking"]['Tables']["requests"]['Row'], Database["booking"]['Tables']["requests"]['ComputedFields']>;
+                    "p_role": string;
+                };
+                Returns: {
+                    "address": string | null;
+                    "approved_at": string | null;
+                    "approved_by": string | null;
+                    "beneficiary_contact": string | null;
+                    "beneficiary_name": string | null;
+                    "budget_per_interpreter_aoa": number | null;
+                    "cancel_reason": string | null;
+                    "cancelled_at": string | null;
+                    "cancelled_by": string | null;
+                    "cancelled_by_role": string | null;
+                    "city": string | null;
+                    "code": string;
+                    "config_version_id": string;
+                    "created_at": string;
+                    "created_by": string;
+                    "duration_minutes": number;
+                    "ends_at": string;
+                    "id": string;
+                    "interpreters_needed": number;
+                    "is_urgent": boolean;
+                    "kind": string;
+                    "managed_unit_price_aoa": number | null;
+                    "meeting_link": string | null;
+                    "modality": string;
+                    "notes": string | null;
+                    "open_mode": string | null;
+                    "organization_id": string | null;
+                    "service_id": string;
+                    "starts_at": string;
+                    "status": string;
+                    "understaffed_warned_at": string | null;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "requests";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
             };
             "close_applications": {
                 Args: {
@@ -1354,6 +1687,55 @@ export type Database = {
                     "p_request": string;
                 };
                 Returns: undefined;
+            };
+            "close_threads": {
+                Args: {
+                    "p_request": string;
+                };
+                Returns: undefined;
+            };
+            "confirm_delivery": {
+                Args: {
+                    "p_actor": string;
+                    "p_assignment": string;
+                };
+                Returns: {
+                    "agreed_price_aoa": number | null;
+                    "agreed_travel_fee_aoa": number | null;
+                    "application_message": string | null;
+                    "cancel_reason": string | null;
+                    "cancelled_by_role": string | null;
+                    "completed_at": string | null;
+                    "completed_via": string | null;
+                    "created_at": string;
+                    "decline_reason": string | null;
+                    "delivered_at": string | null;
+                    "id": string;
+                    "interpreter_id": string;
+                    "interpreter_share_aoa": number | null;
+                    "invite_expires_at": string | null;
+                    "late_cancellation": boolean;
+                    "offered_price_aoa": number | null;
+                    "offered_travel_fee_aoa": number | null;
+                    "origin": string;
+                    "period": unknown;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "request_assignments";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "confirmation_deadline": {
+                Args: {
+                    "p_assignment": Omit<Database["booking"]['Tables']["request_assignments"]['Row'], Database["booking"]['Tables']["request_assignments"]['ComputedFields']>;
+                };
+                Returns: string;
             };
             "create_request": {
                 Args: {
@@ -1492,6 +1874,12 @@ export type Database = {
                     isSetofReturn: false;
                 };
             };
+            "is_late": {
+                Args: {
+                    "p_request": Omit<Database["booking"]['Tables']["requests"]['Row'], Database["booking"]['Tables']["requests"]['ComputedFields']>;
+                };
+                Returns: boolean;
+            };
             "lock_open_request": {
                 Args: {
                     "p_mode": string;
@@ -1578,6 +1966,43 @@ export type Database = {
                     isSetofReturn: false;
                 };
             };
+            "mark_delivered": {
+                Args: {
+                    "p_actor": string;
+                    "p_assignment": string;
+                };
+                Returns: {
+                    "agreed_price_aoa": number | null;
+                    "agreed_travel_fee_aoa": number | null;
+                    "application_message": string | null;
+                    "cancel_reason": string | null;
+                    "cancelled_by_role": string | null;
+                    "completed_at": string | null;
+                    "completed_via": string | null;
+                    "created_at": string;
+                    "decline_reason": string | null;
+                    "delivered_at": string | null;
+                    "id": string;
+                    "interpreter_id": string;
+                    "interpreter_share_aoa": number | null;
+                    "invite_expires_at": string | null;
+                    "late_cancellation": boolean;
+                    "offered_price_aoa": number | null;
+                    "offered_travel_fee_aoa": number | null;
+                    "origin": string;
+                    "period": unknown;
+                    "request_id": string;
+                    "responded_at": string | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "request_assignments";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
             "notify_request": {
                 Args: {
                     "p_accounts": (string)[];
@@ -1587,6 +2012,49 @@ export type Database = {
                     "p_request": string;
                 };
                 Returns: undefined;
+            };
+            "on_account_suspended": {
+                Args: {
+                    "p_account": string;
+                    "p_actor": string;
+                };
+                Returns: undefined;
+            };
+            "on_organization_suspended": {
+                Args: {
+                    "p_actor": string;
+                    "p_org": string;
+                };
+                Returns: undefined;
+            };
+            "open_dispute": {
+                Args: {
+                    "p_actor": string;
+                    "p_assignment": string;
+                    "p_reason": string;
+                };
+                Returns: {
+                    "assignment_id": string;
+                    "created_at": string;
+                    "id": string;
+                    "notes": string | null;
+                    "opened_by": string;
+                    "opened_by_role": string;
+                    "reason": string;
+                    "refund_decision": string | null;
+                    "request_id": string;
+                    "resolution": string | null;
+                    "resolved_at": string | null;
+                    "resolved_by": string | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "disputes";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
             };
             "open_negotiation": {
                 Args: {
@@ -1684,6 +2152,36 @@ export type Database = {
                     "p_role"?: string;
                 };
                 Returns: string;
+            };
+            "resolve_dispute": {
+                Args: {
+                    "p_actor": string;
+                    "p_dispute": string;
+                    "p_notes": string;
+                    "p_resolution": string;
+                };
+                Returns: {
+                    "assignment_id": string;
+                    "created_at": string;
+                    "id": string;
+                    "notes": string | null;
+                    "opened_by": string;
+                    "opened_by_role": string;
+                    "reason": string;
+                    "refund_decision": string | null;
+                    "request_id": string;
+                    "resolution": string | null;
+                    "resolved_at": string | null;
+                    "resolved_by": string | null;
+                    "status": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "disputes";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
             };
             "respond_proposal": {
                 Args: {
@@ -3659,6 +4157,15 @@ export type Database = {
             };
         };
         Views: {
+            "late_cancellations": {
+                Row: {
+                    "account_id": string | null;
+                    "late_count": number | null;
+                };
+                ComputedFields: never;
+                Relationships: [
+                ];
+            };
             "listed_ids": {
                 Row: {
                     "account_id": string;

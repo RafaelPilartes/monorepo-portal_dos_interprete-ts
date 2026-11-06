@@ -21,6 +21,7 @@ export interface RequestPreview {
 }
 
 export type OpenRequestRow = Tables<{ schema: 'booking' }, 'open_requests_for_me'>
+export type DisputeRow = Tables<{ schema: 'booking' }, 'dispute_details'>
 
 export interface NewRequest {
   kind: 'direct' | 'open'
@@ -170,5 +171,43 @@ export class RequestsRepository {
 
   decline(assignmentId: string, reason: string): Promise<unknown> {
     return this.api.post(`/assignments/${assignmentId}/decline`, { reason })
+  }
+
+  // The service lifecycle (service-lifecycle.md) ------------------------------------------------
+  async disputes(requestId: string): Promise<DisputeRow[]> {
+    return this.rows<DisputeRow>(this.booking('dispute_details').select('*').eq('request_id', requestId).order('created_at'), 'booking.dispute_details')
+  }
+
+  /** admin-web /requests: every request the team sees, the disputed first when asked. */
+  async staffList(query: { status: string | null; limit: number; offset: number }): Promise<{ rows: RequestRow[]; total: number }> {
+    let request = this.booking('request_details').select('*', { count: 'exact' })
+    if (query.status) request = request.eq('status', query.status)
+    const { data, error, count } = await request.order('starts_at', { ascending: false }).range(query.offset, query.offset + query.limit - 1)
+    if (error) throw translatePostgrestError(error, 'booking.request_details')
+    return { rows: (data ?? []) as RequestRow[], total: count ?? 0 }
+  }
+
+  cancelRequest(requestId: string, reason: string): Promise<unknown> {
+    return this.api.post(`/requests/${requestId}/cancel`, { reason })
+  }
+
+  cancelAssignment(assignmentId: string, reason: string): Promise<unknown> {
+    return this.api.post(`/assignments/${assignmentId}/cancel`, { reason })
+  }
+
+  deliver(assignmentId: string): Promise<unknown> {
+    return this.api.post(`/assignments/${assignmentId}/deliver`, {})
+  }
+
+  confirm(assignmentId: string): Promise<unknown> {
+    return this.api.post(`/assignments/${assignmentId}/confirm`, {})
+  }
+
+  openDispute(assignmentId: string, reason: string): Promise<unknown> {
+    return this.api.post(`/assignments/${assignmentId}/disputes`, { reason })
+  }
+
+  resolveDispute(disputeId: string, resolution: 'completed' | 'cancelled', notes: string): Promise<unknown> {
+    return this.api.post(`/admin/disputes/${disputeId}/resolve`, { resolution, notes })
   }
 }

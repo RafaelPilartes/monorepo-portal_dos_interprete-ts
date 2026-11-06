@@ -2,6 +2,27 @@
 -- the rows themselves: only who may see a request reads it, and the beneficiary, the exact address
 -- and the notes only for the requester's side, the team and the accepted interpreters.
 
+-- What the lifecycle screens show before an action (service-lifecycle.md "Ecrãs"), from the same
+-- rules the actions use: whether a cancellation now would be late (D-22), and until when a
+-- delivery can be confirmed or disputed (R-LIFE-04). plpgsql: they name functions of 99-lifecycle.sql.
+CREATE OR REPLACE FUNCTION auth_helper.cancel_is_late(p_request uuid) RETURNS boolean
+  LANGUAGE plpgsql STABLE SECURITY DEFINER
+  SET search_path = ''
+AS $$
+BEGIN
+  RETURN (SELECT booking.is_late(r) FROM booking.requests AS r WHERE r.id = p_request);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION auth_helper.confirmation_deadline(p_assignment uuid) RETURNS timestamptz
+  LANGUAGE plpgsql STABLE SECURITY DEFINER
+  SET search_path = ''
+AS $$
+BEGIN
+  RETURN (SELECT booking.confirmation_deadline(a) FROM booking.request_assignments AS a WHERE a.id = p_assignment AND a.delivered_at IS NOT NULL);
+END;
+$$;
+
 CREATE OR REPLACE VIEW booking.request_details WITH (security_invoker = false) AS
 SELECT r.id, r.code, r.kind, r.open_mode, r.created_by, r.organization_id, r.service_id, s.title AS service_title,
        s.pricing_mode, r.modality, r.starts_at, r.duration_minutes, r.ends_at, r.city, r.interpreters_needed,
@@ -21,7 +42,9 @@ SELECT r.id, r.code, r.kind, r.open_mode, r.created_by, r.organization_id, r.ser
        (SELECT pr.full_name FROM identity.profiles AS pr WHERE pr.id = r.created_by) AS created_by_name,
        (SELECT o.name FROM identity.organizations AS o WHERE o.id = r.organization_id) AS organization_name,
        (SELECT auth_helper.account_id() IN (SELECT auth_helper.requester_accounts(r.id))) AS can_manage,
-       r.budget_per_interpreter_aoa
+       r.budget_per_interpreter_aoa,
+       (SELECT auth_helper.cancel_is_late(r.id)) AS cancel_is_late,
+       r.cancel_reason, r.cancelled_by_role
   FROM booking.requests AS r
   JOIN catalog.services AS s ON s.id = r.service_id
  CROSS JOIN LATERAL (SELECT auth_helper.can_see_request_private(r.id) AS private) AS p
@@ -33,7 +56,10 @@ CREATE OR REPLACE VIEW booking.assignment_details WITH (security_invoker = false
 SELECT a.id, a.request_id, a.interpreter_id, i.slug AS interpreter_slug, pr.full_name AS interpreter_name,
        pr.avatar_path AS interpreter_avatar_path, a.origin, a.status, a.offered_price_aoa, a.offered_travel_fee_aoa,
        a.agreed_price_aoa, a.agreed_travel_fee_aoa, a.invite_expires_at, a.responded_at, a.decline_reason,
-       a.cancel_reason, a.created_at, t.id AS thread_id, i.accepts_negotiation, a.application_message
+       a.cancel_reason, a.created_at, t.id AS thread_id, i.accepts_negotiation, a.application_message,
+       a.delivered_at, a.completed_at, a.completed_via, a.late_cancellation, a.cancelled_by_role,
+       (SELECT auth_helper.confirmation_deadline(a.id)) AS confirm_by,
+       (SELECT d.id FROM booking.disputes AS d WHERE d.assignment_id = a.id AND d.status = 'open') AS open_dispute_id
   FROM booking.request_assignments AS a
   JOIN identity.interpreter_profiles AS i ON i.account_id = a.interpreter_id
   JOIN identity.profiles AS pr ON pr.id = a.interpreter_id
@@ -48,7 +74,7 @@ CREATE OR REPLACE VIEW booking.my_assignments WITH (security_invoker = false) AS
 SELECT a.id, a.request_id, a.status, a.offered_price_aoa, a.offered_travel_fee_aoa, a.agreed_price_aoa,
        a.agreed_travel_fee_aoa, a.invite_expires_at, a.created_at,
        r.code, r.kind, r.status AS request_status, r.modality, r.starts_at, r.duration_minutes, r.city, r.is_urgent,
-       s.title AS service_title, s.pricing_mode
+       s.title AS service_title, s.pricing_mode, r.ends_at
   FROM booking.request_assignments AS a
   JOIN booking.requests AS r ON r.id = a.request_id
   JOIN catalog.services AS s ON s.id = r.service_id

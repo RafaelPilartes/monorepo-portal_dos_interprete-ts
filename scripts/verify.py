@@ -911,7 +911,7 @@ def check_no_price_arithmetic(ctx: Context) -> list[Violation]:
 # requests-core.md criterion 8 (R-REQ-04): the status of a request is written only by
 # refresh_request_status and by the explicit transitions of data-model.md §5.
 REQUEST_STATUS_WRITERS = {
-    "booking.refresh_request_status", "booking.expire_unstaffed_requests", "booking.cancel_request",
+    "booking.refresh_request_status", "booking.expire_unstaffed_requests", "booking.cancel_request", "booking.cancel_whole_request",
     "booking.approve_managed_request", "booking.reject_managed_request", "booking.accept_quote",
     "identity.suspend_account", "identity.suspend_organization", "booking.on_payment_event",
 }

@@ -59,7 +59,18 @@ export function notificationText(kind: string, payload: Payload): { title: strin
     case 'request_confirmed': return { title: 'Pedido confirmado', body: request }
     case 'request_understaffed_warning': return { title: 'Ainda faltam intérpretes', body: `${request}. Convida mais ou segue com os que tens.` }
     case 'request_expired': return { title: 'O pedido expirou', body: `Não houve intérpretes suficientes a tempo. ${request}` }
-    case 'request_cancelled': return { title: 'Um pedido foi cancelado', body: text(payload.reason) ? `${request}. ${text(payload.reason)}` : request }
+    case 'request_cancelled': return {
+      title: text(payload.interpreter_name) ? `${who} cancelou a participação` : 'Um pedido foi cancelado',
+      body: text(payload.reason) ? `${request}. Motivo: ${text(payload.reason)}` : request,
+    }
+    case 'delivery_marked': return { title: `${who} marcou o serviço como feito`, body: `${request}. Confirma ou abre uma disputa.` }
+    case 'delivery_auto_confirmed': return { title: 'Serviço confirmado automaticamente', body: request }
+    case 'dispute_opened': return { title: 'Foi aberta uma disputa', body: text(payload.reason) ? `${request}. Motivo: ${text(payload.reason)}` : request }
+    case 'dispute_resolved': return {
+      title: 'A disputa foi resolvida',
+      body: `${request}. ${payload.resolution === 'completed' ? 'O serviço conta como feito.' : 'O serviço não conta como feito.'}`,
+    }
+    case 'account_suspended_counterparty': return { title: 'Um pedido foi cancelado pela equipa', body: `A outra parte deixou de estar disponível. ${request}` }
     case 'proposal_received': return { title: 'Nova proposta de preço', body: typeof payload.amount_aoa === 'number' ? `${request}: ${formatAoa(payload.amount_aoa)}` : request }
     case 'proposal_answered': return { title: payload.accepted === true ? 'A tua proposta foi aceite' : 'A tua proposta foi recusada', body: request }
     case 'meeting_link_changed': return { title: 'O link da reunião mudou', body: request }

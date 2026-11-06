@@ -237,8 +237,12 @@ BEGIN
     FROM booking.request_assignments AS a WHERE a.request_id = p_request;
   v_status := CASE
     WHEN v_disputed > 0 THEN 'disputed'
-    WHEN v_active = 0 AND v_request.ends_at <= util.now() THEN 'cancelled'
-    WHEN v_active < v_request.interpreters_needed THEN 'awaiting_interpreters'
+    -- After the start a place no longer reopens (a dispute resolved as cancelled, R-LIFE-07);
+    -- a request already waiting at the start stays waiting for R-REQ-10.
+    WHEN v_active = 0 AND (v_request.ends_at <= util.now()
+                           OR (v_request.starts_at <= util.now() AND v_request.status <> 'awaiting_interpreters')) THEN 'cancelled'
+    WHEN v_active < v_request.interpreters_needed
+         AND (v_request.starts_at > util.now() OR v_request.status = 'awaiting_interpreters') THEN 'awaiting_interpreters'
     WHEN v_completed = v_active THEN 'completed'
     WHEN v_delivered = v_active THEN 'delivered'
     ELSE 'confirmed' END;
@@ -250,6 +254,9 @@ BEGIN
       PERFORM booking.notify_request('request_confirmed', ARRAY(
         SELECT a.interpreter_id FROM booking.request_assignments AS a
          WHERE a.request_id = p_request AND a.status = 'accepted'), p_request, 'interpreter');
+    END IF;
+    IF v_status IN ('completed', 'cancelled') THEN
+      PERFORM booking.close_threads(p_request);
     END IF;
   END IF;
   RETURN v_status;

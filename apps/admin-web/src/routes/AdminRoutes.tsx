@@ -9,8 +9,9 @@ import AdminLayout from '@/pages/dashboard/admin/AdminLayout'
 import AdminOverview from '@/pages/dashboard/admin/AdminOverview'
 import AdminPayments from '@/pages/dashboard/admin/AdminPayments'
 import AdminReports from '@/pages/dashboard/admin/AdminReports'
-import AdminRequestDetails from '@/pages/dashboard/admin/AdminRequestDetails'
-import AdminRequests from '@/pages/dashboard/admin/AdminRequests'
+import AdminRequestDetails from '@/pages/requests/AdminRequestDetails'
+import AdminRequests from '@/pages/requests/AdminRequests'
+import AdminRequestsArea from '@/pages/requests/AdminRequestsArea'
 import AdminSettings from '@/pages/dashboard/admin/AdminSettings'
 import AdminTeam from '@/pages/dashboard/admin/AdminTeam'
 import AdminAudit from '@/pages/dashboard/admin/AdminAudit'
@@ -39,8 +40,10 @@ const AdminRoutes = () => {
       <Route path="requesters/:id" element={<AdminAccountDetails kind="requester" />} />
       <Route path="organizations" element={<AdminOrganizations />} />
       <Route path="organizations/:id" element={<AdminOrganizationDetails />} />
-      <Route path="requests" element={<AdminRequests />} />
-      <Route path="requests/:id" element={<AdminRequestDetails />} />
+      <Route element={<AdminRequestsArea />}>
+        <Route path="requests" element={<AdminRequests />} />
+        <Route path="requests/:id" element={<AdminRequestDetails />} />
+      </Route>
       <Route path="content/testimonials" element={<AdminTestimonials />} />
       <Route path="content/success-cases" element={<AdminSuccessCases />} />
       <Route path="reports" element={<AdminReports />} />

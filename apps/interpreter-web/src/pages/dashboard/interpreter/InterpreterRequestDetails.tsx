@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { QueryError } from '@portal-dos-interpretes/features/components/QueryStates'
 import { priceText, RequestChat, RequestFacts, RequestTimeline } from '@portal-dos-interpretes/features/requests/RequestParts'
-import { useRequestAction, useRequestDetail, useRequests } from '@portal-dos-interpretes/features/requests/RequestsContext'
+import { DisputeList, LATE_WARNING, OpenDispute, ReasonAction } from '@portal-dos-interpretes/features/requests/Lifecycle'
+import { useRequestAction, useRequestDetail, useRequestDisputes, useRequests } from '@portal-dos-interpretes/features/requests/RequestsContext'
 import { formatDateTime } from '@portal-dos-interpretes/i18n'
 import { Alert, AlertDescription } from '@portal-dos-interpretes/ui/components/alert'
 import { Button } from '@portal-dos-interpretes/ui/components/button'
@@ -15,7 +16,9 @@ import { ArrowLeft, Clock } from 'lucide-react'
 
 // interpreter-web /requests/:id (requests-direct.md): the request (the beneficiary and the exact
 // address only once accepted, D-95), the price offered, "Aceitar" and "Recusar" with a reason,
-// the chat with the requester and the timeline. An overlap answers SCHEDULE_OVERLAP.
+// the chat with the requester and the timeline. An overlap answers SCHEDULE_OVERLAP. Once
+// accepted (service-lifecycle.md): cancel the participation before the start (warned when late),
+// mark as done from the end, dispute after the start.
 export default function InterpreterRequestDetails() {
   const { id = '' } = useParams()
   const { accountId } = useRequests()
@@ -25,6 +28,10 @@ export default function InterpreterRequestDetails() {
   const accept = useRequestAction((repository, assignmentId: string) => repository.accept(assignmentId), 'Pedido aceite. O solicitante foi avisado.')
   const decline = useRequestAction((repository, input: { id: string; reason: string }) => repository.decline(input.id, input.reason), 'Recusaste o pedido.')
   const withdraw = useRequestAction((repository, assignmentId: string) => repository.withdraw(assignmentId), 'Candidatura retirada.')
+  const disputes = useRequestDisputes(id)
+  const cancel = useRequestAction((repository, input: { id: string; reason: string }) => repository.cancelAssignment(input.id, input.reason),
+    'Participação cancelada. O solicitante foi avisado.')
+  const deliver = useRequestAction((repository, assignmentId: string) => repository.deliver(assignmentId), 'Marcado como feito. O solicitante foi avisado.')
 
   if (detail.isPending) return <Skeleton className="h-96 w-full" />
   if (detail.isError) return <QueryError error={detail.error} onRetry={() => void detail.refetch()} />
@@ -41,6 +48,9 @@ export default function InterpreterRequestDetails() {
   const invited = mine.status === 'invited'
   const applied = mine.status === 'applied'
   const reasonOk = reason.trim().length >= 3
+  const accepted = mine.status === 'accepted'
+  const started = Date.parse(request.starts_at ?? '') <= Date.now()
+  const finished = Date.parse(request.ends_at ?? '') <= Date.now()
 
   return (
     <div className="space-y-6">
@@ -91,6 +101,27 @@ export default function InterpreterRequestDetails() {
                   </div>
                 </form>
               )}
+              {accepted && !started && (
+                <ReasonAction label="Cancelar a minha participação" title="Cancelar a minha participação" confirmLabel="Cancelar a participação"
+                  variant="destructive" pending={cancel.isPending} warning={request.cancel_is_late ? LATE_WARNING : null}
+                  description="O solicitante é avisado e o lugar volta a ficar livre."
+                  onConfirm={(text, close) => cancel.mutate({ id: mine.id ?? '', reason: text }, { onSuccess: close })} />
+              )}
+              {accepted && started && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button disabled={!finished || deliver.isPending} onClick={() => deliver.mutate(mine.id ?? '')}>Marcar como feito</Button>
+                  <OpenDispute assignmentId={mine.id ?? ''} other="o solicitante" />
+                  {!finished && <p className="w-full text-muted-foreground">Podes marcar como feito a partir de {formatDateTime(request.ends_at ?? '')}.</p>}
+                </div>
+              )}
+              {mine.status === 'delivered' && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-muted-foreground">Marcaste como feito. {mine.confirm_by ? `Sem resposta do solicitante, fica confirmado a ${formatDateTime(mine.confirm_by)}.` : ''}</p>
+                  <OpenDispute assignmentId={mine.id ?? ''} other="o solicitante" />
+                </div>
+              )}
+              {mine.status === 'cancelled' && mine.cancel_reason && <p className="text-muted-foreground">Cancelado: {mine.cancel_reason}</p>}
+              {(disputes.data?.length ?? 0) > 0 && <DisputeList rows={disputes.data ?? []} />}
               {accept.isError && <Alert variant="destructive"><AlertDescription>{(accept.error as Error).message}</AlertDescription></Alert>}
             </CardContent>
           </Card>

@@ -30,6 +30,8 @@ export const requestKeys = {
   one: (id: string) => ['requests', 'one', id] as const,
   mine: ['requests', 'my-assignments'] as const,
   messages: (threadId: string) => ['requests', 'messages', threadId] as const,
+  disputes: (requestId: string) => ['requests', 'disputes', requestId] as const,
+  staff: (status: string | null, page: number) => ['requests', 'staff', status, page] as const,
 }
 
 export function useRequestList(finished: boolean, organizationId: string | null, mineOnly: boolean, page: number, pageSize: number) {
@@ -54,6 +56,22 @@ export function useRequestDetail(id: string) {
       const [assignments, timeline] = await Promise.all([repository.assignments(id), repository.timeline(id)])
       return { request, assignments, timeline }
     },
+  })
+}
+
+/** The disputes of a request, for its parties and the team (R-LIFE-05). */
+export function useRequestDisputes(requestId: string) {
+  const { repository } = useRequests()
+  return useQuery({ queryKey: requestKeys.disputes(requestId), queryFn: () => repository.disputes(requestId) })
+}
+
+/** admin-web /requests, paginated on the server (R-ADM-06). */
+export function useStaffRequestList(status: string | null, page: number, pageSize: number) {
+  const { repository } = useRequests()
+  return useQuery({
+    queryKey: requestKeys.staff(status, page),
+    queryFn: () => repository.staffList({ status, limit: pageSize, offset: (page - 1) * pageSize }),
+    placeholderData: keepPreviousData,
   })
 }
 

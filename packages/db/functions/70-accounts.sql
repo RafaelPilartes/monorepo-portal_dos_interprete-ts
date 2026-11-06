@@ -499,6 +499,7 @@ BEGIN
   UPDATE identity.profiles
      SET status = 'suspended', suspended_at = util.now(), suspended_reason = trim(p_reason)
    WHERE id = p_account RETURNING * INTO v_row;
+  PERFORM booking.on_account_suspended(p_actor, p_account);
   PERFORM notify.enqueue('account_suspended', p_account, jsonb_build_object('reason', v_row.suspended_reason));
   PERFORM audit.record(p_actor, v_level, 'account.suspended', 'account', p_account::text,
     jsonb_build_object('status', 'active'), jsonb_build_object('status', 'suspended', 'reason', v_row.suspended_reason));
@@ -547,6 +548,7 @@ BEGIN
   UPDATE identity.organizations
      SET status = 'suspended', suspended_at = util.now(), suspended_reason = trim(p_reason)
    WHERE id = p_org RETURNING * INTO v_org;
+  PERFORM booking.on_organization_suspended(p_actor, p_org);
   PERFORM audit.record(p_actor, v_level, 'organization.suspended', 'organization', p_org::text,
     jsonb_build_object('status', 'active'), jsonb_build_object('status', 'suspended', 'reason', v_org.suspended_reason));
   RETURN v_org;

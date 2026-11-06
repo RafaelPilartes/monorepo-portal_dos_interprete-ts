@@ -40,6 +40,7 @@ export function paramsOfHint(hint: string | undefined): Record<string, string | 
 /** Constraint name → catalog code; feature steps add their unique and check constraints here. */
 export const CONSTRAINT_CODES: Readonly<Record<string, ErrorCode>> = {
   organizations_nif_key: 'NIF_IN_USE',
+  disputes_one_open: 'DISPUTE_OPEN',
 }
 
 /** Unique constraints whose duplicate is a form error: the field and what the person reads. */
