@@ -36,6 +36,7 @@ create_tag v0.15.0 32c3b2f1b1c50a14bdbcab90a912f9602c5cfce8 "v0.15.0 - step H6 (
 create_tag v0.16.0 bf66410604d2bddfa24a460b02ab9b93f1f1fa9a "v0.16.0 - step H7 (open requests)"
 create_tag v0.17.0 513610768c5fa970e96d10e9b9d8e56336d05d49 "v0.17.0 - step H8 (service lifecycle)"
 create_tag v0.18.0 3c842d28ce4c209e1618913e103d5f4b3f19242e "v0.18.0 - step H9 (reviews)"
+create_tag v0.19.0 dc6c8222085f2528f6d26557ba8d0e5595a61415 "v0.19.0 - step H10 (payments)"
 # TAGS-END
 
 git push origin --tags
