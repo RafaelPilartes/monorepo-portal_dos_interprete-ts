@@ -57,7 +57,8 @@ export function ReceiptButton({ receipt }: { receipt: ReceiptLink }) {
       link.href = url
       link.download = `${receipt.number}.pdf`
       link.click()
-      URL.revokeObjectURL(url)
+      // Some browsers cancel the download if the link is revoked at once.
+      setTimeout(() => URL.revokeObjectURL(url), 30_000)
     } catch (error) {
       toast.error(errorMessage(error))
     } finally {
@@ -146,6 +147,8 @@ export function PaymentBlock({ payment }: { payment: PaymentRow }) {
               : <p className="text-muted-foreground">Só o dono ou um administrador da organização envia o comprovativo.</p>}
           </div>
         )}
+        {payment.status === 'cancelled' && <p className="text-muted-foreground">Este pagamento foi cancelado: já não há nada a pagar.</p>}
+        {(payment.refund_pending_aoa ?? 0) > 0 && <p>Reembolso a transferir pela equipa: <span className="tabular-nums">{formatAoa(payment.refund_pending_aoa ?? 0)}</span></p>}
         {(payment.refunded_aoa ?? 0) > 0 && <p>Reembolsado: <span className="tabular-nums">{formatAoa(payment.refunded_aoa ?? 0)}</span></p>}
         {receipts.length > 0 && <div className="flex flex-wrap gap-2">{receipts.map((receipt) => <ReceiptButton key={receipt.id} receipt={receipt} />)}</div>}
       </CardContent>

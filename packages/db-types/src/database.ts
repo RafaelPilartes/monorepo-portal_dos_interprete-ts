@@ -149,6 +149,7 @@ export type Database = {
                     "payer_account": string;
                     "reference": string;
                     "refund_due_on_confirm_aoa": number | null;
+                    "refund_due_policy": Json | null;
                     "refund_due_reason_code": string | null;
                     "status": string;
                     "subject_cancelled_at": string | null;
@@ -174,6 +175,7 @@ export type Database = {
                     "payer_account": string;
                     "reference": string;
                     "refund_due_on_confirm_aoa"?: number | null;
+                    "refund_due_policy"?: Json | null;
                     "refund_due_reason_code"?: string | null;
                     "status"?: string;
                     "subject_cancelled_at"?: string | null;
@@ -198,6 +200,7 @@ export type Database = {
                     "payer_account"?: string;
                     "reference"?: string;
                     "refund_due_on_confirm_aoa"?: number | null;
+                    "refund_due_policy"?: Json | null;
                     "refund_due_reason_code"?: string | null;
                     "status"?: string;
                     "subject_cancelled_at"?: string | null;
@@ -494,6 +497,7 @@ export type Database = {
                     "payer_name": string | null;
                     "receipts": Json | null;
                     "reference": string;
+                    "refund_pending_aoa": number | null;
                     "refunded_aoa": number | null;
                     "status": string;
                     "subject_cancelled_at": string | null;
@@ -657,6 +661,7 @@ export type Database = {
                     "payer_account": string;
                     "reference": string;
                     "refund_due_on_confirm_aoa": number | null;
+                    "refund_due_policy": Json | null;
                     "refund_due_reason_code": string | null;
                     "status": string;
                     "subject_cancelled_at": string | null;
@@ -706,6 +711,7 @@ export type Database = {
                     "payer_account": string;
                     "reference": string;
                     "refund_due_on_confirm_aoa": number | null;
+                    "refund_due_policy": Json | null;
                     "refund_due_reason_code": string | null;
                     "status": string;
                     "subject_cancelled_at": string | null;
@@ -968,6 +974,7 @@ export type Database = {
                     "payer_account": string;
                     "reference": string;
                     "refund_due_on_confirm_aoa": number | null;
+                    "refund_due_policy": Json | null;
                     "refund_due_reason_code": string | null;
                     "status": string;
                     "subject_cancelled_at": string | null;

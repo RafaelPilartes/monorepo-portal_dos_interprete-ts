@@ -2,6 +2,15 @@
 
 Uma versão por passo do `docs/plan/MASTER-PLAN.md`. Uma só versão para todo o monorepo.
 
+## 0.19.0 — 2026-11-06 — Passo H10 (pagamentos)
+
+- Os pagamentos pelo Portal fazem-se por transferência: quem paga vê o valor, a referência e o IBAN para copiar, e envia o comprovativo.
+- A equipa financeira aceita ou recusa cada comprovativo com o motivo; aceite, sai um recibo em PDF ("Documento não fiscal").
+- A equipa trata os reembolsos e os repasses aos intérpretes e marca-os como pagos com a referência da transferência.
+- O intérprete indica o IBAN para receber e vê os seus repasses em "Ganhos".
+- Ainda não há nada para pagar: os pedidos geridos, a verificação e os eventos pagos chegam nos próximos passos, e os dados bancários da Academia continuam por indicar.
+- Relatório: `docs/plan/step-reports/H10.md`.
+
 ## 0.18.0 — 2026-11-06 — Passo H9 (avaliações)
 
 - Depois de cada serviço concluído, quem pede e o intérprete avaliam-se um ao outro, com estrelas e um comentário.

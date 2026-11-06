@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useBillingQuery } from '@portal-dos-interpretes/features/billing/Billing'
 import { QueryError, TableSkeleton } from '@portal-dos-interpretes/features/components/QueryStates'
 import { priceText } from '@portal-dos-interpretes/features/requests/RequestParts'
-import { useMyAssignments } from '@portal-dos-interpretes/features/requests/RequestsContext'
+import { useMyAssignments, useRequests } from '@portal-dos-interpretes/features/requests/RequestsContext'
 import { formatAoa, formatDate, formatDateTime, PAYOUT_STATUS_LABELS } from '@portal-dos-interpretes/i18n'
 import { Badge } from '@portal-dos-interpretes/ui/components/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@portal-dos-interpretes/ui/components/card'
@@ -14,7 +14,10 @@ import { Wallet } from 'lucide-react'
 // with the reference), and apart the prices agreed in direct and open requests, paid outside the
 // Portal (D-30). Nothing is added up here: each value is what the database holds.
 export default function InterpreterEarnings() {
-  const payouts = useBillingQuery(['payouts'], (repository) => repository.payouts())
+  const { accountId } = useRequests()
+  // Only the interpreter's own: an account that is also finance reads every payout in the view.
+  const payouts = useBillingQuery(['payouts', 'mine', accountId], async (repository) =>
+    (await repository.payouts()).filter((row) => row.interpreter_id === accountId))
   const mine = useMyAssignments()
   const agreed = (mine.data ?? []).filter((row) => row.kind !== 'managed' && ['accepted', 'delivered', 'completed'].includes(row.status ?? '') && row.agreed_price_aoa !== null)
   return (

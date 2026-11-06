@@ -38,6 +38,7 @@ CREATE TABLE billing.payment_intents (
   subject_cancelled_at timestamptz,
   refund_due_on_confirm_aoa bigint CHECK (refund_due_on_confirm_aoa >= 0),
   refund_due_reason_code text,
+  refund_due_policy jsonb,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   CHECK (amount_base_aoa + tax_aoa = amount_total_aoa),
@@ -149,5 +150,7 @@ END;
 $$;
 CREATE TRIGGER receipts_immutable BEFORE UPDATE OR DELETE ON billing.receipts
   FOR EACH ROW EXECUTE FUNCTION billing.receipts_immutable();
+CREATE TRIGGER receipts_no_truncate BEFORE TRUNCATE ON billing.receipts
+  FOR EACH STATEMENT EXECUTE FUNCTION billing.receipts_immutable();
 
 COMMIT;

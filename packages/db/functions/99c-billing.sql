@@ -116,13 +116,19 @@ AS $$
     FROM identity.staff_members AS s WHERE s.active AND s.level IN ('finance', 'super_admin')
 $$;
 
+-- The payer, and in an organisation also its active owners and admins: they are the ones who pay
+-- (R-PAY-04; review of H10).
 CREATE OR REPLACE FUNCTION billing.notify_payer(p_kind text, p_intent billing.payment_intents, p_extra jsonb DEFAULT '{}') RETURNS void
   LANGUAGE sql VOLATILE SECURITY DEFINER
   SET search_path = ''
 AS $$
-  SELECT notify.enqueue(p_kind, p_intent.payer_account, jsonb_build_object('reference', p_intent.reference,
+  SELECT notify.enqueue(p_kind, x.account_id, jsonb_build_object('reference', p_intent.reference,
            'amount_aoa', p_intent.amount_total_aoa, 'description', p_intent.description, 'due_at', p_intent.due_at,
            'app', 'requester', 'link', '/payments') || p_extra)
+    FROM (SELECT p_intent.payer_account AS account_id
+          UNION
+          SELECT m.account_id FROM identity.organization_members AS m
+           WHERE m.organization_id = p_intent.organization_id AND m.status = 'active' AND m.role IN ('owner', 'admin')) AS x
 $$;
 
 -- R-PAY-12: a receipt, numbered without gaps (the counter is in this transaction), never changed.
@@ -200,9 +206,12 @@ BEGIN
   IF v_intent.status = 'expired' THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'INTENT_EXPIRED'; END IF;
   IF v_intent.status = 'proof_submitted' THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'PROOF_ALREADY_PENDING'; END IF;
   IF v_intent.status <> 'awaiting_proof' THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'STATE_CHANGED'; END IF;
-  -- The file the API signed for this intent, and uploaded.
+  -- Past the deadline, even before the job marks it (review of H10).
+  IF util.now() >= v_intent.due_at THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'INTENT_EXPIRED'; END IF;
+  -- The file the API signed for this intent, uploaded, and not a proof already registered.
   IF p_file_path IS NULL OR p_file_path NOT LIKE 'payment_proof/' || p_intent || '/%'
-     OR NOT EXISTS (SELECT 1 FROM storage.objects AS o WHERE o.bucket_id = 'payment-proofs' AND o.name = p_file_path) THEN
+     OR NOT EXISTS (SELECT 1 FROM storage.objects AS o WHERE o.bucket_id = 'payment-proofs' AND o.name = p_file_path)
+     OR EXISTS (SELECT 1 FROM billing.payment_proofs AS x WHERE x.intent_id = p_intent AND x.file_path = p_file_path) THEN
     RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'PROOF_FILE_INVALID';
   END IF;
   INSERT INTO billing.payment_proofs (intent_id, file_path, uploaded_by, uploaded_at)
@@ -275,7 +284,7 @@ BEGIN
     -- R-PAY-06: the subject was cancelled while the proof waited; its refund is created now.
     IF v_intent.subject_cancelled_at IS NOT NULL AND coalesce(v_intent.refund_due_on_confirm_aoa, 0) > 0 THEN
       PERFORM billing.create_refund(NULL, v_intent.id, v_intent.refund_due_on_confirm_aoa,
-        coalesce(v_intent.refund_due_reason_code, 'provider_failure'), 'Assunto cancelado com o comprovativo por validar.');
+        v_intent.refund_due_reason_code, 'Assunto cancelado com o comprovativo por validar.', NULL, v_intent.refund_due_policy);
     END IF;
     PERFORM billing.on_subject_event(v_intent, 'confirmed');
   ELSE
@@ -326,7 +335,9 @@ $$;
 
 -- R-PAY-06: the subject was cancelled. Waiting for a proof → cancelled; with a proof sent → kept,
 -- with the refund due if finance later accepts it; confirmed → the refund now. Called by the
--- subjects (H11, H12, H17).
+-- subjects (H11, H12, H17), which must lock the intent before their own row (lock order: the intent
+-- first). Once per subject: a second call changes nothing. The refund never passes what is left
+-- to refund (review of H10).
 CREATE OR REPLACE FUNCTION billing.cancel_intent_for_subject(p_context text, p_subject uuid, p_refund_aoa bigint, p_reason_code text,
   p_policy jsonb DEFAULT NULL)
 RETURNS billing.payment_intents
@@ -335,19 +346,27 @@ RETURNS billing.payment_intents
 AS $$
 DECLARE
   v_intent billing.payment_intents;
+  v_refund bigint;
 BEGIN
+  IF coalesce(p_refund_aoa, 0) > 0 AND p_reason_code IS NULL THEN
+    RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'INTERNAL_ERROR', DETAIL = 'a refund needs its reason code (R-PAY-09)';
+  END IF;
   SELECT * INTO v_intent FROM billing.payment_intents AS i
    WHERE i.context = p_context AND i.subject_id = p_subject AND i.status IN ('awaiting_proof', 'proof_submitted', 'confirmed')
    FOR UPDATE;
-  IF v_intent.id IS NULL THEN RETURN NULL; END IF;
+  IF v_intent.id IS NULL OR v_intent.subject_cancelled_at IS NOT NULL THEN RETURN v_intent; END IF;
+  v_refund := least(coalesce(p_refund_aoa, 0),
+                    v_intent.amount_total_aoa - coalesce((SELECT sum(r.amount_aoa) FROM billing.refunds AS r WHERE r.intent_id = v_intent.id), 0));
   IF v_intent.status = 'awaiting_proof' THEN
     UPDATE billing.payment_intents SET status = 'cancelled', subject_cancelled_at = util.now() WHERE id = v_intent.id RETURNING * INTO v_intent;
   ELSIF v_intent.status = 'proof_submitted' THEN
-    UPDATE billing.payment_intents SET subject_cancelled_at = util.now(), refund_due_on_confirm_aoa = coalesce(p_refund_aoa, 0),
-           refund_due_reason_code = p_reason_code WHERE id = v_intent.id RETURNING * INTO v_intent;
-  ELSIF coalesce(p_refund_aoa, 0) > 0 THEN
+    UPDATE billing.payment_intents SET subject_cancelled_at = util.now(), refund_due_on_confirm_aoa = v_refund,
+           refund_due_reason_code = p_reason_code, refund_due_policy = p_policy WHERE id = v_intent.id RETURNING * INTO v_intent;
+  ELSE
     UPDATE billing.payment_intents SET subject_cancelled_at = util.now() WHERE id = v_intent.id RETURNING * INTO v_intent;
-    PERFORM billing.create_refund(NULL, v_intent.id, p_refund_aoa, p_reason_code, NULL, NULL, p_policy);
+    IF v_refund > 0 THEN
+      PERFORM billing.create_refund(NULL, v_intent.id, v_refund, p_reason_code, NULL, NULL, p_policy);
+    END IF;
   END IF;
   RETURN v_intent;
 END;
@@ -463,8 +482,8 @@ AS $$
   UPDATE billing.payouts SET status = 'cancelled', cancelled_reason = p_reason WHERE assignment_id = p_assignment AND status = 'queued'
 $$;
 
--- PUT /me/payout-details (R-PAY-11): the interpreter's own details; queued payouts without a copy
--- take it now.
+-- PUT /me/payout-details (R-PAY-11): the interpreter's own details; every payout still queued takes
+-- the new copy, so a corrected IBAN is the one finance pays (AD-039.11).
 CREATE OR REPLACE FUNCTION identity.save_payout_details(p_actor uuid, p_holder text, p_bank text, p_iban text)
 RETURNS identity.interpreter_payout_details
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
@@ -482,7 +501,7 @@ BEGIN
   RETURNING * INTO v_row;
   UPDATE billing.payouts SET payout_details_snapshot = jsonb_build_object('account_holder', v_row.account_holder,
            'bank_name', v_row.bank_name, 'iban', v_row.iban)
-   WHERE interpreter_id = p_actor AND status = 'queued' AND payout_details_snapshot IS NULL;
+   WHERE interpreter_id = p_actor AND status = 'queued';
   RETURN v_row;
 END;
 $$;
@@ -512,12 +531,13 @@ SELECT i.id, i.context, i.subject_id, i.payer_account, i.organization_id, i.desc
        i.amount_total_aoa, i.reference, i.bank_snapshot, i.status, i.due_at, i.confirmed_at, i.subject_cancelled_at, i.created_at,
        p.id AS last_proof_id, p.review_status AS last_proof_status, p.rejection_reason AS last_rejection_reason,
        p.uploaded_at AS last_proof_uploaded_at, p.file_path AS last_proof_path,
-       coalesce((SELECT sum(r.amount_aoa) FROM billing.refunds AS r WHERE r.intent_id = i.id), 0)::bigint AS refunded_aoa,
+       coalesce((SELECT sum(r.amount_aoa) FROM billing.refunds AS r WHERE r.intent_id = i.id AND r.status = 'paid'), 0)::bigint AS refunded_aoa,
        coalesce((SELECT jsonb_agg(jsonb_build_object('id', c.id, 'number', c.number, 'kind', c.kind, 'amount_aoa', c.amount_aoa,
                    'issued_at', c.issued_at) ORDER BY c.issued_at) FROM billing.receipts AS c WHERE c.intent_id = i.id), '[]') AS receipts,
        (SELECT auth_helper.can_pay(i.id)) AS can_pay,
        (SELECT pr.full_name FROM identity.profiles AS pr WHERE pr.id = i.payer_account) AS payer_name,
-       (SELECT o.name FROM identity.organizations AS o WHERE o.id = i.organization_id) AS organization_name
+       (SELECT o.name FROM identity.organizations AS o WHERE o.id = i.organization_id) AS organization_name,
+       coalesce((SELECT sum(r.amount_aoa) FROM billing.refunds AS r WHERE r.intent_id = i.id AND r.status = 'pending'), 0)::bigint AS refund_pending_aoa
   FROM billing.payment_intents AS i
   LEFT JOIN LATERAL (SELECT * FROM billing.payment_proofs AS x WHERE x.intent_id = i.id ORDER BY x.uploaded_at DESC LIMIT 1) AS p ON true
  WHERE (SELECT auth_helper.can_view_payment(i.id));
@@ -536,7 +556,9 @@ SELECT p.id, p.intent_id, p.file_path, p.uploaded_at, p.review_status, p.rejecti
 
 -- admin-web /refunds, and the refunds of the payer's own payments.
 CREATE OR REPLACE VIEW billing.refund_details WITH (security_invoker = false) AS
-SELECT r.id, r.intent_id, r.assignment_id, r.amount_aoa, r.reason_code, r.note, r.status, r.paid_reference, r.paid_at, r.created_at,
+SELECT r.id, r.intent_id, r.assignment_id, r.amount_aoa, r.reason_code,
+       -- The note is finance's; the payer side reads the reason only.
+       CASE WHEN (SELECT auth_helper.is_staff(ARRAY['finance'])) THEN r.note END AS note, r.status, r.paid_reference, r.paid_at, r.created_at,
        i.reference AS payment_reference, i.description, i.amount_total_aoa,
        coalesce((SELECT o.name FROM identity.organizations AS o WHERE o.id = i.organization_id),
                 (SELECT pr.full_name FROM identity.profiles AS pr WHERE pr.id = i.payer_account)) AS payer_name

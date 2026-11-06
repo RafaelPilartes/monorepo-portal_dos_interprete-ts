@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { receiptLines, receiptPdf } from './receiptPdf.js'
+import { receiptLines, receiptPdf, wrap } from './receiptPdf.js'
 
 const payload = {
   number: 'RC-2026-000001', kind: 'payment' as const, issued_at: '2026-11-06T10:00:00Z', issued_to: 'Paula (Clínica)',
@@ -21,5 +21,11 @@ describe('receipt PDF (R-PAY-12)', () => {
     expect(text).toContain('(Documento n\u00e3o fiscal) Tj')
     expect(text).toContain('Paula \\(Cl\u00ednica\\)')
     expect(text.trimEnd().endsWith('%%EOF')).toBe(true)
+  })
+
+  it('keeps the typographic characters WinAnsi has and wraps a long description (review of H10)', () => {
+    const text = receiptPdf({ ...payload, issued_to: 'Clínica D\u2019Ávila \u2013 Luanda', description: 'palavra '.repeat(40).trim() }).toString('latin1')
+    expect(text).toContain('Cl\u00ednica D\u0092\u00c1vila \u0096 Luanda')
+    expect(wrap('palavra '.repeat(40).trim()).every((line) => line.length <= 85)).toBe(true)
   })
 })

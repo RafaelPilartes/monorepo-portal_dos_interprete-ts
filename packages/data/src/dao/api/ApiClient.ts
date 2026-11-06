@@ -74,8 +74,9 @@ export class ApiClient {
       throw new DataError('INTERNAL_ERROR', { cause })
     }
     if (response.ok) return response.blob()
-    // The error body is JSON like any other: let the common path read it.
-    return this.request<Blob>('GET', path)
+    const payload: unknown = (response.headers.get('Content-Type') ?? '').includes('application/json')
+      ? await response.json().catch(() => undefined) : undefined
+    throw this.failure(response.status, payload, 'GET', path)
   }
 
   /** Sends a file to the storage URL the API signed (POST /uploads/sign); no session header there. */
@@ -123,11 +124,16 @@ export class ApiClient {
       return payload as T
     }
 
+    throw this.failure(response.status, payload, method, path)
+  }
+
+  /** The DataError of a failed answer: the catalog code it sent, or one for its status (api.md §2). */
+  private failure(status: number, payload: unknown, method: string, path: string): DataError {
     const envelope = (payload ?? {}) as ErrorEnvelope
     const sentCode = typeof envelope.error?.code === 'string' ? envelope.error.code : undefined
-    const code = sentCode ?? STATUS_CODES[response.status] ?? 'INTERNAL_ERROR'
+    const code = sentCode ?? STATUS_CODES[status] ?? 'INTERNAL_ERROR'
     if (!sentCode || !isErrorCode(sentCode)) {
-      console.error(`[api] ${method} ${path}: ${response.status} with code ${sentCode ?? 'none'}`)
+      console.error(`[api] ${method} ${path}: ${status} with code ${sentCode ?? 'none'}`)
     }
     let params: MessageParams | undefined
     if (isParams(envelope.error?.params)) {
@@ -138,6 +144,6 @@ export class ApiClient {
     const details = isStringRecord(envelope.error?.details) ? envelope.error.details : undefined
     const error = new DataError(code, { params, details, cause: payload })
     this.options.onError?.(error, { method, path })
-    throw error
+    return error
   }
 }

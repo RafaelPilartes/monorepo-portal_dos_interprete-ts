@@ -45,19 +45,47 @@ export function receiptLines(payload: ReceiptPayload): string[] {
   return lines
 }
 
-/** PDF string literal in WinAnsi (Latin-1 covers Portuguese), with ( ) \ escaped. */
+/** Characters WinAnsi has outside Latin-1, at their WinAnsi byte (names and descriptions use them). */
+const WIN_ANSI: Readonly<Record<string, number>> = {
+  '\u20ac': 0x80, '\u201a': 0x82, '\u201e': 0x84, '\u2026': 0x85, '\u2018': 0x91, '\u2019': 0x92, '\u201c': 0x93,
+  '\u201d': 0x94, '\u2022': 0x95, '\u2013': 0x96, '\u2014': 0x97, '\u0152': 0x8c, '\u0153': 0x9c,
+}
+
+/** PDF string literal in WinAnsi, with ( ) \ escaped; what WinAnsi cannot show becomes "?". */
 function pdfText(text: string): Buffer {
-  const latin = Buffer.from(text.replace(/[^\x20-\xff]/g, '?'), 'latin1')
   const parts: number[] = []
-  for (const byte of latin) {
+  for (const char of text) {
+    const code = char.codePointAt(0) ?? 0x3f
+    const byte = WIN_ANSI[char] ?? (code >= 0x20 && code <= 0xff && (code < 0x7f || code >= 0xa0) ? code : 0x3f)
     if (byte === 0x28 || byte === 0x29 || byte === 0x5c) parts.push(0x5c)
     parts.push(byte)
   }
   return Buffer.from(parts)
 }
 
+/** Lines of at most `width` characters, broken at spaces (an A4 page holds about 85 at 11 pt). */
+export function wrap(line: string, width = 85): string[] {
+  if (line.length <= width) return [line]
+  const out: string[] = []
+  let current = ''
+  for (const word of line.split(' ')) {
+    if (current && (current + ' ' + word).length > width) {
+      out.push(current)
+      current = word
+    } else {
+      current = current ? `${current} ${word}` : word
+    }
+    while (current.length > width) {
+      out.push(current.slice(0, width))
+      current = current.slice(width)
+    }
+  }
+  if (current) out.push(current)
+  return out
+}
+
 export function receiptPdf(payload: ReceiptPayload): Buffer {
-  const lines = receiptLines(payload)
+  const lines = receiptLines(payload).flatMap((line, index) => (index === 0 ? [line] : wrap(line)))
   const content: Buffer[] = [Buffer.from('BT\n/F1 11 Tf\n56 780 Td\n16 TL\n', 'latin1')]
   lines.forEach((line, index) => {
     const size = index === 0 ? 16 : 11

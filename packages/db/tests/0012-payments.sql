@@ -224,7 +224,10 @@ BEGIN
   EXCEPTION WHEN raise_exception THEN v_code := SQLERRM; END;
   IF v_code IS DISTINCT FROM 'FORBIDDEN' THEN RAISE EXCEPTION 'FAIL - an organisation member does not pay (got %)', v_code; END IF;
   PERFORM billing.submit_proof('00000000-0000-4000-8000-0000000000f2', v_intent.id, pg_temp.uploaded(v_intent.id));
-  RAISE NOTICE 'ok - in an organisation only the owner or admin sends the proof (R-PAY-04)';
+  IF NOT EXISTS (SELECT 1 FROM notify.notifications WHERE kind = 'payment_requested' AND account_id = '00000000-0000-4000-8000-0000000000f2') THEN
+    RAISE EXCEPTION 'FAIL - the organisation owner, who pays, is told of the payment';
+  END IF;
+  RAISE NOTICE 'ok - in an organisation only the owner or admin sends the proof, and they are told (R-PAY-04)';
 END $$;
 DO $$ BEGIN PERFORM pg_temp.as_account('00000000-0000-4000-8000-0000000000f3'); END $$;
 SET LOCAL ROLE authenticated;
@@ -279,6 +282,32 @@ BEGIN
     RAISE EXCEPTION 'FAIL - an intent waiting for a proof expires at its deadline';
   END IF;
   RAISE NOTICE 'ok - a sent proof never expires; its refund comes when accepted; a waiting intent is warned and expires (R-PAY-06)';
+END $$;
+
+-- Review of H10: a cancelled subject refunds at most what is left, once; a late proof is refused.
+DO $$
+DECLARE
+  v_intent billing.payment_intents;
+  v_code text;
+BEGIN
+  v_intent := billing.create_intent('verification', gen_random_uuid(), '00000000-0000-4000-8000-0000000000f1', NULL,
+    'Taxa de verificação', 15000, config.current_version_id(), util.now() + interval '3 days');
+  PERFORM billing.review_proof('00000000-0000-4000-8000-0000000000f8',
+    (billing.submit_proof('00000000-0000-4000-8000-0000000000f1', v_intent.id, pg_temp.uploaded(v_intent.id))).id, true);
+  PERFORM billing.create_manual_refund('00000000-0000-4000-8000-0000000000f8', v_intent.id, 5000, 'Acerto anterior.');
+  PERFORM billing.cancel_intent_for_subject('verification', v_intent.subject_id, 15000, 'verification_rejected', '{"pct": 100}');
+  PERFORM billing.cancel_intent_for_subject('verification', v_intent.subject_id, 15000, 'verification_rejected');
+  IF (SELECT sum(amount_aoa) FROM billing.refunds WHERE intent_id = v_intent.id) <> 15000
+     OR (SELECT count(*) FROM billing.refunds WHERE intent_id = v_intent.id AND policy_snapshot = '{"pct": 100}') <> 1 THEN
+    RAISE EXCEPTION 'FAIL - the subject''s refund is what is left (10 000), once, with its policy';
+  END IF;
+  v_intent := billing.create_intent('verification', gen_random_uuid(), '00000000-0000-4000-8000-0000000000f1', NULL,
+    'Taxa de verificação', 15000, config.current_version_id(), util.now() + interval '1 hour');
+  PERFORM pg_temp.at(v_intent.due_at);
+  BEGIN PERFORM billing.submit_proof('00000000-0000-4000-8000-0000000000f1', v_intent.id, pg_temp.uploaded(v_intent.id));
+  EXCEPTION WHEN raise_exception THEN v_code := SQLERRM; END;
+  IF v_code IS DISTINCT FROM 'INTENT_EXPIRED' THEN RAISE EXCEPTION 'FAIL - a proof after the deadline is refused before the job runs (got %)', v_code; END IF;
+  RAISE NOTICE 'ok - a cancelled subject refunds what is left, once; a proof after the deadline is INTENT_EXPIRED (review of H10)';
 END $$;
 
 -- R-PAY-10, R-PAY-11: a payout without bank details cannot be paid; adding them fills the copy.
