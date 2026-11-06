@@ -70,6 +70,9 @@ export function notificationText(kind: string, payload: Payload): { title: strin
       title: 'A disputa foi resolvida',
       body: `${request}. ${payload.resolution === 'completed' ? 'O serviço conta como feito.' : 'O serviço não conta como feito.'}`,
     }
+    case 'review_requested': return { title: `Avalia o teu serviço com ${text(payload.other_name) || 'a outra parte'}`, body: request }
+    case 'review_revealed': return { title: 'Recebeste uma avaliação', body: request }
+    case 'review_hidden': return { title: 'A equipa escondeu uma avaliação tua', body: text(payload.reason) ? `Motivo: ${text(payload.reason)}` : '' }
     case 'account_suspended_counterparty': return payload.place_reopened === true
       ? { title: 'Um intérprete deixou de estar disponível', body: `${request}. O lugar voltou a ficar livre.` }
       : { title: 'Um pedido foi cancelado pela equipa', body: `A outra parte deixou de estar disponível. ${request}` }

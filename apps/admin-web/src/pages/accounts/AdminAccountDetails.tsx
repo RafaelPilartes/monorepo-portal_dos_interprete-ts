@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { AccountReviews } from '@/pages/requests/AccountReviews'
 import { Link, useParams } from 'react-router-dom'
 import { useSession } from '@portal-dos-interpretes/auth'
 import { QueryError, TableSkeleton } from '@portal-dos-interpretes/features/components/QueryStates'
@@ -146,6 +147,7 @@ export default function AdminAccountDetails({ kind }: { kind: AccountKind }) {
               )}
           </CardContent>
         </Card>
+        <AccountReviews accountId={id} role={kind === 'interpreter' ? 'interpreter' : 'requester'} canModerate={canModerate} />
       </div>
 
       <SuspendDialog open={suspending} onOpenChange={setSuspending} kind="account" name={data.full_name ?? ''} suspend={suspend} />

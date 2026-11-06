@@ -1,8 +1,7 @@
 -- What the visitor sees of the directory (R-DIR-04, D-05): name, photo, city, languages,
 -- specialties, modality, badge and rating. No contacts, no biography, no prices. It runs as its
 -- owner and shows only the listed interpreters (R-DIR-03), to anyone, signed in or not. The badge
--- (H12) and the rating (R-DIR-05, with the reviews) are fixed values until their steps redefine
--- the view keeping these columns (AD-033).
+-- (H12) is a fixed value until its step redefines the view keeping the column (AD-033).
 CREATE OR REPLACE VIEW directory.public_listing WITH (security_invoker = false) AS
 SELECT i.account_id, i.slug, p.full_name, p.avatar_path, i.city, i.modality,
        coalesce((SELECT array_agg(c.name ORDER BY c.sort, c.name) FROM directory.interpreter_languages AS l
@@ -14,8 +13,12 @@ SELECT i.account_id, i.slug, p.full_name, p.avatar_path, i.city, i.modality,
        coalesce((SELECT array_agg(s.specialty_id) FROM directory.interpreter_specialties AS s
                   WHERE s.interpreter_id = i.account_id), '{}') AS specialty_ids,
        false AS is_verified,
-       NULL::numeric AS rating_average,
-       0 AS rating_count
+       -- R-DIR-05: the same rule as directory.interpreter_ratings (99b-reviews.sql, step H9), read
+       -- on the table here because this file runs before that one.
+       (SELECT round(avg(v.rating), 1) FROM booking.reviews AS v
+         WHERE v.target_account = i.account_id AND v.author_role = 'requester' AND v.revealed_at IS NOT NULL AND NOT v.hidden) AS rating_average,
+       (SELECT count(*)::integer FROM booking.reviews AS v
+         WHERE v.target_account = i.account_id AND v.author_role = 'requester' AND v.revealed_at IS NOT NULL AND NOT v.hidden) AS rating_count
   FROM identity.interpreter_profiles AS i
   JOIN identity.profiles AS p ON p.id = i.account_id
   JOIN directory.listed_ids AS l ON l.account_id = i.account_id;

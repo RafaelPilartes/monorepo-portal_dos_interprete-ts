@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { QueryError } from '@portal-dos-interpretes/features/components/QueryStates'
 import { priceText, RequestChat, RequestFacts, RequestTimeline } from '@portal-dos-interpretes/features/requests/RequestParts'
+import { ReceivedReviews, RequestReviewForms } from '@portal-dos-interpretes/features/requests/Reviews'
 import { DisputeList, LATE_WARNING, OpenDispute, ReasonAction } from '@portal-dos-interpretes/features/requests/Lifecycle'
 import { useRequestAction, useRequestDetail, useRequestDisputes, useRequests } from '@portal-dos-interpretes/features/requests/RequestsContext'
 import { formatDateTime } from '@portal-dos-interpretes/i18n'
@@ -125,7 +126,12 @@ export default function InterpreterRequestDetails() {
               {accept.isError && <Alert variant="destructive"><AlertDescription>{(accept.error as Error).message}</AlertDescription></Alert>}
             </CardContent>
           </Card>
+          <RequestReviewForms requestId={id} />
           <RequestFacts request={request} />
+          {/* R-REV-03 (D-44): the requester's reviews, for an interpreter it invited. */}
+          <Card><CardContent className="pt-6">
+            <ReceivedReviews accountId={request.created_by ?? ''} role="requester" title={`Avaliações de ${request.created_by_name ?? 'quem pede'}`} />
+          </CardContent></Card>
           {mine.thread_id && (
             <RequestChat threadId={mine.thread_id} title={`Conversa com ${request.created_by_name ?? 'o solicitante'}`}
               negotiation={{ role: 'interpreter', assignmentStatus: mine.status ?? '', offeredPrice: mine.offered_price_aoa,

@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
+import { RatingLine, ReceivedReviews } from '../requests/Reviews'
 import { formatAoa, formatDate } from '@portal-dos-interpretes/i18n'
 import { Badge } from '@portal-dos-interpretes/ui/components/badge'
 import { Button } from '@portal-dos-interpretes/ui/components/button'
@@ -89,7 +90,7 @@ export function InterpreterProfileView({ details }: { details: InterpreterDetail
             <div className="flex flex-wrap gap-1.5">
               {details.languages.map((row) => <Badge key={row.id} variant="secondary">{row.name} · {LANGUAGE_LEVELS[row.level] ?? row.level}</Badge>)}
             </div>
-            <p className="text-sm text-muted-foreground">Ainda sem avaliações</p>
+            <RatingLine accountId={id ?? ''} role="interpreter" />
           </div>
           {favorites && (
             <Button asChild><Link to={`/requests/new?interpreter=${profile.slug}`}>Pedir este intérprete</Link></Button>
@@ -159,6 +160,8 @@ export function InterpreterProfileView({ details }: { details: InterpreterDetail
               ))}
             </Section>
           )}
+
+          <ReceivedReviews accountId={id ?? ''} role="interpreter" title="Avaliações" />
 
           {(videos.length > 0 || articles.length > 0) && (
             <Section title="Conteúdo">

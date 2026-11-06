@@ -47,6 +47,7 @@ export default defineConfig({
     { name: 'h6', testMatch: /h6-.*\.spec\.ts$/ },
     { name: 'h7', testMatch: /h7-.*\.spec\.ts$/ },
     { name: 'h8', testMatch: /h8-.*\.spec\.ts$/, dependencies: ['admin-login'] },
+    { name: 'h9', testMatch: /h9-.*\.spec\.ts$/, dependencies: ['admin-login'] },
   ],
   webServer: [
     {

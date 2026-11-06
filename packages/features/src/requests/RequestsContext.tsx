@@ -3,7 +3,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { toast } from 'sonner'
 import { DataError } from '@portal-dos-interpretes/data'
 import { errorMessage } from '../lib/errorText'
-import type { RequestsRepository } from './data'
+import type { RequestsRepository, ReviewQuery } from './data'
 
 // The requests for a panel app: the repository (built by the app) and the signed-in account.
 
@@ -32,6 +32,9 @@ export const requestKeys = {
   messages: (threadId: string) => ['requests', 'messages', threadId] as const,
   disputes: (requestId: string) => ['requests', 'disputes', requestId] as const,
   staff: (status: string | null, page: number) => ['requests', 'staff', status, page] as const,
+  reviewsToDo: ['requests', 'reviews', 'to-do'] as const,
+  reviews: (query: ReviewQuery) => ['requests', 'reviews', query] as const,
+  rating: (accountId: string, role: string) => ['requests', 'rating', role, accountId] as const,
 }
 
 export function useRequestList(finished: boolean, organizationId: string | null, mineOnly: boolean, page: number, pageSize: number) {
@@ -73,6 +76,22 @@ export function useStaffRequestList(status: string | null, page: number, pageSiz
     queryFn: () => repository.staffList({ status, limit: pageSize, offset: (page - 1) * pageSize }),
     placeholderData: keepPreviousData,
   })
+}
+
+/** "Por avaliar": the completed services the signed-in side has not reviewed (R-REV-01). */
+export function useReviewsToDo() {
+  const { repository } = useRequests()
+  return useQuery({ queryKey: requestKeys.reviewsToDo, queryFn: () => repository.reviewsToDo() })
+}
+
+export function useReviews(query: ReviewQuery, enabled = true) {
+  const { repository } = useRequests()
+  return useQuery({ queryKey: requestKeys.reviews(query), queryFn: () => repository.reviews(query), enabled })
+}
+
+export function useRating(accountId: string, role: 'requester' | 'interpreter') {
+  const { repository } = useRequests()
+  return useQuery({ queryKey: requestKeys.rating(accountId, role), queryFn: () => repository.rating(accountId, role), enabled: accountId !== '' })
 }
 
 export function useMyAssignments() {

@@ -12,7 +12,7 @@ const routes: SmokeRoute[] = [
   { path: '/interpreters', name: 'interpreters', expectText: 'Intérpretes' },
   { path: '/favorites', name: 'favorites', expectText: 'Os intérpretes que marcaste para encontrar depressa.' },
   { path: '/history', name: 'history', expectText: 'Histórico de Solicitações' },
-  { path: '/reviews', name: 'reviews', expectText: 'Minhas Avaliações' },
+  { path: '/reviews', name: 'reviews', expectText: 'Avalia os intérpretes depois de cada serviço' },
   { path: '/profile', name: 'profile', expectText: 'Meu Perfil' },
   { path: '/settings', name: 'settings', expectText: 'Notificações' },
   // An unknown slug (the real profiles, videos and articles are in h4-directory.spec.ts).

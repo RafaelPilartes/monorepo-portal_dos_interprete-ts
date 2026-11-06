@@ -41,6 +41,7 @@ export function paramsOfHint(hint: string | undefined): Record<string, string | 
 export const CONSTRAINT_CODES: Readonly<Record<string, ErrorCode>> = {
   organizations_nif_key: 'NIF_IN_USE',
   disputes_one_open: 'DISPUTE_OPEN',
+  reviews_one_per_side: 'REVIEW_EXISTS',
 }
 
 /** Unique constraints whose duplicate is a form error: the field and what the person reads. */
@@ -60,6 +61,7 @@ export const FIELD_REASONS: Readonly<Record<string, string>> = {
   invalid: 'Valor inválido.',
   not_available: 'Este tipo de pedido ainda não está disponível.',
   already_invited: 'Este intérprete já foi convidado para este pedido.',
+  stars: 'Escolhe de 1 a 5 estrelas.',
 }
 
 /** Shared domains (util.*) → their own catalog code, whose field the catalog names. */

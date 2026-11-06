@@ -3,6 +3,7 @@ import { Link, useLocation, useParams } from 'react-router-dom'
 import { QueryError } from '@portal-dos-interpretes/features/components/QueryStates'
 import { useListing } from '@portal-dos-interpretes/features/directory/DirectoryContext'
 import { priceText, RequestChat, RequestFacts, RequestTimeline } from '@portal-dos-interpretes/features/requests/RequestParts'
+import { RequestReviewForms } from '@portal-dos-interpretes/features/requests/Reviews'
 import { DeliveredActions, DisputeList, LATE_WARNING, OpenDispute, ReasonAction } from '@portal-dos-interpretes/features/requests/Lifecycle'
 import { useRequestAction, useRequestDetail, useRequestDisputes } from '@portal-dos-interpretes/features/requests/RequestsContext'
 import { formatDateTime, REQUEST_KIND_LABELS } from '@portal-dos-interpretes/i18n'
@@ -139,6 +140,7 @@ export default function RequestDetails() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
+          {manage && <RequestReviewForms requestId={id} />}
           <RequestFacts request={request} />
           <Card>
             <CardHeader><CardTitle>Intérpretes</CardTitle></CardHeader>

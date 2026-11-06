@@ -233,6 +233,17 @@ export type Database = {
                         ];
                     },
                     {
+                        foreignKeyName: "disputes_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "reviews_to_do";
+                        referencedColumns: [
+                            "assignment_id"
+                        ];
+                    },
+                    {
                         foreignKeyName: "disputes_request_id_fkey";
                         columns: [
                             "request_id"
@@ -389,6 +400,17 @@ export type Database = {
                         referencedRelation: "request_assignments";
                         referencedColumns: [
                             "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "proposals_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "reviews_to_do";
+                        referencedColumns: [
+                            "assignment_id"
                         ];
                     },
                     {
@@ -610,6 +632,17 @@ export type Database = {
                         ];
                     },
                     {
+                        foreignKeyName: "request_events_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "reviews_to_do";
+                        referencedColumns: [
+                            "assignment_id"
+                        ];
+                    },
+                    {
                         foreignKeyName: "request_events_request_id_fkey";
                         columns: [
                             "request_id"
@@ -780,6 +813,131 @@ export type Database = {
                 Relationships: [
                 ];
             };
+            "reviews": {
+                Row: {
+                    "assignment_id": string;
+                    "author_account": string;
+                    "author_role": string;
+                    "comment": string | null;
+                    "created_at": string;
+                    "hidden": boolean;
+                    "hidden_at": string | null;
+                    "hidden_by": string | null;
+                    "hidden_reason": string | null;
+                    "id": string;
+                    "rating": number;
+                    "request_id": string;
+                    "revealed_at": string | null;
+                    "submitted_at": string;
+                    "target_account": string;
+                    "updated_at": string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    "assignment_id": string;
+                    "author_account": string;
+                    "author_role": string;
+                    "comment"?: string | null;
+                    "created_at"?: string;
+                    "hidden"?: boolean;
+                    "hidden_at"?: string | null;
+                    "hidden_by"?: string | null;
+                    "hidden_reason"?: string | null;
+                    "id"?: string;
+                    "rating": number;
+                    "request_id": string;
+                    "revealed_at"?: string | null;
+                    "submitted_at": string;
+                    "target_account": string;
+                    "updated_at"?: string;
+                };
+                Update: {
+                    "assignment_id"?: string;
+                    "author_account"?: string;
+                    "author_role"?: string;
+                    "comment"?: string | null;
+                    "created_at"?: string;
+                    "hidden"?: boolean;
+                    "hidden_at"?: string | null;
+                    "hidden_by"?: string | null;
+                    "hidden_reason"?: string | null;
+                    "id"?: string;
+                    "rating"?: number;
+                    "request_id"?: string;
+                    "revealed_at"?: string | null;
+                    "submitted_at"?: string;
+                    "target_account"?: string;
+                    "updated_at"?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "reviews_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "assignment_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "reviews_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "reviews_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "reviews_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "reviews_to_do";
+                        referencedColumns: [
+                            "assignment_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "reviews_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "reviews_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "requests";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
             "thread_reads": {
                 Row: {
                     "account_id": string;
@@ -880,6 +1038,17 @@ export type Database = {
                         referencedRelation: "request_assignments";
                         referencedColumns: [
                             "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "threads_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "reviews_to_do";
+                        referencedColumns: [
+                            "assignment_id"
                         ];
                     },
                     {
@@ -1012,6 +1181,17 @@ export type Database = {
                         referencedRelation: "request_assignments";
                         referencedColumns: [
                             "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "disputes_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "reviews_to_do";
+                        referencedColumns: [
+                            "assignment_id"
                         ];
                     },
                     {
@@ -1189,6 +1369,17 @@ export type Database = {
                         ];
                     },
                     {
+                        foreignKeyName: "proposals_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "reviews_to_do";
+                        referencedColumns: [
+                            "assignment_id"
+                        ];
+                    },
+                    {
                         foreignKeyName: "proposals_request_id_fkey";
                         columns: [
                             "request_id"
@@ -1347,6 +1538,17 @@ export type Database = {
                         ];
                     },
                     {
+                        foreignKeyName: "request_events_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "reviews_to_do";
+                        referencedColumns: [
+                            "assignment_id"
+                        ];
+                    },
+                    {
                         foreignKeyName: "request_events_request_id_fkey";
                         columns: [
                             "request_id"
@@ -1359,6 +1561,143 @@ export type Database = {
                     },
                     {
                         foreignKeyName: "request_events_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "requests";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "requester_ratings": {
+                Row: {
+                    "rating_average": number | null;
+                    "rating_count": number | null;
+                    "requester_id": string;
+                };
+                ComputedFields: never;
+                Relationships: [
+                ];
+            };
+            "review_details": {
+                Row: {
+                    "assignment_id": string;
+                    "author_account": string;
+                    "author_name": string | null;
+                    "author_role": string;
+                    "comment": string | null;
+                    "hidden": boolean;
+                    "hidden_reason": string | null;
+                    "id": string;
+                    "rating": number;
+                    "request_code": string;
+                    "request_id": string;
+                    "revealed_at": string | null;
+                    "service_title": string;
+                    "submitted_at": string;
+                    "target_account": string;
+                    "target_name": string | null;
+                };
+                ComputedFields: never;
+                Relationships: [
+                    {
+                        foreignKeyName: "reviews_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "assignment_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "reviews_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "my_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "reviews_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_assignments";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "reviews_assignment_id_fkey";
+                        columns: [
+                            "assignment_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "reviews_to_do";
+                        referencedColumns: [
+                            "assignment_id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "reviews_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "reviews_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "requests";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    }
+                ];
+            };
+            "reviews_to_do": {
+                Row: {
+                    "assignment_id": string;
+                    "author_role": string | null;
+                    "completed_at": string | null;
+                    "other_name": string | null;
+                    "request_code": string;
+                    "request_id": string;
+                    "reveal_days": number | null;
+                    "review_by": string | null;
+                    "service_title": string;
+                };
+                ComputedFields: never;
+                Relationships: [
+                    {
+                        foreignKeyName: "request_assignments_request_id_fkey";
+                        columns: [
+                            "request_id"
+                        ];
+                        isOneToOne: false;
+                        referencedRelation: "request_details";
+                        referencedColumns: [
+                            "id"
+                        ];
+                    },
+                    {
+                        foreignKeyName: "request_assignments_request_id_fkey";
                         columns: [
                             "request_id"
                         ];
@@ -1836,6 +2175,37 @@ export type Database = {
                 Args: Record<PropertyKey, never>;
                 Returns: number;
             };
+            "hide_review": {
+                Args: {
+                    "p_actor": string;
+                    "p_reason": string;
+                    "p_review": string;
+                };
+                Returns: {
+                    "assignment_id": string;
+                    "author_account": string;
+                    "author_role": string;
+                    "comment": string | null;
+                    "created_at": string;
+                    "hidden": boolean;
+                    "hidden_at": string | null;
+                    "hidden_by": string | null;
+                    "hidden_reason": string | null;
+                    "id": string;
+                    "rating": number;
+                    "request_id": string;
+                    "revealed_at": string | null;
+                    "submitted_at": string;
+                    "target_account": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "reviews";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
             "invite_interpreter": {
                 Args: {
                     "p_actor": string;
@@ -2211,6 +2581,16 @@ export type Database = {
                     isSetofReturn: false;
                 };
             };
+            "reveal_review": {
+                Args: {
+                    "p_review": string;
+                };
+                Returns: undefined;
+            };
+            "reveal_reviews": {
+                Args: Record<PropertyKey, never>;
+                Returns: number;
+            };
             "select_candidate": {
                 Args: {
                     "p_actor": string;
@@ -2245,6 +2625,38 @@ export type Database = {
                 SetofOptions: {
                     from: "*";
                     to: "request_assignments";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
+            "submit_review": {
+                Args: {
+                    "p_actor": string;
+                    "p_assignment": string;
+                    "p_comment": string;
+                    "p_rating": number;
+                };
+                Returns: {
+                    "assignment_id": string;
+                    "author_account": string;
+                    "author_role": string;
+                    "comment": string | null;
+                    "created_at": string;
+                    "hidden": boolean;
+                    "hidden_at": string | null;
+                    "hidden_by": string | null;
+                    "hidden_reason": string | null;
+                    "id": string;
+                    "rating": number;
+                    "request_id": string;
+                    "revealed_at": string | null;
+                    "submitted_at": string;
+                    "target_account": string;
+                    "updated_at": string;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "reviews";
                     isOneToOne: true;
                     isSetofReturn: false;
                 };
@@ -4157,6 +4569,16 @@ export type Database = {
             };
         };
         Views: {
+            "interpreter_ratings": {
+                Row: {
+                    "interpreter_id": string;
+                    "rating_average": number | null;
+                    "rating_count": number | null;
+                };
+                ComputedFields: never;
+                Relationships: [
+                ];
+            };
             "late_cancellations": {
                 Row: {
                     "account_id": string | null;

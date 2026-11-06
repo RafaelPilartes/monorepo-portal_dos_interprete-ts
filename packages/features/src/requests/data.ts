@@ -22,6 +22,12 @@ export interface RequestPreview {
 
 export type OpenRequestRow = Tables<{ schema: 'booking' }, 'open_requests_for_me'>
 export type DisputeRow = Tables<{ schema: 'booking' }, 'dispute_details'>
+export type ReviewRow = Tables<{ schema: 'booking' }, 'review_details'>
+export type ReviewToDoRow = Tables<{ schema: 'booking' }, 'reviews_to_do'>
+export interface Rating { average: number | null; count: number }
+
+/** Which reviews to read (R-REV-03 decides what the person may see). */
+export type ReviewQuery = { authorId: string } | { targetId: string; role: 'requester' | 'interpreter' } | { requestId: string }
 
 export interface NewRequest {
   kind: 'direct' | 'open'
@@ -205,6 +211,39 @@ export class RequestsRepository {
 
   openDispute(assignmentId: string, reason: string): Promise<unknown> {
     return this.api.post(`/assignments/${assignmentId}/disputes`, { reason })
+  }
+
+  // Reviews (reviews.md) ------------------------------------------------------------------------
+  async reviewsToDo(): Promise<ReviewToDoRow[]> {
+    return this.rows<ReviewToDoRow>(this.booking('reviews_to_do').select('*').order('completed_at', { ascending: false }), 'booking.reviews_to_do')
+  }
+
+  /** By author ("Que fiz"), by target and the role they were reviewed in ("Que recebi", a profile), or by request. */
+  async reviews(query: ReviewQuery): Promise<ReviewRow[]> {
+    let request = this.booking('review_details').select('*')
+    if ('authorId' in query) request = request.eq('author_account', query.authorId)
+    else if ('targetId' in query) request = request.eq('target_account', query.targetId).eq('author_role', query.role === 'interpreter' ? 'requester' : 'interpreter')
+    else request = request.eq('request_id', query.requestId)
+    return this.rows<ReviewRow>(request.order('submitted_at', { ascending: false }), 'booking.review_details')
+  }
+
+  /** R-REV-05: an interpreter's average (public) or a requester's (for whoever may read it). */
+  async rating(accountId: string, role: 'requester' | 'interpreter'): Promise<Rating> {
+    const rows = role === 'interpreter'
+      ? await this.rows<{ rating_average: number | null; rating_count: number | null }>(
+        this.client.schema('directory').from('interpreter_ratings').select('rating_average, rating_count').eq('interpreter_id', accountId), 'directory.interpreter_ratings')
+      : await this.rows<{ rating_average: number | null; rating_count: number | null }>(
+        this.booking('requester_ratings').select('rating_average, rating_count').eq('requester_id', accountId), 'booking.requester_ratings')
+    const row = rows[0]
+    return { average: row?.rating_average === null || row?.rating_average === undefined ? null : Number(row.rating_average), count: row?.rating_count ?? 0 }
+  }
+
+  submitReview(assignmentId: string, rating: number, comment: string): Promise<unknown> {
+    return this.api.post(`/assignments/${assignmentId}/reviews`, comment ? { rating, comment } : { rating })
+  }
+
+  hideReview(reviewId: string, reason: string): Promise<unknown> {
+    return this.api.post(`/admin/reviews/${reviewId}/hide`, { reason })
   }
 
   resolveDispute(disputeId: string, resolution: 'completed' | 'cancelled', notes: string): Promise<unknown> {

@@ -49,6 +49,7 @@ const bodies = {
   select: z.object({ assignment_id: uuid }),
   reason: z.object({ reason: z.string().trim().max(2000) }),
   resolve: z.object({ resolution: z.enum(['completed', 'cancelled']), notes: z.string().trim().max(4000) }),
+  review: z.object({ rating: z.number().int(), comment: z.string().trim().max(2000).optional() }),
 }
 const idParam = z.object({ id: uuid })
 
@@ -136,6 +137,17 @@ export function registerRequestRoutes(server: FastifyInstance, deps: { db: Datab
     reply.status(201).send(await callSql(deps.db, request, 'SELECT * FROM booking.open_dispute($1, $2, $3)', [
       actor(request), idParam.parse(request.params).id, bodies.reason.parse(request.body).reason,
     ])))
+  // Reviews (reviews.md): R-REV-01, R-REV-04.
+  server.post('/assignments/:id/reviews', async (request, reply) => {
+    const body = bodies.review.parse(request.body)
+    return reply.status(201).send(await callSql(deps.db, request, 'SELECT * FROM booking.submit_review($1, $2, $3, $4)', [
+      actor(request), idParam.parse(request.params).id, body.rating, body.comment ?? null,
+    ]))
+  })
+  server.post('/admin/reviews/:id/hide', async (request) =>
+    callSql(deps.db, request, 'SELECT * FROM booking.hide_review($1, $2, $3)', [
+      actor(request), idParam.parse(request.params).id, bodies.reason.parse(request.body).reason,
+    ]))
   // The refund decision of the managed request arrives with H11 (R-LIFE-06).
   server.post('/admin/disputes/:id/resolve', async (request) => {
     const body = bodies.resolve.parse(request.body)

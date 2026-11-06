@@ -195,3 +195,15 @@ describe('service lifecycle through the API (service-lifecycle.md)', () => {
     expect(line.rows[0]).toEqual({ status: 'cancelled', late_cancellation: false })
   })
 })
+
+describe('reviews through the API (reviews.md)', () => {
+  it('a service not completed is not reviewed; a rating out of 1 to 5 is a field error; only a moderator hides', async () => {
+    const created = await app.inject({ method: 'POST', url: '/requests', headers: as(requester), payload: request({ starts_at: new Date(Date.now() + 11 * 24 * 3600_000).toISOString() }) })
+    const assignment = (await owner.query<{ id: string }>('SELECT id FROM booking.request_assignments WHERE request_id = $1', [created.json().id])).rows[0]!
+    const early = await app.inject({ method: 'POST', url: `/assignments/${assignment.id}/reviews`, headers: as(requester), payload: { rating: 5 } })
+    expect(early.statusCode).toBe(409)
+    expect(early.json().error).toMatchObject({ code: 'REVIEW_NOT_ALLOWED', message: 'Só podes avaliar depois de o serviço estar concluído.' })
+    const hide = await app.inject({ method: 'POST', url: `/admin/reviews/${assignment.id}/hide`, headers: as(requester), payload: { reason: 'Ofensiva' } })
+    expect(hide.json().error.code).toBe('FORBIDDEN')
+  })
+})

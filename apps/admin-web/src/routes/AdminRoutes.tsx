@@ -31,16 +31,18 @@ const AdminRoutes = () => {
     <Route path="/" element={<AdminLayout />}>
       <Route index element={<AdminOverview />} />
       <Route path="interpreters" element={<AdminAccounts kind="interpreter" />} />
-      <Route path="interpreters/:id" element={<AdminAccountDetails kind="interpreter" />} />
       <Route
         path="verifications"
         element={<AdminInterpreterVerifications />}
       />
       <Route path="requesters" element={<AdminAccounts kind="requester" />} />
-      <Route path="requesters/:id" element={<AdminAccountDetails kind="requester" />} />
+
       <Route path="organizations" element={<AdminOrganizations />} />
       <Route path="organizations/:id" element={<AdminOrganizationDetails />} />
+      {/* The requests and the account sheets (their reviews) read booking through the same provider. */}
       <Route element={<AdminRequestsArea />}>
+        <Route path="interpreters/:id" element={<AdminAccountDetails kind="interpreter" />} />
+        <Route path="requesters/:id" element={<AdminAccountDetails kind="requester" />} />
         <Route path="requests" element={<AdminRequests />} />
         <Route path="requests/:id" element={<AdminRequestDetails />} />
       </Route>
