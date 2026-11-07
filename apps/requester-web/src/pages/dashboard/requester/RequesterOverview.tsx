@@ -39,7 +39,7 @@ export default function RequesterOverview() {
         action={<Button asChild><Link to="/requests/new"><Plus className="h-4 w-4" />Nova solicitação</Link></Button>} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <Card className="order-2 lg:order-1">
+        <Card className="order-2 min-w-0 lg:order-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle>Próximos serviços</CardTitle>
             <Button variant="ghost" size="sm" asChild><Link to="/requests">Ver todos</Link></Button>
@@ -65,7 +65,7 @@ export default function RequesterOverview() {
           </CardContent>
         </Card>
 
-        <Card className="order-1 h-fit lg:order-2">
+        <Card className="order-1 h-fit min-w-0 lg:order-2">
           <CardHeader className="pb-1"><CardTitle>À tua espera</CardTitle></CardHeader>
           <CardContent>
             {loading ? <Skeleton className="h-28 w-full" /> : (

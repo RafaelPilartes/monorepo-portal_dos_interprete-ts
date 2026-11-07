@@ -49,7 +49,7 @@ export default function AdminOverview() {
       <PageHeader title={greetingFor(account?.fullName)} description="As filas do teu trabalho e os próximos pedidos da plataforma." />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <Card className="order-2 lg:order-1">
+        <Card className="order-2 min-w-0 lg:order-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle>Próximos pedidos</CardTitle>
             <Button variant="ghost" size="sm" asChild><Link to="/requests">Ver todos</Link></Button>
@@ -73,7 +73,7 @@ export default function AdminOverview() {
           </CardContent>
         </Card>
 
-        <Card className="order-1 h-fit lg:order-2">
+        <Card className="order-1 h-fit min-w-0 lg:order-2">
           <CardHeader className="pb-1"><CardTitle>Filas de trabalho</CardTitle></CardHeader>
           <CardContent>
             {rows.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">O teu nível não tem filas de trabalho nesta página.</p>

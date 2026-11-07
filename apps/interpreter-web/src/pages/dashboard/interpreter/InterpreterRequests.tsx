@@ -25,7 +25,7 @@ const GROUPS = [
 function Row({ row }: { row: MyAssignmentRow }) {
   return (
     <li>
-      <Link to={`/requests/${row.request_id}`} className="-mx-2 flex items-center gap-4 rounded-md px-2 py-3.5 transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <Link to={`/requests/${row.request_id}`} className="-mx-2 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md px-2 py-3.5 sm:flex-nowrap transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <AgendaWhen at={row.starts_at} />
         <div className="min-w-0 flex-1 border-l border-border pl-4">
           <p className="font-medium">{row.service_title}{row.is_urgent && <Badge variant="destructive" className="ml-2 py-0 text-[10px]">Urgente</Badge>}</p>
@@ -36,7 +36,7 @@ function Row({ row }: { row: MyAssignmentRow }) {
             <p className="text-sm font-medium text-warning">Responde até {formatDateTime(row.invite_expires_at)}</p>
           )}
         </div>
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
+        <div className="flex basis-full flex-wrap items-center gap-3 pl-[calc(4.75rem+1rem+1rem+1px)] sm:basis-auto sm:shrink-0 sm:justify-end sm:pl-0">
           <span className="tabular-nums text-sm">{row.agreed_price_aoa !== null ? priceText(row.agreed_price_aoa, row.agreed_travel_fee_aoa) : priceText(row.offered_price_aoa, row.offered_travel_fee_aoa)}</span>
           <StatusBadge kind="assignment" status={row.status ?? ''} />
         </div>

@@ -22,10 +22,11 @@ export function AgendaWhen({ at, className }: { at: string | null | undefined; c
 /** One appointment: the time column, what it is, and what it needs (status, action). */
 export function AgendaItem({ at, children, aside, className }: { at: string | null | undefined; children: ReactNode; aside?: ReactNode; className?: string }) {
   return (
-    <li className={cn('flex items-start gap-4 py-3.5 sm:items-center', className)}>
+    <li className={cn('flex flex-wrap items-start gap-x-4 gap-y-2 py-3.5 sm:flex-nowrap sm:items-center', className)}>
       <AgendaWhen at={at} />
       <div className="min-w-0 flex-1 border-l border-border pl-4">{children}</div>
-      {aside && <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">{aside}</div>}
+      {/* On a phone the status and actions go under the line, aligned with the text. */}
+      {aside && <div className="flex basis-full flex-wrap items-center gap-2 pl-[calc(4.75rem+1rem+1rem+1px)] sm:basis-auto sm:shrink-0 sm:justify-end sm:pl-0">{aside}</div>}
     </li>
   )
 }

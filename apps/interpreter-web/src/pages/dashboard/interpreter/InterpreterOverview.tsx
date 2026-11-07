@@ -42,7 +42,7 @@ export default function InterpreterOverview() {
         action={<Button variant="outline" asChild><Link to="/open-requests">Ver solicitações abertas</Link></Button>} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <Card className="order-2 lg:order-1">
+        <Card className="order-2 min-w-0 lg:order-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle>Agenda</CardTitle>
             <Button variant="ghost" size="sm" asChild><Link to="/schedule">Ver calendário</Link></Button>
@@ -68,7 +68,7 @@ export default function InterpreterOverview() {
           </CardContent>
         </Card>
 
-        <Card className="order-1 h-fit lg:order-2">
+        <Card className="order-1 h-fit min-w-0 lg:order-2">
           <CardHeader className="pb-1"><CardTitle>À tua espera</CardTitle></CardHeader>
           <CardContent>
             {loading ? <Skeleton className="h-28 w-full" /> : (

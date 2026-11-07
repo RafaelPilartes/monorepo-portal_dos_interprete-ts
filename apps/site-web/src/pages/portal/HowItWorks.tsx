@@ -106,12 +106,12 @@ export default function HowItWorks() {
                   >
                     <div className="hidden md:block md:w-1/2" />
                     <div className="relative z-10 flex-1 md:w-1/2">
+                      {/* On a phone the dot sits on the line at the left; from md it alternates
+                          sides as before (the inline style used to push it off the screen). */}
                       <div
-                        className="absolute left-6 top-6 h-3 w-3 rounded-full bg-primary md:left-1/2 md:-translate-x-1/2"
-                        style={{
-                          left: index % 2 === 0 ? '-1.125rem' : 'auto',
-                          right: index % 2 !== 0 ? '-1.125rem' : 'auto'
-                        }}
+                        className={`absolute left-[1.1875rem] top-6 h-3 w-3 rounded-full bg-primary md:-translate-x-1/2 ${
+                          index % 2 === 0 ? 'md:left-[-1.125rem]' : 'md:left-auto md:right-[-1.125rem]'
+                        }`}
                       />
                       <div className="ml-12 md:ml-0 rounded-xl bg-card p-6 shadow-md">
                         <div className="flex items-start gap-4">
