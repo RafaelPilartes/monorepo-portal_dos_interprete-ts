@@ -31,7 +31,6 @@ import { Route } from 'react-router-dom'
 const AdminRoutes = () => {
   return (
     <Route path="/" element={<AdminLayout />}>
-      <Route index element={<AdminOverview />} />
       <Route path="interpreters" element={<AdminAccounts kind="interpreter" />} />
       <Route
         path="verifications"
@@ -43,6 +42,7 @@ const AdminRoutes = () => {
       <Route path="organizations/:id" element={<AdminOrganizationDetails />} />
       {/* The requests and the account sheets (their reviews) read booking through the same provider. */}
       <Route element={<AdminRequestsArea />}>
+        <Route index element={<AdminOverview />} />
         <Route path="interpreters/:id" element={<AdminAccountDetails kind="interpreter" />} />
         <Route path="requesters/:id" element={<AdminAccountDetails kind="requester" />} />
         <Route path="requests" element={<AdminRequests />} />

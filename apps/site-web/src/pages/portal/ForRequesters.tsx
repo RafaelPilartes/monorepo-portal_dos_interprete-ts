@@ -80,16 +80,12 @@ export default function ForRequesters() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="section-padding bg-gradient-to-br from-accent via-background to-background">
+      <section className="section-padding border-b border-border bg-[hsl(216_33%_97.5%)] pt-32 dark:bg-muted/30">
         <div className="container-wide">
           <div className="grid gap-12 lg:grid-cols-2 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary mb-6">
-                <Building2 className="h-4 w-4" />
-                <span>Para Solicitantes</span>
-              </div>
               <h1 className="text-4xl font-bold text-foreground sm:text-5xl mb-6">
-                Precisa de um <span className="text-gradient">Intérprete?</span>
+                Precisa de um <span className="text-primary">Intérprete?</span>
               </h1>
               <p className="text-lg text-muted-foreground mb-8">
                 Conectamos você a intérpretes qualificados de Língua Gestual
@@ -107,7 +103,6 @@ export default function ForRequesters() {
             </div>
             <div className="hidden lg:block">
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-3xl blur-3xl" />
                 <div className="relative bg-card rounded-2xl p-8 shadow-xl">
                   <h3 className="font-semibold text-foreground mb-4">
                     Exemplo de Solicitação

@@ -1,7 +1,7 @@
 // Sidebar of interpreter-web; its own module so the layout file only exports components.
 import type { NavGroup, NavItem } from '@portal-dos-interpretes/ui/components/dashboard-layout'
 import {
-  LayoutDashboard,
+  Home,
   FileText,
   Calendar,
   Clock,
@@ -26,50 +26,51 @@ import {
 } from "lucide-react";
 
 export const navigation: (NavItem | NavGroup)[] = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Início", href: "/", icon: Home },
   {
-    label: "Solicitações",
+    label: "Trabalho",
     defaultOpen: true,
     items: [
-      { name: "Minhas Solicitações", href: "/requests", icon: FileText },
-      { name: "Abertas", href: "/open-requests", icon: Users },
-    ],
-  },
-  {
-    label: "Agenda",
-    items: [
-      { name: "Calendário", href: "/schedule", icon: Calendar },
+      { name: "Solicitações", href: "/requests", icon: FileText },
+      { name: "Solicitações abertas", href: "/open-requests", icon: Users },
+      { name: "Agenda", href: "/schedule", icon: Calendar },
       { name: "Disponibilidade", href: "/availability", icon: Clock },
+      { name: "Avaliações", href: "/reviews", icon: Star },
+      { name: "Ganhos", href: "/earnings", icon: DollarSign },
     ],
   },
   {
-    label: "Perfil Público",
+    label: "Perfil público",
     items: [
-      { name: "Visão Geral", href: "/profile/overview", icon: Eye },
+      { name: "Visão geral", href: "/profile/overview", icon: Eye },
       { name: "Experiência", href: "/profile/experience", icon: Briefcase },
-      { name: "Serviços", href: "/profile/services", icon: Settings },
+      { name: "Serviços e preços", href: "/profile/services", icon: Settings },
       { name: "Conteúdos", href: "/profile/content", icon: Video },
-      { name: "Avaliações", href: "/profile/reviews", icon: Star },
+      { name: "Avaliações recebidas", href: "/profile/reviews", icon: Star },
       { name: "Contacto", href: "/profile/contact", icon: Phone },
     ],
   },
-  { name: "Verificação", href: "/verification", icon: Shield },
-  { name: "Ganhos", href: "/earnings", icon: DollarSign },
-  { name: "Documentos", href: "/verification/documents", icon: FileCheck },
   {
-    label: "Portal dos Intérpretes",
+    label: "Verificação",
+    items: [
+      { name: "Selo de verificação", href: "/verification", icon: Shield },
+      { name: "Documentos", href: "/verification/documents", icon: FileCheck },
+    ],
+  },
+  {
+    label: "Comunidade",
     defaultOpen: false,
     items: [
-      { name: "Bolsa de Oportunidades", href: "/opportunities", icon: Briefcase },
-      { name: "Biblioteca de Recursos", href: "/library", icon: BookOpen },
-      { name: "Comunidade", href: "/community/feed", icon: Users },
+      { name: "Bolsa de oportunidades", href: "/opportunities", icon: Briefcase },
+      { name: "Biblioteca de recursos", href: "/library", icon: BookOpen },
+      { name: "Feed", href: "/community/feed", icon: Users },
       { name: "Eventos", href: "/events", icon: CalendarDays },
-      { name: "Formação Contínua", href: "/training", icon: GraduationCap },
+      { name: "Formação contínua", href: "/training", icon: GraduationCap },
       { name: "Mentorias", href: "/mentorship", icon: UserPlus },
       { name: "Fórum", href: "/community/forum", icon: MessageSquare },
-      { name: "Apoio Jurídico e Ético", href: "/library/legal", icon: Scale },
-      { name: "Benefícios e Parcerias", href: "/benefits", icon: Gift },
-      { name: "Suporte e Ouvidoria", href: "/support", icon: HelpCircle },
+      { name: "Apoio jurídico e ético", href: "/library/legal", icon: Scale },
+      { name: "Benefícios e parcerias", href: "/benefits", icon: Gift },
+      { name: "Suporte e ouvidoria", href: "/support", icon: HelpCircle },
     ],
   },
   { name: "Configurações", href: "/settings", icon: Settings },

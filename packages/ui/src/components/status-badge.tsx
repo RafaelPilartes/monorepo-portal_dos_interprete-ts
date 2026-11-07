@@ -109,11 +109,13 @@ export function StatusBadge({ status, className, kind }: StatusBadgeProps & {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border",
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium border panel:border-transparent panel:px-2",
         config.className,
         className
       )}
     >
+      {/* The state's colour as a dot as well, so it does not rest on the fill alone. */}
+      <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
       {config.label}
     </span>
   );

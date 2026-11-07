@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { formatDateTime, REQUEST_KIND_LABELS } from '@portal-dos-interpretes/i18n'
+import { REQUEST_KIND_LABELS } from '@portal-dos-interpretes/i18n'
+import { AgendaWhen } from '@portal-dos-interpretes/ui/components/agenda'
 import { Badge } from '@portal-dos-interpretes/ui/components/badge'
 import { Button } from '@portal-dos-interpretes/ui/components/button'
 import { Card, CardContent } from '@portal-dos-interpretes/ui/components/card'
@@ -48,8 +49,8 @@ export function RequestList({ finished, organizationId }: { finished: boolean; o
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-28">Quando</TableHead>
                       <TableHead>Pedido</TableHead>
-                      <TableHead>Quando</TableHead>
                       <TableHead className="hidden md:table-cell">Tipo</TableHead>
                       <TableHead className="hidden sm:table-cell">Intérpretes</TableHead>
                       <TableHead>Estado</TableHead>
@@ -58,11 +59,11 @@ export function RequestList({ finished, organizationId }: { finished: boolean; o
                   <TableBody>
                     {list.data.rows.map((row) => (
                       <TableRow key={row.id}>
+                        <TableCell><AgendaWhen at={row.starts_at} /></TableCell>
                         <TableCell>
                           <Link to={`/requests/${row.id}`} className="font-medium hover:underline">{row.service_title}</Link>
                           <p className="font-mono text-xs text-muted-foreground">{row.code}{row.is_urgent && <Badge variant="destructive" className="ml-2 py-0 text-[10px]">Urgente</Badge>}</p>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap tabular-nums">{formatDateTime(row.starts_at ?? '')}</TableCell>
                         <TableCell className="hidden md:table-cell">{REQUEST_KIND_LABELS[row.kind as keyof typeof REQUEST_KIND_LABELS]}</TableCell>
                         <TableCell className="hidden tabular-nums sm:table-cell">{row.accepted_count}/{row.interpreters_needed}</TableCell>
                         <TableCell><StatusBadge kind="request" status={row.status ?? ''} /></TableCell>

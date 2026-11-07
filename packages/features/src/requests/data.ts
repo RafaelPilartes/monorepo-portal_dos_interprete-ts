@@ -193,6 +193,20 @@ export class RequestsRepository {
     return { rows: (data ?? []) as RequestRow[], total: count ?? 0 }
   }
 
+  /** admin-web /: the platform's requests still to happen, soonest first (R-REQ-07: staff read all). */
+  async staffUpcoming(limit: number): Promise<RequestRow[]> {
+    return this.rows<RequestRow>(this.booking('request_details').select('*')
+      .in('status', ['awaiting_interpreters', 'awaiting_payment', 'payment_review', 'confirmed'])
+      .gte('ends_at', new Date().toISOString()).order('starts_at').limit(limit), 'booking.request_details')
+  }
+
+  /** How many requests have this status (admin-web /, the team's queues). */
+  async staffCount(status: string): Promise<number> {
+    const { count, error } = await this.booking('request_details').select('id', { count: 'exact', head: true }).eq('status', status)
+    if (error) throw translatePostgrestError(error, 'booking.request_details')
+    return count ?? 0
+  }
+
   cancelRequest(requestId: string, reason: string): Promise<unknown> {
     return this.api.post(`/requests/${requestId}/cancel`, { reason })
   }

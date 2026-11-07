@@ -1,166 +1,87 @@
-import { PageHeader } from "@portal-dos-interpretes/ui/components/page-header";
-import { StatsCard } from "@portal-dos-interpretes/ui/components/stats-card";
-import { Card, CardContent, CardHeader, CardTitle } from "@portal-dos-interpretes/ui/components/card";
-import { Button } from "@portal-dos-interpretes/ui/components/button";
-import { Link } from "react-router-dom";
-import { StatusBadge } from "@portal-dos-interpretes/ui/components/status-badge";
-import {
-  Users,
-  UserCheck,
-  FileText,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  ArrowRight,
-} from "lucide-react";
+import { Link } from 'react-router-dom'
+import { useSession } from '@portal-dos-interpretes/auth'
+import { useBillingQuery } from '@portal-dos-interpretes/features/billing/Billing'
+import { QueryError } from '@portal-dos-interpretes/features/components/QueryStates'
+import { greetingFor, WaitingList, type WaitingRow } from '@portal-dos-interpretes/features/components/WaitingList'
+import { useStaffCount, useStaffUpcoming } from '@portal-dos-interpretes/features/requests/RequestsContext'
+import { REQUEST_KIND_LABELS } from '@portal-dos-interpretes/i18n'
+import { AgendaItem, AgendaList } from '@portal-dos-interpretes/ui/components/agenda'
+import { Button } from '@portal-dos-interpretes/ui/components/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@portal-dos-interpretes/ui/components/card'
+import { EmptyState } from '@portal-dos-interpretes/ui/components/empty-state'
+import { PageHeader } from '@portal-dos-interpretes/ui/components/page-header'
+import { Skeleton } from '@portal-dos-interpretes/ui/components/skeleton'
+import { StatusBadge } from '@portal-dos-interpretes/ui/components/status-badge'
+import { CalendarClock } from 'lucide-react'
 
-const stats = [
-  { title: "Total Intérpretes", value: "48", icon: Users, change: "+5 este mês" },
-  { title: "Solicitantes Ativos", value: "156", icon: UserCheck, change: "+12 este mês" },
-  { title: "Serviços este mês", value: "89", icon: FileText, change: "+23% vs mês anterior" },
-  { title: "Taxa de Conclusão", value: "94%", icon: TrendingUp, change: "+2% vs mês anterior" },
-];
-
-const pendingInterpreters = [
-  { id: "1", name: "Ana Ferreira", email: "ana@email.com", date: "15 Jan 2026" },
-  { id: "2", name: "Carlos Mendes", email: "carlos@email.com", date: "14 Jan 2026" },
-  { id: "3", name: "Sofia Almeida", email: "sofia@email.com", date: "13 Jan 2026" },
-];
-
-const recentRequests = [
-  { id: "req-201", service: "Consulta Médica", requester: "João Silva", status: "pending" as const, date: "16 Jan 2026" },
-  { id: "req-202", service: "Reunião Empresarial", requester: "Empresa XYZ", status: "confirmed" as const, date: "16 Jan 2026" },
-  { id: "req-203", service: "Audiência Jurídica", requester: "Maria Costa", status: "pending" as const, date: "15 Jan 2026" },
-];
+// admin-web / (the team's first page): the queues the signed-in level works on, and the agenda of
+// the platform's next requests — from the database (the old sample figures are gone). The counters
+// and reports of the operations dashboard arrive with H13 (admin-operations.md).
 
 export default function AdminOverview() {
+  const session = useSession()
+  const account = session.status === 'authenticated' ? session.account : null
+  const level = account?.staffLevel ?? null
+  const finance = level === 'finance' || level === 'super_admin'
+  const moderates = level === 'moderator' || level === 'super_admin'
+  const operates = moderates || level === 'request_operator'
+
+  const disputes = useStaffCount('disputed', moderates)
+  const waiting = useStaffCount('awaiting_interpreters', operates)
+  const proofs = useBillingQuery(['proofs', false], (repository) => (finance ? repository.proofs(false) : Promise.resolve([])))
+  const refunds = useBillingQuery(['refunds'], (repository) => (finance ? repository.refunds() : Promise.resolve([])))
+  const payouts = useBillingQuery(['payouts'], (repository) => (finance ? repository.payouts() : Promise.resolve([])))
+  const upcoming = useStaffUpcoming(10)
+
+  const rows: WaitingRow[] = [
+    ...(moderates ? [{ label: 'Disputas abertas', detail: 'Resolve com notas; as partes são avisadas.', count: disputes.data ?? 0, href: '/requests', tone: 'urgent' as const }] : []),
+    ...(finance ? [
+      { label: 'Comprovativos por validar', detail: 'Aceita ou recusa, dos mais antigos primeiro.', count: proofs.data?.length ?? 0, href: '/payments', tone: 'urgent' as const },
+      { label: 'Reembolsos a transferir', detail: 'Marca como pago com a referência.', count: (refunds.data ?? []).filter((row) => row.status === 'pending').length, href: '/refunds' },
+      { label: 'Repasses em fila', detail: 'O valor dos intérpretes dos pedidos geridos.', count: (payouts.data ?? []).filter((row) => row.status === 'queued').length, href: '/payouts' },
+    ] : []),
+    ...(operates ? [{ label: 'Pedidos à espera de intérpretes', detail: 'Ainda sem todos os intérpretes.', count: waiting.data ?? 0, href: '/requests' }] : []),
+  ]
+  const loading = (moderates && disputes.isPending) || (operates && waiting.isPending) || proofs.isPending || refunds.isPending || payouts.isPending
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Dashboard Administrativo"
-        description="Visão geral da plataforma"
-      />
+      <PageHeader title={greetingFor(account?.fullName)} description="As filas do teu trabalho e os próximos pedidos da plataforma." />
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <StatsCard
-            key={stat.title}
-            title={stat.title}
-            value={stat.value}
-            icon={stat.icon}
-            description={stat.change}
-          />
-        ))}
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Pending Interpreters */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-warning" />
-              Intérpretes Pendentes
-            </CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/interpreters?status=pending">
-                Ver todos <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <Card className="order-2 lg:order-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle>Próximos pedidos</CardTitle>
+            <Button variant="ghost" size="sm" asChild><Link to="/requests">Ver todos</Link></Button>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {pendingInterpreters.map((interpreter) => (
-                <div key={interpreter.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div>
-                    <p className="font-medium">{interpreter.name}</p>
-                    <p className="text-sm text-muted-foreground">{interpreter.email}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{interpreter.date}</span>
-                    <Button size="sm" asChild>
-                      <Link to={`/interpreters/${interpreter.id}`}>
-                        Analisar
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {upcoming.isPending ? <Skeleton className="h-48 w-full" />
+              : upcoming.isError ? <QueryError error={upcoming.error} onRetry={() => void upcoming.refetch()} />
+              : upcoming.data.length === 0 ? <EmptyState icon={CalendarClock} title="Nenhum pedido marcado." description="Os pedidos em curso da plataforma aparecem aqui, por dia e hora." />
+              : (
+                <AgendaList label="Próximos pedidos">
+                  {upcoming.data.map((row) => (
+                    <AgendaItem key={row.id} at={row.starts_at} aside={<StatusBadge kind="request" status={row.status ?? ''} />}>
+                      <Link to={`/requests/${row.id}`} className="font-medium hover:underline">{row.service_title}</Link>
+                      <p className="truncate text-xs text-muted-foreground">
+                        <span className="font-mono">{row.code}</span> · {REQUEST_KIND_LABELS[row.kind as keyof typeof REQUEST_KIND_LABELS]} · {row.organization_name ?? row.created_by_name}
+                      </p>
+                    </AgendaItem>
+                  ))}
+                </AgendaList>
+              )}
           </CardContent>
         </Card>
 
-        {/* Recent Requests */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
-              Solicitações Recentes
-            </CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/requests">
-                Ver todas <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardHeader>
+        <Card className="order-1 h-fit lg:order-2">
+          <CardHeader className="pb-1"><CardTitle>Filas de trabalho</CardTitle></CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentRequests.map((request) => (
-                <div key={request.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div>
-                    <p className="font-medium">{request.service}</p>
-                    <p className="text-sm text-muted-foreground">{request.requester}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <StatusBadge status={request.status} />
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link to={`/requests/${request.id}`}>
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {rows.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">O teu nível não tem filas de trabalho nesta página.</p>
+              : loading ? <Skeleton className="h-28 w-full" />
+              : <WaitingList rows={rows} empty="Nenhuma fila com trabalho. Está tudo em dia." />}
           </CardContent>
         </Card>
       </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Ações Rápidas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Button variant="outline" className="h-auto py-4 flex-col gap-2" asChild>
-              <Link to="/interpreters?status=pending">
-                <AlertCircle className="h-6 w-6" />
-                <span>Aprovar Intérpretes</span>
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col gap-2" asChild>
-              <Link to="/requests?status=pending">
-                <Clock className="h-6 w-6" />
-                <span>Atribuir Serviços</span>
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col gap-2" asChild>
-              <Link to="/content/testimonials">
-                <CheckCircle className="h-6 w-6" />
-                <span>Gerir Testemunhos</span>
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col gap-2" asChild>
-              <Link to="/reports">
-                <TrendingUp className="h-6 w-6" />
-                <span>Ver Relatórios</span>
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
-  );
+  )
 }

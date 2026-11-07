@@ -84,6 +84,11 @@ O rollback fica escrito antes de qualquer deploy.
 
 ---
 
+## Completo e premium (decisão do Rafael, 2026-11-07)
+
+- **Cada passo entrega-se completo**: quando o Rafael testar, só devem aparecer acertos mínimos. Cada botão funciona, cada estado (vazio, a carregar, erro) existe, cada papel foi percorrido, os casos-limite da spec estão testados. O que fica de fora escreve-se no relatório com a razão — nunca se esconde. Regras em `docs/plan/claude-code-rules.md` §6 c′.
+- **UI premium e profissional, sóbria**, sobretudo nas dashboards: referências reais antes de desenhar (Mobbin, Pinterest…), skill `impeccable`, sistema em `DESIGN.md`. Regras em `claude-code-rules.md` §12.
+
 ## Nunca inventar
 
 **Nenhuma regra de negócio, preço ou fluxo que não esteja em `docs/plan/decisions.md`, `docs/plan/specs/` ou `docs/_source/product-explainer.md`.**

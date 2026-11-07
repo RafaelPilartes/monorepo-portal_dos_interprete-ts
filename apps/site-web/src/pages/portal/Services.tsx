@@ -54,7 +54,7 @@ export default function Services() {
         <div className="container-wide">
           <AnimatedSection animation="fade-up" className="text-center mb-12">
             <h2 className="text-3xl font-bold text-foreground sm:text-4xl mb-4">
-              Categorias de <span className="text-gradient">Serviços</span>
+              Categorias de <span className="text-primary">Serviços</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Interpretação profissional em todos os principais sectores

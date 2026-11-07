@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { APP_TIMEZONE, COMMON_TEXTS, formatAoa, formatDate, formatDateTime, formatTime, fromLuandaLocal, luandaDay } from './index'
+import { agendaParts, APP_TIMEZONE, COMMON_TEXTS, formatAoa, formatDate, formatDateTime, formatTime, fromLuandaLocal, luandaDay } from './index'
 
 const NBSP = ' '
 
@@ -55,3 +55,15 @@ describe('fromLuandaLocal', () => {
     expect(fromLuandaLocal('2026-11-03', '00:15')).toBe('2026-11-02T23:15:00.000Z')
   })
 })
+
+describe('agenda column (DESIGN.md)', () => {
+  it('gives the weekday, the day and the time in Luanda, and Hoje/Amanhã by the Luanda calendar', () => {
+    const now = new Date('2026-11-11T22:30:00Z') // 23:30 on Wednesday in Luanda
+    expect(agendaParts('2026-11-11T22:45:00Z', now)).toMatchObject({ time: '23:45', relative: 'Hoje' })
+    expect(agendaParts('2026-11-11T23:30:00Z', now)).toMatchObject({ time: '00:30', relative: 'Amanhã' })
+    const later = agendaParts('2026-11-20T09:00:00Z', now)
+    expect(later).toMatchObject({ time: '10:00', relative: null })
+    expect(later).toMatchObject({ weekday: 'sex', day: '20 nov' })
+  })
+})
+

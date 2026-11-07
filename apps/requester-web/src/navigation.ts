@@ -1,7 +1,7 @@
 // Sidebar of requester-web; its own module so the layout file only exports components.
 import type { NavGroup, NavItem } from '@portal-dos-interpretes/ui/components/dashboard-layout'
 import {
-  LayoutDashboard,
+  Home,
   Plus,
   FileText,
   Users,
@@ -16,19 +16,21 @@ import {
 } from "lucide-react";
 
 export const navigation: (NavItem | NavGroup)[] = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Nova Solicitação", href: "/requests/new", icon: Plus },
+  { name: "Início", href: "/", icon: Home },
+  { name: "Nova solicitação", href: "/requests/new", icon: Plus },
   {
-    label: "Solicitações",
+    label: "Pedidos",
     defaultOpen: true,
     items: [
-      { name: "Minhas Solicitações", href: "/requests", icon: FileText },
+      { name: "Em curso", href: "/requests", icon: FileText },
       { name: "Histórico", href: "/history", icon: History },
       { name: "Pagamentos", href: "/payments", icon: CreditCard },
+      { name: "Avaliações", href: "/reviews", icon: Star },
     ],
   },
   {
     label: "Intérpretes",
+    defaultOpen: true,
     items: [
       { name: "Procurar", href: "/interpreters", icon: Users },
       { name: "Favoritos", href: "/favorites", icon: Heart },
@@ -41,7 +43,6 @@ export const navigation: (NavItem | NavGroup)[] = [
       { name: "Membros", href: "/organization/members", icon: UsersRound },
     ],
   },
-  { name: "Minhas Avaliações", href: "/reviews", icon: Star },
-  { name: "Meu Perfil", href: "/profile", icon: User },
+  { name: "Meu perfil", href: "/profile", icon: User },
   { name: "Configurações", href: "/settings", icon: Settings },
 ];

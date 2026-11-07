@@ -15,7 +15,10 @@ export default {
   theme: {
     container: { center: true, padding: '2rem', screens: { '2xl': '1400px' } },
     extend: {
-      fontFamily: { sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'] },
+      fontFamily: {
+        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        mono: ['Red Hat Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+      },
       colors: {
         border: token('border'),
         input: token('input'),

@@ -1,144 +1,87 @@
-import { StatsCard } from "@portal-dos-interpretes/ui/components/stats-card";
-import { ServiceRequestCard } from "@portal-dos-interpretes/features/components/ServiceRequestCard";
-import { PageHeader } from "@portal-dos-interpretes/ui/components/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@portal-dos-interpretes/ui/components/card";
-import { Button } from "@portal-dos-interpretes/ui/components/button";
-import { FileText, Clock, CheckCircle, Star, DollarSign, TrendingUp, Calendar } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useOptionalSession, type SessionState } from '@portal-dos-interpretes/auth'
+import { Link } from 'react-router-dom'
+import { useSession } from '@portal-dos-interpretes/auth'
+import { useBillingQuery } from '@portal-dos-interpretes/features/billing/Billing'
+import { QueryError } from '@portal-dos-interpretes/features/components/QueryStates'
+import { greetingFor, WaitingList } from '@portal-dos-interpretes/features/components/WaitingList'
+import { useMyAssignments, useReviewsToDo } from '@portal-dos-interpretes/features/requests/RequestsContext'
+import { MODALITY_TEXT } from '@portal-dos-interpretes/i18n'
+import { AgendaItem, AgendaList } from '@portal-dos-interpretes/ui/components/agenda'
+import { Button } from '@portal-dos-interpretes/ui/components/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@portal-dos-interpretes/ui/components/card'
+import { EmptyState } from '@portal-dos-interpretes/ui/components/empty-state'
+import { PageHeader } from '@portal-dos-interpretes/ui/components/page-header'
+import { Skeleton } from '@portal-dos-interpretes/ui/components/skeleton'
+import { StatusBadge } from '@portal-dos-interpretes/ui/components/status-badge'
+import { CalendarClock } from 'lucide-react'
 
-/** "Olá, Joana": the first name of the session (the rest of this page is still sample data). */
-function greeting(session: SessionState | null): string {
-  const first = session?.status === 'authenticated' ? session.account.fullName.trim().split(/\s+/)[0] : ''
-  return first ? `Olá, ${first}` : 'Olá'
-}
-
-const pendingRequests = [
-  {
-    id: "req-101",
-    serviceType: "Consulta Médica",
-    date: "20 Jan 2026",
-    time: "10:00",
-    duration: "2h",
-    modality: "presencial" as const,
-    location: "Hospital Central",
-    status: "pendente" as const,
-    requesterName: "João Silva",
-  },
-  {
-    id: "req-102",
-    serviceType: "Reunião Empresarial",
-    date: "22 Jan 2026",
-    time: "14:00",
-    duration: "3h",
-    modality: "online" as const,
-    status: "pendente" as const,
-    requesterName: "Empresa ABC",
-  },
-];
-
-const upcomingServices = [
-  { id: "srv-1", service: "Audiência Jurídica", date: "18 Jan 2026", time: "09:00", location: "Tribunal de Luanda" },
-  { id: "srv-2", service: "Conferência Médica", date: "19 Jan 2026", time: "14:00", location: "Online - Zoom" },
-];
+// interpreter-web / (the panel's first page): invitations to answer, services to mark as done,
+// reviews, payouts waiting for bank details, and the agenda of accepted services — all from the
+// database (the old sample data is gone).
 
 export default function InterpreterOverview() {
-  const session = useOptionalSession()
+  const session = useSession()
+  const account = session.status === 'authenticated' ? session.account : null
+  const mine = useMyAssignments()
+  const reviews = useReviewsToDo()
+  const payouts = useBillingQuery(['payouts', 'mine', account?.id ?? ''], async (repository) =>
+    (await repository.payouts()).filter((row) => row.interpreter_id === account?.id))
+
+  const now = Date.now()
+  const rows = mine.data ?? []
+  const invites = rows.filter((row) => row.status === 'invited').length
+  const toMark = rows.filter((row) => row.status === 'accepted' && Date.parse(row.ends_at ?? '') <= now).length
+  const upcoming = rows.filter((row) => ['accepted', 'invited', 'applied'].includes(row.status ?? '') && Date.parse(row.ends_at ?? '') > now)
+    .sort((a, b) => Date.parse(a.starts_at ?? '') - Date.parse(b.starts_at ?? '')).slice(0, 8)
+  const toReview = (reviews.data ?? []).filter((row) => row.author_role === 'interpreter').length
+  const noDetails = (payouts.data ?? []).filter((row) => row.status === 'queued' && !row.payout_details_snapshot).length
+  const loading = mine.isPending || reviews.isPending || payouts.isPending
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={greeting(session)}
-        description="Gerencie as suas solicitações e acompanhe os seus ganhos"
-      />
+      <PageHeader title={greetingFor(account?.fullName)} description="Os convites por responder e os teus próximos serviços."
+        action={<Button variant="outline" asChild><Link to="/open-requests">Ver solicitações abertas</Link></Button>} />
 
-      {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard title="Novas Solicitações" value={2} icon={FileText} trend={{ value: 10, isPositive: true }} />
-        <StatsCard title="Serviços Confirmados" value={5} icon={Clock} />
-        <StatsCard title="Concluídos (Mês)" value={12} icon={CheckCircle} trend={{ value: 20, isPositive: true }} />
-        <StatsCard title="Avaliação Média" value="4.9" icon={Star} />
-      </div>
-
-      {/* Earnings Summary */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
-              Ganhos do Mês
-            </CardTitle>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <Card className="order-2 lg:order-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle>Agenda</CardTitle>
+            <Button variant="ghost" size="sm" asChild><Link to="/schedule">Ver calendário</Link></Button>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-baseline justify-between">
-                <span className="text-3xl font-bold">150.000 Kz</span>
-                <div className="flex items-center text-sm text-green-600">
-                  <TrendingUp className="h-4 w-4 mr-1" />
-                  +15% vs mês anterior
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Serviços realizados</span>
-                  <p className="font-medium">12</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Horas trabalhadas</span>
-                  <p className="font-medium">32h</p>
-                </div>
-              </div>
-              <Button variant="outline" className="w-full" asChild>
-                <Link to="/earnings">Ver Detalhes</Link>
-              </Button>
-            </div>
+            {mine.isPending ? <Skeleton className="h-48 w-full" />
+              : mine.isError ? <QueryError error={mine.error} onRetry={() => void mine.refetch()} />
+              : upcoming.length === 0 ? (
+                <EmptyState icon={CalendarClock} title="Sem serviços marcados." description="Os convites e os pedidos que aceitares aparecem aqui, por dia e hora."
+                  action={<Button variant="outline" asChild><Link to="/open-requests">Ver solicitações abertas</Link></Button>} />
+              ) : (
+                <AgendaList label="Agenda">
+                  {upcoming.map((row) => (
+                    <AgendaItem key={row.id} at={row.starts_at} aside={<StatusBadge kind="assignment" status={row.status ?? ''} />}>
+                      <Link to={`/requests/${row.request_id}`} className="font-medium hover:underline">{row.service_title}</Link>
+                      <p className="truncate text-xs text-muted-foreground">
+                        <span className="font-mono">{row.code}</span> · {MODALITY_TEXT[row.modality as keyof typeof MODALITY_TEXT]}{row.city ? ` · ${row.city}` : ''}
+                      </p>
+                    </AgendaItem>
+                  ))}
+                </AgendaList>
+              )}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Próximos Serviços
-            </CardTitle>
-          </CardHeader>
+        <Card className="order-1 h-fit lg:order-2">
+          <CardHeader className="pb-1"><CardTitle>À tua espera</CardTitle></CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {upcomingServices.map((service) => (
-                <div key={service.id} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div>
-                    <p className="font-medium">{service.service}</p>
-                    <p className="text-sm text-muted-foreground">{service.date}, {service.time}</p>
-                    <p className="text-sm text-muted-foreground">{service.location}</p>
-                  </div>
-                </div>
-              ))}
-              <Button variant="outline" className="w-full" asChild>
-                <Link to="/schedule">Ver Agenda Completa</Link>
-              </Button>
-            </div>
+            {loading ? <Skeleton className="h-28 w-full" /> : (
+              <WaitingList empty="Nada à tua espera. Está tudo em dia." rows={[
+                { label: 'Convites por responder', detail: 'Aceita ou recusa antes do prazo.', count: invites, href: '/requests', tone: 'urgent' },
+                { label: 'Marcar como feitos', detail: 'Serviços que já terminaram.', count: toMark, href: '/schedule', tone: 'urgent' },
+                { label: 'Indicar o IBAN', detail: 'Tens repasses à espera dos teus dados bancários.', count: noDetails, href: '/settings', tone: 'urgent' },
+                { label: 'Avaliações por fazer', detail: 'Avalia quem pediu o serviço.', count: toReview, href: '/reviews' },
+              ]} />
+            )}
           </CardContent>
         </Card>
-      </div>
-
-      {/* Pending Requests */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Solicitações Pendentes</h2>
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/requests">Ver todas</Link>
-          </Button>
-        </div>
-        {pendingRequests.map((request) => (
-          <ServiceRequestCard
-            key={request.id}
-            {...request}
-            detailsLink={`/requests/${request.id}`}
-            showActions
-            onAccept={() => console.log("Accept", request.id)}
-            onReject={() => console.log("Reject", request.id)}
-          />
-        ))}
       </div>
     </div>
-  );
+  )
 }

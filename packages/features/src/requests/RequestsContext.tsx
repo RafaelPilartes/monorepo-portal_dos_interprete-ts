@@ -99,6 +99,17 @@ export function useRating(accountId: string, role: 'requester' | 'interpreter') 
   return useQuery({ queryKey: requestKeys.rating(accountId, role), queryFn: () => repository.rating(accountId, role), enabled: accountId !== '' })
 }
 
+/** admin-web /: the platform's next requests and the size of a status's queue. */
+export function useStaffUpcoming(limit: number) {
+  const { repository } = useRequests()
+  return useQuery({ queryKey: ['requests', 'staff-upcoming', limit], queryFn: () => repository.staffUpcoming(limit) })
+}
+
+export function useStaffCount(status: string, enabled: boolean) {
+  const { repository } = useRequests()
+  return useQuery({ queryKey: ['requests', 'staff-count', status], queryFn: () => repository.staffCount(status), enabled })
+}
+
 export function useMyAssignments() {
   const { repository } = useRequests()
   return useQuery({ queryKey: requestKeys.mine, queryFn: () => repository.myAssignments() })

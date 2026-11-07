@@ -4,7 +4,8 @@ import { QueryError } from '@portal-dos-interpretes/features/components/QuerySta
 import type { MyAssignmentRow } from '@portal-dos-interpretes/features/requests/data'
 import { durationText } from '@portal-dos-interpretes/features/requests/RequestParts'
 import { useMyAssignments } from '@portal-dos-interpretes/features/requests/RequestsContext'
-import { formatDate, formatDateTime, formatTime, luandaDay, MODALITY_TEXT } from '@portal-dos-interpretes/i18n'
+import { formatDate, formatTime, luandaDay, MODALITY_TEXT } from '@portal-dos-interpretes/i18n'
+import { AgendaItem, AgendaList } from '@portal-dos-interpretes/ui/components/agenda'
 import { Button } from '@portal-dos-interpretes/ui/components/button'
 import { Calendar } from '@portal-dos-interpretes/ui/components/calendar'
 import { Card, CardContent, CardHeader, CardTitle } from '@portal-dos-interpretes/ui/components/card'
@@ -21,21 +22,16 @@ const ON_SCHEDULE = ['accepted', 'delivered', 'disputed']
 function ServiceLine({ row }: { row: MyAssignmentRow }) {
   const Icon = row.modality === 'online' ? Video : MapPin
   return (
-    <li className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
-      <div className="flex items-start gap-3">
-        <Icon className="mt-0.5 h-5 w-5 text-primary" aria-hidden="true" />
-        <div>
-          <p className="font-medium">{row.service_title}</p>
-          <p className="text-sm text-muted-foreground">
-            {formatDateTime(row.starts_at ?? '')} · {durationText(row.duration_minutes)} · {MODALITY_TEXT[row.modality as keyof typeof MODALITY_TEXT]}{row.city ? ` · ${row.city}` : ''}
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center gap-3">
-        <StatusBadge kind="assignment" status={row.status ?? ''} />
-        <Button variant="outline" size="sm" asChild><Link to={`/requests/${row.request_id}`}>Ver pedido</Link></Button>
-      </div>
-    </li>
+    <AgendaItem at={row.starts_at} aside={<>
+      <StatusBadge kind="assignment" status={row.status ?? ''} />
+      <Button variant="outline" size="sm" asChild><Link to={`/requests/${row.request_id}`}>Ver pedido</Link></Button>
+    </>}>
+      <p className="font-medium">{row.service_title}</p>
+      <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+        {durationText(row.duration_minutes)} · {MODALITY_TEXT[row.modality as keyof typeof MODALITY_TEXT]}{row.city ? ` · ${row.city}` : ''} · <span className="font-mono text-xs">{row.code}</span>
+      </p>
+    </AgendaItem>
   )
 }
 
@@ -64,7 +60,7 @@ export default function InterpreterSchedule() {
           </CardHeader>
           <CardContent>
             <p className="mb-3 text-sm text-muted-foreground">Estes serviços já terminaram. Marca-os como feitos para o solicitante confirmar.</p>
-            <ul className="space-y-3">{toMark.map((row) => <ServiceLine key={row.id} row={row} />)}</ul>
+            <AgendaList label="Por marcar como feitos">{toMark.map((row) => <ServiceLine key={row.id} row={row} />)}</AgendaList>
           </CardContent>
         </Card>
       )}
@@ -105,7 +101,7 @@ export default function InterpreterSchedule() {
         <CardContent>
           {upcoming.length === 0
             ? <p className="text-sm text-muted-foreground">Ainda não tens serviços marcados. Os pedidos que aceitares aparecem aqui.</p>
-            : <ul className="space-y-3">{upcoming.map((row) => <ServiceLine key={row.id} row={row} />)}</ul>}
+            : <AgendaList label="Próximos serviços">{upcoming.map((row) => <ServiceLine key={row.id} row={row} />)}</AgendaList>}
         </CardContent>
       </Card>
     </div>

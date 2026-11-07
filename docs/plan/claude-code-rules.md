@@ -89,6 +89,15 @@ trap cleanup EXIT INT TERM
 
 **c) Implementar**, por esta ordem dentro do passo: migration → funções → políticas e concessões → seed → asserções SQL → rotas da API e testes → DAOs, UseCases e ViewModels (skill `clean-architecture-mvvm-data-layer`) → ecrãs, com estados vazio, a carregar e de erro → apagar os mocks substituídos.
 
+**c′) Completo, não "quase" (decisão do Rafael, 2026-11-07).** Cada passo entrega-se pronto para o Rafael testar a sério: quando ele testar, só devem aparecer acertos mínimos. Antes dos portões, percorrer cada ecrã tocado como um utilizador real e confirmar:
+- **cada botão, ligação e formulário funciona** e mostra o resultado verdadeiro (nada de avisos de sucesso sem nada por trás);
+- **estados vazio, a carregar e de erro** em cada lista e detalhe; erros no campo certo, em português;
+- **os caminhos de cada papel** (solicitante, membro de organização, intérprete, cada nível da equipa) e o que cada um não pode ver nem fazer;
+- **casos-limite da spec** testados, não só o caminho feliz;
+- **a navegação**: o menu leva às páginas do passo, o item activo está certo, nenhuma ligação leva a um mock que o passo devia ter substituído;
+- **a UI ao nível do resto** (ver §12): alinhamento, espaçamento, hierarquia, ecrã estreito.
+O que ficar de fora tem de estar escrito no relatório do passo, com a razão e o passo onde chega. Nunca se esconde.
+
 **d) Passar os portões:** `pnpm lint`, `pnpm typecheck`, `pnpm test`, `python3 scripts/verify.py`, `pnpm db:verify`, e o fluxo do passo em Playwright com capturas em `docs/plan/evidence/<passo>/`.
 **Cada teste de comportamento novo corre-se também contra o commit anterior e tem de falhar lá.** Se passar no commit anterior, não está a testar a regra: reescreve-se. Regista-se no relatório o resultado das duas corridas. As **verificações estruturais** (`verify.py`, `grep`) provam-se de outra forma: um ficheiro de violação deliberada em `scripts/fixtures/` que a verificação tem de apanhar (`MASTER-PLAN.md`, portão 2).
 
@@ -161,3 +170,11 @@ Corrigir o que for CONFIRMADO e repetir a alínea d). Os PLAUSÍVEIS verificam-s
 ## 11. Mensagens que ninguém vai ler a tempo
 
 O Rafael não está a ver. Uma pergunta escrita no terminal não tem resposta. Por isso, nada se pergunta: decide-se pelo §3 e regista-se. A única excepção é o disco abaixo de 10 GB (§5), que se escreve no terminal **e** em `auto-decisions.md`, e mesmo aí não se espera: segue-se para o que não precisa da base.
+
+## 12. Interface: premium e profissional (decisão do Rafael, 2026-11-07)
+
+As áreas com sessão (`admin-web`, `requester-web`, `interpreter-web`) são um produto de trabalho: devem parecer uma dashboard premium e profissional, sóbria, sem efeitos espalhafatosos. O site público segue a mesma linguagem nas páginas internas (a home fica como está, salvo pedido).
+- **Referências antes de desenhar:** procurar padrões reais (Mobbin — há MCP —, Pinterest, Dribbble, produtos de referência) para o tipo de ecrã; registar a referência escolhida no relatório do passo.
+- **Skill `impeccable`** para desenhar, criticar e polir; o sistema de design fica em `DESIGN.md` (tokens, componentes, regras) e todos os ecrãs novos seguem-no.
+- Hierarquia clara, densidade de informação adequada a uma ferramenta de trabalho, tipografia e espaçamento consistentes, cor com moderação (estado e acção), modo escuro, acessível (contraste, foco, teclado), bom em ecrã estreito.
+

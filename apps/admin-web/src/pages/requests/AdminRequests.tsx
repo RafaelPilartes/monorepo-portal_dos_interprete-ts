@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { QueryError, TableSkeleton } from '@portal-dos-interpretes/features/components/QueryStates'
 import { useStaffRequestList } from '@portal-dos-interpretes/features/requests/RequestsContext'
-import { formatDateTime, REQUEST_KIND_LABELS } from '@portal-dos-interpretes/i18n'
+import { REQUEST_KIND_LABELS } from '@portal-dos-interpretes/i18n'
+import { AgendaWhen } from '@portal-dos-interpretes/ui/components/agenda'
 import { Button } from '@portal-dos-interpretes/ui/components/button'
 import { Card, CardContent } from '@portal-dos-interpretes/ui/components/card'
 import { EmptyState } from '@portal-dos-interpretes/ui/components/empty-state'
@@ -50,8 +51,8 @@ export default function AdminRequests() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-28">Quando</TableHead>
                       <TableHead>Pedido</TableHead>
-                      <TableHead>Quando</TableHead>
                       <TableHead className="hidden md:table-cell">Solicitante</TableHead>
                       <TableHead className="hidden lg:table-cell">Tipo</TableHead>
                       <TableHead>Estado</TableHead>
@@ -60,11 +61,11 @@ export default function AdminRequests() {
                   <TableBody>
                     {list.data.rows.map((row) => (
                       <TableRow key={row.id}>
+                        <TableCell><AgendaWhen at={row.starts_at} /></TableCell>
                         <TableCell>
                           <Link to={`/requests/${row.id}`} className="font-medium hover:underline">{row.service_title}</Link>
                           <p className="font-mono text-xs text-muted-foreground">{row.code}</p>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap tabular-nums">{formatDateTime(row.starts_at ?? '')}</TableCell>
                         <TableCell className="hidden md:table-cell">{row.organization_name ?? row.created_by_name}</TableCell>
                         <TableCell className="hidden lg:table-cell">{REQUEST_KIND_LABELS[row.kind as keyof typeof REQUEST_KIND_LABELS]}</TableCell>
                         <TableCell><StatusBadge kind="request" status={row.status ?? ''} /></TableCell>

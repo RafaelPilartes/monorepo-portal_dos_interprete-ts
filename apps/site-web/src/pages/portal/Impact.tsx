@@ -1,4 +1,5 @@
 import { registerUrl } from '@/lib/links'
+import { PageBanner } from '@/components/PageBanner'
 import { Link } from 'react-router-dom'
 import { Button } from '@portal-dos-interpretes/ui/components/button'
 import {
@@ -7,8 +8,7 @@ import {
   Globe,
   Target,
   ArrowRight,
-  CheckCircle2,
-  Sparkles
+  CheckCircle2
 } from 'lucide-react'
 
 const impactAreas = [
@@ -74,26 +74,10 @@ const projects = [
 export default function Impact() {
   return (
     <div className="flex flex-col">
-      {/* Hero */}
-      <section className="section-padding page-banner pt-28">
-        <div className="container-wide">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary mb-6 bg-white">
-              <Sparkles className="h-4 w-4" />
-              <span>Impacto Social Real</span>
-            </div>
-            <h1 className="text-white text-4xl font-bold text-foreground sm:text-5xl">
-              Transformando Vidas Através da{' '}
-              <span className="text-secondary">Comunicação</span>
-            </h1>
-            <p className="mt-6 text-lg text-gray-200">
-              O Portal dos Intérpretes é mais do que uma plataforma tecnológica.
-              É um instrumento de mudança social que conecta pessoas e derruba
-              barreiras de comunicação.
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageBanner
+        title="Transformando vidas através da comunicação"
+        subtitle="O Portal dos Intérpretes é mais do que uma plataforma tecnológica. É um instrumento de mudança social que conecta pessoas e derruba barreiras de comunicação."
+      />
 
       {/* Impact Areas */}
       <section className="section-padding bg-background">

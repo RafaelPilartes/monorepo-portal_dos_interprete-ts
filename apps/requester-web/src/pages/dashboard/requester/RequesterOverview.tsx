@@ -1,268 +1,84 @@
-import { Link } from "react-router-dom";
-import { Button } from "@portal-dos-interpretes/ui/components/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@portal-dos-interpretes/ui/components/card";
-import { PageHeader } from "@portal-dos-interpretes/ui/components/page-header";
-import { StatsCard } from "@portal-dos-interpretes/ui/components/stats-card";
-import { ServiceRequestCard } from "@portal-dos-interpretes/features/components/ServiceRequestCard";
-import { EmptyState } from "@portal-dos-interpretes/ui/components/empty-state";
-import { Timeline } from "@portal-dos-interpretes/ui/components/timeline";
-import {
-  FileText,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  Plus,
-  Calendar,
-  ArrowRight,
-  User,
-  Star,
-} from "lucide-react";
-import { useOptionalSession, type SessionState } from '@portal-dos-interpretes/auth'
+import { Link } from 'react-router-dom'
+import { useRequestContext, useSession } from '@portal-dos-interpretes/auth'
+import { useBillingQuery } from '@portal-dos-interpretes/features/billing/Billing'
+import { QueryError } from '@portal-dos-interpretes/features/components/QueryStates'
+import { greetingFor, WaitingList } from '@portal-dos-interpretes/features/components/WaitingList'
+import { useRequestList, useReviewsToDo } from '@portal-dos-interpretes/features/requests/RequestsContext'
+import { REQUEST_KIND_LABELS } from '@portal-dos-interpretes/i18n'
+import { AgendaItem, AgendaList } from '@portal-dos-interpretes/ui/components/agenda'
+import { Button } from '@portal-dos-interpretes/ui/components/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@portal-dos-interpretes/ui/components/card'
+import { EmptyState } from '@portal-dos-interpretes/ui/components/empty-state'
+import { PageHeader } from '@portal-dos-interpretes/ui/components/page-header'
+import { Skeleton } from '@portal-dos-interpretes/ui/components/skeleton'
+import { StatusBadge } from '@portal-dos-interpretes/ui/components/status-badge'
+import { CalendarClock, Plus } from 'lucide-react'
 
-/** "Olá, Joana": the first name of the session (the rest of this page is still sample data). */
-function greeting(session: SessionState | null): string {
-  const first = session?.status === 'authenticated' ? session.account.fullName.trim().split(/\s+/)[0] : ''
-  return first ? `Olá, ${first}` : 'Olá'
-}
-
-// Mock data
-const stats = {
-  total: 12,
-  pending: 2,
-  inProgress: 3,
-  completed: 7,
-};
-
-const recentRequests = [
-  {
-    id: "REQ-001",
-    service: "Interpretação em Consulta Médica",
-    date: "2024-01-20",
-    time: "10:00",
-    status: "pendente" as const,
-    modality: "presencial" as const,
-  },
-  {
-    id: "REQ-002",
-    service: "Interpretação em Reunião Empresarial",
-    date: "2024-01-18",
-    time: "14:00",
-    status: "confirmado" as const,
-    modality: "online" as const,
-    interpreter: "Maria Silva",
-  },
-  {
-    id: "REQ-003",
-    service: "Interpretação em Conferência",
-    date: "2024-01-15",
-    time: "09:00",
-    status: "concluido" as const,
-    modality: "presencial" as const,
-    interpreter: "Ana Beatriz",
-  },
-];
-
-const upcomingServices = [
-  {
-    id: "1",
-    date: "20 Jan",
-    time: "10:00",
-    service: "Consulta Médica",
-    interpreter: "A confirmar",
-  },
-  {
-    id: "2",
-    date: "22 Jan",
-    time: "14:00",
-    service: "Reunião Empresarial",
-    interpreter: "Maria Silva",
-  },
-];
-
-const recentActivity = [
-  {
-    id: "1",
-    title: "Solicitação REQ-003 concluída",
-    description: "Serviço de interpretação em conferência finalizado com sucesso.",
-    date: "Há 2 dias",
-  },
-  {
-    id: "2",
-    title: "Intérprete atribuído",
-    description: "Maria Silva foi atribuída à solicitação REQ-002.",
-    date: "Há 3 dias",
-  },
-  {
-    id: "3",
-    title: "Nova solicitação criada",
-    description: "Solicitação REQ-001 submetida para análise.",
-    date: "Há 5 dias",
-  },
-];
+// requester-web / (the panel's first page): what waits on the person, and the agenda of its
+// requests still running — all from the database (the old sample data is gone).
 
 export default function RequesterOverview() {
-  const session = useOptionalSession()
+  const session = useSession()
+  const account = session.status === 'authenticated' ? session.account : null
+  const [organizationId] = useRequestContext(account)
+  const requests = useRequestList(false, organizationId, false, 1, 50)
+  const payments = useBillingQuery(['payments'], (repository) => repository.payments())
+  const reviews = useReviewsToDo()
+
+  const rows = requests.data?.rows ?? []
+  const upcoming = [...rows].sort((a, b) => Date.parse(a.starts_at ?? '') - Date.parse(b.starts_at ?? '')).slice(0, 8)
+  const toConfirm = rows.filter((row) => row.status === 'delivered').length
+  const waitingInterpreters = rows.filter((row) => row.status === 'awaiting_interpreters').length
+  const toPay = (payments.data ?? []).filter((row) => row.status === 'awaiting_proof' && row.can_pay).length
+  const toReview = (reviews.data ?? []).filter((row) => row.author_role === 'requester').length
+  const loading = requests.isPending || payments.isPending || reviews.isPending
+
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title={greeting(session)}
-        description="Acompanhe as suas solicitações de serviços de interpretação."
-        action={
-          <Button asChild>
-            <Link to="/requests/new">
-              <Plus className="h-4 w-4" />
-              Nova Solicitação
-            </Link>
-          </Button>
-        }
-      />
+    <div className="space-y-6">
+      <PageHeader title={greetingFor(account?.fullName)} description="O que está à tua espera e os teus próximos serviços."
+        action={<Button asChild><Link to="/requests/new"><Plus className="h-4 w-4" />Nova solicitação</Link></Button>} />
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title="Total de Solicitações"
-          value={stats.total}
-          icon={FileText}
-          description="Todas as solicitações"
-        />
-        <StatsCard
-          title="Pendentes"
-          value={stats.pending}
-          icon={Clock}
-          description="Aguardando atribuição"
-        />
-        <StatsCard
-          title="Em Andamento"
-          value={stats.inProgress}
-          icon={AlertCircle}
-          description="Serviços confirmados"
-        />
-        <StatsCard
-          title="Concluídas"
-          value={stats.completed}
-          icon={CheckCircle2}
-          description="Serviços finalizados"
-        />
-      </div>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <Card className="order-2 lg:order-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle>Próximos serviços</CardTitle>
+            <Button variant="ghost" size="sm" asChild><Link to="/requests">Ver todos</Link></Button>
+          </CardHeader>
+          <CardContent>
+            {requests.isPending ? <Skeleton className="h-48 w-full" />
+              : requests.isError ? <QueryError error={requests.error} onRetry={() => void requests.refetch()} />
+              : upcoming.length === 0 ? (
+                <EmptyState icon={CalendarClock} title="Ainda não tens pedidos em curso." description="Escolhe um intérprete e marca o serviço em poucos passos."
+                  action={<Button asChild><Link to="/requests/new">Fazer um pedido</Link></Button>} />
+              ) : (
+                <AgendaList label="Próximos serviços">
+                  {upcoming.map((row) => (
+                    <AgendaItem key={row.id} at={row.starts_at} aside={<StatusBadge kind="request" status={row.status ?? ''} />}>
+                      <Link to={`/requests/${row.id}`} className="font-medium hover:underline">{row.service_title}</Link>
+                      <p className="truncate text-xs text-muted-foreground">
+                        <span className="font-mono">{row.code}</span> · {REQUEST_KIND_LABELS[row.kind as keyof typeof REQUEST_KIND_LABELS]} · {row.accepted_count}/{row.interpreters_needed} {row.interpreters_needed === 1 ? 'intérprete' : 'intérpretes'}
+                      </p>
+                    </AgendaItem>
+                  ))}
+                </AgendaList>
+              )}
+          </CardContent>
+        </Card>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Recent Requests */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Solicitações Recentes</h2>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/requests" className="gap-1">
-                Ver todas
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-
-          {recentRequests.length > 0 ? (
-            <div className="space-y-4">
-              {recentRequests.map((request) => (
-                <ServiceRequestCard
-                  key={request.id}
-                  id={request.id}
-                  serviceType={request.service}
-                  date={request.date}
-                  time={request.time}
-                  duration="2 horas"
-                  modality={request.modality}
-                  status={request.status}
-                  interpreterName={request.interpreter}
-                  detailsLink={`/requests/${request.id}`}
-                />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={FileText}
-              title="Nenhuma solicitação"
-              description="Você ainda não tem solicitações de serviços."
-              action={
-                <Button asChild>
-                  <Link to="/requests/new">
-                    <Plus className="h-4 w-4" />
-                    Nova Solicitação
-                  </Link>
-                </Button>
-              }
-            />
-          )}
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Upcoming Services */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-primary" />
-                Próximos Serviços
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {upcomingServices.map((service) => (
-                <div
-                  key={service.id}
-                  className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
-                >
-                  <div className="text-center min-w-[48px]">
-                    <p className="text-xs text-muted-foreground">{service.date.split(" ")[1]}</p>
-                    <p className="font-bold text-lg">{service.date.split(" ")[0]}</p>
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{service.service}</p>
-                    <p className="text-xs text-muted-foreground">{service.time}</p>
-                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                      <User className="h-3 w-3" />
-                      {service.interpreter}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Recent Activity */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Actividade Recente</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Timeline events={recentActivity} />
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Acções Rápidas</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start gap-2" asChild>
-                <Link to="/requests/new">
-                  <Plus className="h-4 w-4" />
-                  Nova Solicitação
-                </Link>
-              </Button>
-              <Button variant="outline" className="w-full justify-start gap-2" asChild>
-                <Link to="/interpreters">
-                  <User className="h-4 w-4" />
-                  Ver Intérpretes
-                </Link>
-              </Button>
-              <Button variant="outline" className="w-full justify-start gap-2" asChild>
-                <Link to="/reviews">
-                  <Star className="h-4 w-4" />
-                  Minhas Avaliações
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="order-1 h-fit lg:order-2">
+          <CardHeader className="pb-1"><CardTitle>À tua espera</CardTitle></CardHeader>
+          <CardContent>
+            {loading ? <Skeleton className="h-28 w-full" /> : (
+              <WaitingList empty="Nada à tua espera. Está tudo em dia." rows={[
+                { label: 'Confirmar serviços feitos', detail: 'O intérprete marcou como feito: confirma ou abre disputa.', count: toConfirm, href: '/requests', tone: 'urgent' },
+                { label: 'Pagamentos por fazer', detail: 'Envia o comprovativo da transferência.', count: toPay, href: '/payments', tone: 'urgent' },
+                { label: 'Avaliações por fazer', detail: 'Avalia o intérprete depois do serviço.', count: toReview, href: '/reviews' },
+                { label: 'À espera de intérpretes', detail: 'Pedidos que ainda não têm todos os intérpretes.', count: waitingInterpreters, href: '/requests' },
+              ]} />
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
-  );
+  )
 }

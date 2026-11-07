@@ -4,6 +4,7 @@ import type { MyAssignmentRow } from '@portal-dos-interpretes/features/requests/
 import { priceText } from '@portal-dos-interpretes/features/requests/RequestParts'
 import { useMyAssignments } from '@portal-dos-interpretes/features/requests/RequestsContext'
 import { formatDateTime, MODALITY_TEXT } from '@portal-dos-interpretes/i18n'
+import { AgendaWhen } from '@portal-dos-interpretes/ui/components/agenda'
 import { Badge } from '@portal-dos-interpretes/ui/components/badge'
 import { Card, CardContent } from '@portal-dos-interpretes/ui/components/card'
 import { EmptyState } from '@portal-dos-interpretes/ui/components/empty-state'
@@ -24,17 +25,18 @@ const GROUPS = [
 function Row({ row }: { row: MyAssignmentRow }) {
   return (
     <li>
-      <Link to={`/requests/${row.request_id}`} className="flex flex-wrap items-center justify-between gap-3 rounded-lg p-3 transition-colors hover:bg-muted/60">
-        <div className="min-w-0">
+      <Link to={`/requests/${row.request_id}`} className="-mx-2 flex items-center gap-4 rounded-md px-2 py-3.5 transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <AgendaWhen at={row.starts_at} />
+        <div className="min-w-0 flex-1 border-l border-border pl-4">
           <p className="font-medium">{row.service_title}{row.is_urgent && <Badge variant="destructive" className="ml-2 py-0 text-[10px]">Urgente</Badge>}</p>
           <p className="text-sm text-muted-foreground">
-            {formatDateTime(row.starts_at ?? '')} · {MODALITY_TEXT[row.modality as 'online' | 'in_person']}{row.city ? ` · ${row.city}` : ''}
+            <span className="font-mono text-xs">{row.code}</span> · {MODALITY_TEXT[row.modality as 'online' | 'in_person']}{row.city ? ` · ${row.city}` : ''}
           </p>
           {row.status === 'invited' && row.invite_expires_at && (
             <p className="text-sm font-medium text-warning">Responde até {formatDateTime(row.invite_expires_at)}</p>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
           <span className="tabular-nums text-sm">{row.agreed_price_aoa !== null ? priceText(row.agreed_price_aoa, row.agreed_travel_fee_aoa) : priceText(row.offered_price_aoa, row.offered_travel_fee_aoa)}</span>
           <StatusBadge kind="assignment" status={row.status ?? ''} />
         </div>

@@ -6,7 +6,7 @@ import { type SmokeRoute, visitAndCapture } from './smoke'
 // verifications), signed in as the super_admin (admin.setup.ts). Since H1 the team, configuration,
 // legal, document type and audit screens read the local database.
 const routes: SmokeRoute[] = [
-  { path: '/', name: 'overview', expectText: 'Dashboard Administrativo' },
+  { path: '/', name: 'overview', expectText: 'As filas do teu trabalho' },
   { path: '/interpreters', name: 'interpreters', expectText: 'Intérpretes' },
   { path: '/verifications', name: 'verifications', expectText: 'Gestão de Verificações' },
   { path: '/verifications/requests', name: 'verification-requests', expectText: 'Pedidos de Verificação' },

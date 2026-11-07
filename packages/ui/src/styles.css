@@ -1,5 +1,5 @@
 /* Must come before every other rule, or the browser drops it (it did in the old SPA). */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Red+Hat+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -183,18 +183,75 @@
   }
 }
 
-/* The three dashboard apps (<html class="app-panel">): tighter corners, themed selection and
-   tabular numbers in data. Components opt into the rest with the `panel:` variant. */
+/* The three dashboard apps (<html class="app-panel">): the "clinic appointment book" world
+   (PRODUCT.md, packages/ui/.impeccable/surfaces): a cool clinical ground, white sheets with
+   hairlines, ink-navy text, the brand blue only for the active place and primary actions, state
+   colours dark enough to read as text. Public Sans (an institutional workhorse) for text, Red Hat
+   Mono for codes and references.
+   Components opt into the denser shapes with the `panel:` variant. */
 @layer base {
   .app-panel {
     --radius: 0.5rem;
+    --background: 216 33% 97.5%;
+    --foreground: 222 47% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 12%;
+    --muted: 216 28% 94.5%;
+    --muted-foreground: 220 13% 38%;
+    --accent: 214 70% 95%;
+    --accent-foreground: 216 92% 30%;
+    --border: 218 22% 89%;
+    --input: 218 18% 82%;
+    --success: 152 65% 28%;
+    --warning: 30 92% 34%;
+    --destructive: 0 70% 44%;
+    --shadow-sm: 0 1px 2px 0 hsl(222 47% 12% / 0.04);
+    --shadow-md: 0 2px 8px -2px hsl(222 47% 12% / 0.08), 0 1px 2px 0 hsl(222 47% 12% / 0.04);
+    --shadow-lg: 0 12px 32px -8px hsl(222 47% 12% / 0.14), 0 2px 6px 0 hsl(222 47% 12% / 0.05);
+    --sidebar-background: 0 0% 100%;
+    --sidebar-border: 218 22% 89%;
+  }
+  .app-panel.dark {
+    --background: 222 32% 7%;
+    --foreground: 210 25% 94%;
+    --card: 222 28% 10%;
+    --card-foreground: 210 25% 94%;
+    --popover: 222 28% 11%;
+    --popover-foreground: 210 25% 94%;
+    --muted: 222 22% 14%;
+    --muted-foreground: 218 14% 66%;
+    --accent: 216 40% 18%;
+    --accent-foreground: 214 90% 76%;
+    --border: 222 20% 18%;
+    --input: 222 18% 24%;
+    --primary: 214 88% 62%;
+    --primary-foreground: 222 47% 8%;
+    --ring: 214 88% 62%;
+    --success: 152 50% 52%;
+    --warning: 38 92% 60%;
+    --destructive: 0 75% 64%;
+    --sidebar-background: 222 28% 10%;
+    --sidebar-border: 222 20% 18%;
+  }
+  .app-panel body {
+    font-family: 'Public Sans', system-ui, sans-serif;
+    letter-spacing: -0.003em;
   }
   .app-panel ::selection {
     background: hsl(var(--primary) / 0.18);
   }
+  .app-panel :focus-visible {
+    outline-color: hsl(var(--ring));
+  }
   .app-panel table,
   .app-panel .tabular-nums {
     font-variant-numeric: tabular-nums;
+  }
+  .app-panel * {
+    scrollbar-color: hsl(var(--border)) transparent;
+    scrollbar-width: thin;
   }
 }
 
@@ -224,16 +281,11 @@
     @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
   }
 
-  /* Page Banner Component */
+  /* Bands of the site's inner pages (closing calls to action): a solid ink-navy field, no
+     pattern or glow (DESIGN.md). */
   .page-banner {
     @apply relative overflow-hidden;
-    background: var(--gradient-banner);
-  }
-
-  .page-banner::before {
-    content: '';
-    @apply absolute inset-0 opacity-10;
-    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background: hsl(222 47% 14%);
   }
 }
 

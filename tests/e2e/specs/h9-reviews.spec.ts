@@ -111,7 +111,7 @@ test('both sides review; each review shows only once both are in (R-REV-01, R-RE
   await shot(interpreterPage, '03-interpreter-received')
   await requesterPage.goto(`${REQUESTER_URL}/reviews`)
   await requesterPage.getByRole('tab', { name: 'Que recebi' }).click()
-  await expect(requesterPage.getByLabel('4 de 5 estrelas')).toBeVisible()
+  await expect(requesterPage.getByRole('listitem').getByLabel('4 de 5 estrelas')).toBeVisible()
   await shot(requesterPage, '04-requester-received')
   await requesterPage.goto(`${REQUESTER_URL}/interpreters/${sqlLocal(`SELECT slug FROM identity.interpreter_profiles WHERE account_id = '${interpreter.id}'`)}`)
   await expect(requesterPage.getByText('(1 avaliação)').first()).toBeVisible()

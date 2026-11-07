@@ -94,7 +94,7 @@ export default function ForInterpreters() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="section-padding bg-gradient-to-br from-accent via-background to-background">
+      <section className="section-padding border-b border-border bg-[hsl(216_33%_97.5%)] pt-32 dark:bg-muted/30">
         <div className="container-wide">
           <div className="grid gap-12 lg:grid-cols-2 items-center">
             <div>
@@ -104,7 +104,7 @@ export default function ForInterpreters() {
               </div>
               <h1 className="text-4xl font-bold text-foreground sm:text-5xl mb-6">
                 Junte-se à Nossa{' '}
-                <span className="text-gradient">Rede de Intérpretes</span>
+                <span className="text-primary">Rede de Intérpretes</span>
               </h1>
               <p className="text-lg text-muted-foreground mb-8">
                 Faça parte de uma comunidade de profissionais comprometidos com
@@ -126,7 +126,6 @@ export default function ForInterpreters() {
             </div>
             <div className="hidden lg:block">
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-primary/20 rounded-3xl blur-3xl" />
                 <div className="relative bg-card rounded-2xl p-8 shadow-xl">
                   <div className="flex items-center gap-4 mb-6">
                     <div className="h-16 w-16 rounded-full bg-secondary/10 flex items-center justify-center">

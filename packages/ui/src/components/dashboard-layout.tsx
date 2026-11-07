@@ -121,14 +121,14 @@ export function DashboardLayout({
         onClick={() => setSidebarOpen(false)}
         aria-current={isActive ? 'page' : undefined}
         className={cn(
-          'flex h-9 items-center gap-2.5 rounded-md px-2.5 text-sm transition-colors duration-150',
+          'flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[0.8125rem] transition-colors duration-150',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           isActive
-            ? 'bg-primary/10 font-medium text-primary'
-            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            ? 'bg-accent font-medium text-accent-foreground'
+            : 'text-foreground/75 hover:bg-muted hover:text-foreground'
         )}
       >
-        <item.icon className="h-4 w-4 shrink-0" />
+        <item.icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-primary' : 'text-muted-foreground')} />
         <span className="truncate">{item.name}</span>
       </Link>
     )
@@ -143,7 +143,7 @@ export function DashboardLayout({
         onOpenChange={(open) => setOpenGroups((current) => ({ ...current, [group.label]: open }))}
         className="pt-3"
       >
-        <CollapsibleTrigger className="group flex h-7 w-full items-center justify-between rounded-md px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <CollapsibleTrigger className="group flex h-7 w-full items-center justify-between rounded-md px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <span>{group.label}</span>
           <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-150', !isOpen && '-rotate-90')} />
         </CollapsibleTrigger>
@@ -155,7 +155,7 @@ export function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-muted/40">
+    <div className="flex min-h-screen bg-background">
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 bg-foreground/30 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
@@ -163,7 +163,7 @@ export function DashboardLayout({
       <aside
         aria-label="Navegação"
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 border-r border-border bg-card transition-transform duration-200 ease-out lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 w-64 border-r border-sidebar-border bg-sidebar transition-transform duration-200 ease-out lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -180,7 +180,7 @@ export function DashboardLayout({
               <X className="h-4 w-4" />
             </button>
           </div>
-          <p className="px-5 pb-1 pt-4 text-xs font-medium text-muted-foreground">{APP_LABELS[userRole]}</p>
+          <p className="px-5 pb-1 pt-4 text-[0.6875rem] font-medium text-muted-foreground">{APP_LABELS[userRole]}</p>
 
           <ScrollArea className="flex-1">
             <nav className="space-y-0.5 px-2.5 pb-6">
@@ -191,7 +191,7 @@ export function DashboardLayout({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col lg:ml-64">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-card/80 lg:px-8">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card px-4 lg:px-8">
           <button
             onClick={() => setSidebarOpen(true)}
             aria-label="Abrir a navegação"
@@ -234,7 +234,7 @@ export function DashboardLayout({
         </header>
 
         <main className="flex-1">
-          <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8"><Outlet /></div>
+          <div className="mx-auto w-full max-w-[84rem] px-4 py-6 sm:px-6 lg:px-10 lg:py-9"><Outlet /></div>
         </main>
       </div>
     </div>
