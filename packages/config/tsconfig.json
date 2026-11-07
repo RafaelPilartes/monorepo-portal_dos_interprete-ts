@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig/node.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noUnusedParameters": false
+  },
+  "include": ["eslint.js", "vite.js", "tailwind.js", "eslint.config.js"]
+}

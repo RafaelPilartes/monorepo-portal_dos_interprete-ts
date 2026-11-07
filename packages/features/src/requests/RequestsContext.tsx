@@ -1,0 +1,133 @@
+import { createContext, useContext, type ReactNode } from 'react'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { DataError } from '@portal-dos-interpretes/data'
+import { errorMessage } from '../lib/errorText'
+import type { RequestsRepository, ReviewQuery } from './data'
+
+// The requests for a panel app: the repository (built by the app) and the signed-in account.
+
+interface RequestsContextValue {
+  repository: RequestsRepository
+  accountId: string
+}
+
+const RequestsContext = createContext<RequestsContextValue | null>(null)
+
+export function RequestsProvider({ children, ...value }: RequestsContextValue & { children: ReactNode }) {
+  return <RequestsContext.Provider value={value}>{children}</RequestsContext.Provider>
+}
+
+export function useRequests(): RequestsContextValue {
+  const value = useContext(RequestsContext)
+  if (!value) throw new Error('useRequests needs a RequestsProvider')
+  return value
+}
+
+export const requestKeys = {
+  all: ['requests'] as const,
+  list: (finished: boolean, mineOnly: boolean, page: number) => ['requests', 'list', finished, mineOnly, page] as const,
+  one: (id: string) => ['requests', 'one', id] as const,
+  mine: ['requests', 'my-assignments'] as const,
+  messages: (threadId: string) => ['requests', 'messages', threadId] as const,
+  disputes: (requestId: string) => ['requests', 'disputes', requestId] as const,
+  staff: (status: string | null, page: number) => ['requests', 'staff', status, page] as const,
+  reviewsToDo: ['requests', 'reviews', 'to-do'] as const,
+  reviews: (query: ReviewQuery) => ['requests', 'reviews', query] as const,
+  rating: (accountId: string, role: string) => ['requests', 'rating', role, accountId] as const,
+}
+
+export function useRequestList(finished: boolean, organizationId: string | null, mineOnly: boolean, page: number, pageSize: number) {
+  const { repository, accountId } = useRequests()
+  return useQuery({
+    queryKey: [...requestKeys.list(finished, mineOnly, page), organizationId],
+    queryFn: () => repository.list({ finished, accountId, organizationId, mineOnly, limit: pageSize, offset: (page - 1) * pageSize }),
+    placeholderData: keepPreviousData,
+  })
+}
+
+/** One request with its interpreters and its timeline; null when it does not exist or is not visible. */
+export function useRequestDetail(id: string) {
+  const { repository } = useRequests()
+  return useQuery({
+    queryKey: requestKeys.one(id),
+    // While it waits for interpreters the other side may act (accept, answer a proposal).
+    refetchInterval: (query) => (query.state.data?.request.status === 'awaiting_interpreters' ? 15_000 : false),
+    queryFn: async () => {
+      const request = await repository.request(id)
+      if (!request) return null
+      const [assignments, timeline] = await Promise.all([repository.assignments(id), repository.timeline(id)])
+      return { request, assignments, timeline }
+    },
+  })
+}
+
+/** The disputes of a request, for its parties and the team (R-LIFE-05). */
+export function useRequestDisputes(requestId: string) {
+  const { repository } = useRequests()
+  return useQuery({ queryKey: requestKeys.disputes(requestId), queryFn: () => repository.disputes(requestId) })
+}
+
+/** admin-web /requests, paginated on the server (R-ADM-06). */
+export function useStaffRequestList(status: string | null, page: number, pageSize: number) {
+  const { repository } = useRequests()
+  return useQuery({
+    queryKey: requestKeys.staff(status, page),
+    queryFn: () => repository.staffList({ status, limit: pageSize, offset: (page - 1) * pageSize }),
+    placeholderData: keepPreviousData,
+  })
+}
+
+/** "Por avaliar": the completed services the signed-in side has not reviewed (R-REV-01). */
+export function useReviewsToDo() {
+  const { repository } = useRequests()
+  return useQuery({ queryKey: requestKeys.reviewsToDo, queryFn: () => repository.reviewsToDo() })
+}
+
+export function useReviews(query: ReviewQuery, enabled = true) {
+  const { repository } = useRequests()
+  return useQuery({ queryKey: requestKeys.reviews(query), queryFn: () => repository.reviews(query), enabled })
+}
+
+export function useUnrevealedCount(role: 'requester' | 'interpreter') {
+  const { repository } = useRequests()
+  return useQuery({ queryKey: ['requests', 'reviews', 'unrevealed', role], queryFn: () => repository.unrevealedCount(role) })
+}
+
+export function useRating(accountId: string, role: 'requester' | 'interpreter') {
+  const { repository } = useRequests()
+  return useQuery({ queryKey: requestKeys.rating(accountId, role), queryFn: () => repository.rating(accountId, role), enabled: accountId !== '' })
+}
+
+/** admin-web /: the platform's next requests and the size of a status's queue. */
+export function useStaffUpcoming(limit: number) {
+  const { repository } = useRequests()
+  return useQuery({ queryKey: ['requests', 'staff-upcoming', limit], queryFn: () => repository.staffUpcoming(limit) })
+}
+
+export function useStaffCount(status: string, enabled: boolean) {
+  const { repository } = useRequests()
+  return useQuery({ queryKey: ['requests', 'staff-count', status], queryFn: () => repository.staffCount(status), enabled })
+}
+
+export function useMyAssignments() {
+  const { repository } = useRequests()
+  return useQuery({ queryKey: requestKeys.mine, queryFn: () => repository.myAssignments() })
+}
+
+/** A write through the API; re-reads the requests after it, says how it went. */
+export function useRequestAction<Input>(
+  action: (repository: RequestsRepository, input: Input) => Promise<unknown>,
+  success: string,
+  /** What the person reads for a given error code here, when the catalog's text is about someone else. */
+  messages: Readonly<Record<string, string>> = {},
+) {
+  const { repository } = useRequests()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: Input) => action(repository, input),
+    onSuccess: () => toast.success(success),
+    onError: (error) => toast.error((error instanceof DataError && messages[error.code]) || errorMessage(error)),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: requestKeys.all }),
+  })
+}

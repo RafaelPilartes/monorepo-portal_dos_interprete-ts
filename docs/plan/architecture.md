@@ -72,7 +72,7 @@ interpreter-web ├─► ui, i18n, core, config, db-types, data, auth, features
 admin-web ────┘
 api ───────────────► core, i18n, db-types, config
 
-features ──► ui, data, i18n, core
+features ──► ui, data, i18n, core, db-types
 data ──────► db-types, core
 auth ──────► ui, i18n, db-types
 core ──────► (nada além de zod)

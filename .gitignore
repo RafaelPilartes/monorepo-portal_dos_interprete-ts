@@ -47,3 +47,12 @@ docs/superpowers/
 
 # O import de scripts/column_grants.py pelo verify.py compila para aqui.
 __pycache__/
+
+# ---------- Plano (foundation.md §B) ----------
+# Bundle of the old history lives outside the repository.
+*.bundle
+# Test account passwords (claude-code-rules.md §8.6).
+docs/technical/TEST-CREDENTIALS.md
+# Playwright output that is not evidence.
+test-results/
+playwright-report/

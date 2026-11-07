@@ -1,0 +1,105 @@
+import { formatAoa } from './money'
+
+// What the person reads about requests and notices (data-model.md §5, notifications.md). One
+// vocabulary for every app: the status badges, the lists and the bell read it from here.
+
+/** The status of a request (booking.requests.status). */
+export const REQUEST_STATUS_LABELS = {
+  awaiting_approval: 'Aguarda aprovação',
+  quoting: 'Em orçamento',
+  awaiting_interpreters: 'À espera de intérpretes',
+  awaiting_payment: 'Aguarda pagamento',
+  payment_review: 'Pagamento em validação',
+  confirmed: 'Confirmado',
+  delivered: 'Realizado',
+  disputed: 'Em disputa',
+  completed: 'Concluído',
+  cancelled: 'Cancelado',
+  expired: 'Expirado',
+} as const
+
+/** The status of an interpreter in a request (booking.request_assignments.status). */
+export const ASSIGNMENT_STATUS_LABELS = {
+  invited: 'Convidado',
+  applied: 'Candidato',
+  accepted: 'Aceite',
+  declined: 'Recusou',
+  expired: 'Expirou',
+  not_selected: 'Não seleccionado',
+  withdrawn: 'Desistiu',
+  cancelled: 'Cancelado',
+  delivered: 'Realizado',
+  disputed: 'Em disputa',
+  completed: 'Concluído',
+} as const
+
+export const REQUEST_KIND_LABELS = {
+  direct: 'Directo',
+  open: 'Aberto',
+  managed: 'Gerido pela plataforma',
+} as const
+
+export const MODALITY_TEXT = { online: 'Online', in_person: 'Presencial' } as const
+
+type Payload = Record<string, unknown>
+const text = (value: unknown): string => (typeof value === 'string' ? value : '')
+
+/**
+ * The title and the line of a notice in the bell, by its kind and payload (R-NOT-01; the emails
+ * have their own texts in the API). A kind without a text here shows a neutral line.
+ */
+export function notificationText(kind: string, payload: Payload): { title: string; body: string } {
+  const request = text(payload.code) ? `${text(payload.code)} · ${text(payload.service)}` : text(payload.service)
+  const who = text(payload.interpreter_name) || 'Um intérprete'
+  switch (kind) {
+    case 'request_invited': return { title: 'Novo convite para um serviço', body: request }
+    case 'request_invite_expired': return { title: 'Um convite expirou', body: `${who} não respondeu a tempo. ${request}` }
+    case 'request_accepted': return { title: `${who} aceitou o pedido`, body: request }
+    case 'request_declined': return { title: `${who} recusou o pedido`, body: text(payload.reason) ? `Motivo: ${text(payload.reason)}` : request }
+    case 'request_confirmed': return { title: 'Pedido confirmado', body: request }
+    case 'request_understaffed_warning': return { title: 'Ainda faltam intérpretes', body: `${request}. Convida mais ou segue com os que tens.` }
+    case 'request_expired': return { title: 'O pedido expirou', body: `Não houve intérpretes suficientes a tempo. ${request}` }
+    case 'request_cancelled': return {
+      title: text(payload.interpreter_name) ? `${who} cancelou a participação` : 'Um pedido foi cancelado',
+      body: text(payload.reason) ? `${request}. Motivo: ${text(payload.reason)}` : request,
+    }
+    case 'delivery_marked': return { title: `${who} marcou o serviço como feito`, body: `${request}. Confirma ou abre uma disputa.` }
+    case 'delivery_auto_confirmed': return { title: 'Serviço confirmado automaticamente', body: request }
+    case 'dispute_opened': return { title: 'Foi aberta uma disputa', body: text(payload.reason) ? `${request}. Motivo: ${text(payload.reason)}` : request }
+    case 'dispute_resolved': return {
+      title: 'A disputa foi resolvida',
+      body: `${request}. ${payload.resolution === 'completed' ? 'O serviço conta como feito.' : 'O serviço não conta como feito.'}`,
+    }
+    case 'payment_requested': return { title: 'Tens um pagamento por fazer', body: `${text(payload.description)} · ${text(payload.reference)}` }
+    case 'payment_proof_received': return { title: 'Novo comprovativo para validar', body: `${text(payload.description)} · ${text(payload.reference)}` }
+    case 'payment_confirmed': return { title: 'Pagamento confirmado', body: `${text(payload.description)} · ${text(payload.reference)}` }
+    case 'payment_proof_rejected': return { title: 'O comprovativo foi recusado', body: text(payload.reason) ? `Motivo: ${text(payload.reason)}` : text(payload.reference) }
+    case 'payment_expiring': return { title: 'O prazo para pagar está a acabar', body: `${text(payload.description)} · ${text(payload.reference)}` }
+    case 'payment_expired': return { title: 'O prazo para pagar terminou', body: `${text(payload.description)} · ${text(payload.reference)}` }
+    case 'refund_created': return { title: 'Vais receber um reembolso', body: typeof payload.refund_aoa === 'number' ? formatAoa(payload.refund_aoa) : text(payload.reference) }
+    case 'refund_paid': return { title: 'Reembolso pago', body: typeof payload.refund_aoa === 'number' ? formatAoa(payload.refund_aoa) : text(payload.reference) }
+    case 'payout_queued': return { title: 'Tens um pagamento a receber', body: typeof payload.amount_aoa === 'number' ? formatAoa(payload.amount_aoa) : '' }
+    case 'payout_paid': return { title: 'Pagamento transferido', body: typeof payload.amount_aoa === 'number' ? `${formatAoa(payload.amount_aoa)} · ${text(payload.reference)}` : text(payload.reference) }
+    case 'payout_details_missing': return { title: 'Indica o IBAN para receber', body: 'Tens um pagamento à espera dos teus dados bancários.' }
+    case 'review_requested': return { title: `Avalia o teu serviço com ${text(payload.other_name) || 'a outra parte'}`, body: request }
+    case 'review_revealed': return { title: 'Recebeste uma avaliação', body: request }
+    case 'review_hidden': return { title: 'A equipa escondeu uma avaliação tua', body: text(payload.reason) ? `Motivo: ${text(payload.reason)}` : '' }
+    case 'account_suspended_counterparty': return payload.place_reopened === true
+      ? { title: 'Um intérprete deixou de estar disponível', body: `${request}. O lugar voltou a ficar livre.` }
+      : { title: 'Um pedido foi cancelado pela equipa', body: `A outra parte deixou de estar disponível. ${request}` }
+    case 'proposal_received': return { title: 'Nova proposta de preço', body: typeof payload.amount_aoa === 'number' ? `${request}: ${formatAoa(payload.amount_aoa)}` : request }
+    case 'proposal_answered': return { title: payload.accepted === true ? 'A tua proposta foi aceite' : 'A tua proposta foi recusada', body: request }
+    case 'meeting_link_changed': return { title: 'O link da reunião mudou', body: request }
+    case 'org_invite_accepted': return { title: 'Um convite foi aceite', body: text(payload.organization_name) }
+    case 'content_removed': return { title: 'A equipa removeu um conteúdo teu', body: text(payload.reason) ? `Motivo: ${text(payload.reason)}` : text(payload.title) }
+    default: return { title: 'Nova notificação', body: '' }
+  }
+}
+
+export const NOTIFICATION_TEXTS = {
+  bellLabel: (unread: number): string => (unread === 0 ? 'Notificações' : `Notificações, ${unread} por ler`),
+  markAllRead: 'Marcar todas como lidas',
+  seeAll: 'Ver todas',
+  empty: 'Não tens notificações.',
+  pageTitle: 'Notificações',
+} as const
