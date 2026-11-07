@@ -203,7 +203,8 @@
     --accent: 214 70% 95%;
     --accent-foreground: 216 92% 30%;
     --border: 218 22% 89%;
-    --input: 218 18% 82%;
+    /* Field borders at 3:1 against white and the ground (WCAG 1.4.11). */
+    --input: 218 12% 57%;
     --success: 152 65% 28%;
     --warning: 30 92% 34%;
     --destructive: 0 70% 44%;
@@ -225,7 +226,7 @@
     --accent: 216 40% 18%;
     --accent-foreground: 214 90% 76%;
     --border: 222 20% 18%;
-    --input: 222 18% 24%;
+    --input: 220 12% 44%;
     --primary: 214 88% 62%;
     --primary-foreground: 222 47% 8%;
     --ring: 214 88% 62%;

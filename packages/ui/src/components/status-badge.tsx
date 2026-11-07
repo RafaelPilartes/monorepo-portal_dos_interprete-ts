@@ -47,7 +47,7 @@ const statusConfig: Record<StatusType, { label: string; className: string }> = {
   },
   confirmed: {
     label: 'Confirmado',
-    className: 'bg-secondary/10 text-secondary border-secondary/20'
+    className: 'bg-success/10 text-success border-success/20'
   },
   active: {
     label: 'Activo',
